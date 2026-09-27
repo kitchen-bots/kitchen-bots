@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -79,6 +80,34 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     pincode: '',
     notes: '',
   });
+
+  // Freeze background scroll and handle Escape key when checkout modal is active
+  useEffect(() => {
+    if (!showCheckout) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowCheckout(false);
+        setFormErrors({});
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCheckout]);
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (!Number.isFinite(newQuantity)) return;
@@ -234,7 +263,12 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
   // ─── Cart with items ──────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-[#FAFAFA] pt-24 sm:pt-28">
+    <main
+      className={`min-h-screen bg-[#FAFAFA] pt-24 sm:pt-28 transition-opacity duration-300 ${
+        showCheckout ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'
+      }`}
+      aria-hidden={showCheckout}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
@@ -461,15 +495,25 @@ export default function CartPage({ onNavigate }: CartPageProps) {
           </aside>
         </div>
 
-        {/* ─── Direct Checkout Panel ─────────────────────────────────────────── */}
-        {showCheckout && (
+        {/* ─── Direct Checkout Panel Modal ─────────────────────────────────────── */}
+        {showCheckout && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0F172A]/50 p-4"
+            className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-4 overscroll-contain animate-fade-in"
             role="dialog"
             aria-modal="true"
-            aria-label="Place order"
+            aria-label="Delivery Details"
           >
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[92vh]">
+            {/* Backdrop: Hides and obscures background, covering header and floating buttons */}
+            <div
+              className="fixed inset-0 bg-[#0B0F19]/85 backdrop-blur-md transition-opacity duration-300 touch-none"
+              onClick={() => { setShowCheckout(false); setFormErrors({}); }}
+              aria-hidden="true"
+            />
+
+            <div
+              className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[92vh] overscroll-contain animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Modal header */}
               <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#F1F5F9]">
                 <div>
@@ -484,7 +528,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   className="text-[#94A3B8] hover:text-[#475569] p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors"
                   aria-label="Close checkout"
                 >
-                  <ChevronDown size={20} />
+                  <X size={20} />
                 </button>
               </div>
 
@@ -658,7 +702,8 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </main>
