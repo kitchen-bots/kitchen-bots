@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
@@ -108,6 +108,29 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [showCheckout]);
+
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [summaryHeight, setSummaryHeight] = useState<number | undefined>(undefined);
+
+  // Equalize cart items list container height with Order Summary sidebar on desktop
+  useEffect(() => {
+    if (!summaryRef.current) return;
+    const updateHeight = () => {
+      if (summaryRef.current && window.innerWidth >= 1024) {
+        setSummaryHeight(summaryRef.current.offsetHeight);
+      } else {
+        setSummaryHeight(undefined);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(summaryRef.current);
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (!Number.isFinite(newQuantity)) return;
@@ -313,7 +336,8 @@ export default function CartPage({ onNavigate }: CartPageProps) {
           {/* Cart Items List */}
           <section
             aria-label="Cart items"
-            className="lg:col-span-2 max-h-[580px] sm:max-h-[620px] overflow-y-auto pr-2 sm:pr-3 space-y-4 thin-scrollbar"
+            style={summaryHeight ? { maxHeight: `${summaryHeight}px` } : undefined}
+            className="lg:col-span-2 max-h-[460px] overflow-y-auto pr-2 sm:pr-3 space-y-2.5 sm:space-y-3 thin-scrollbar"
           >
             {items.map((item) => {
               const itemSubtotal = item.price * item.quantity;
@@ -326,10 +350,10 @@ export default function CartPage({ onNavigate }: CartPageProps) {
               return (
                 <article
                   key={item.id}
-                  className="bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:gap-5 shadow-xs"
+                  className="bg-white border border-[#E2E8F0] rounded-xl p-3 sm:p-3.5 flex flex-col sm:flex-row gap-3 sm:gap-4 shadow-xs hover:border-[#CBD5E1] transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 bg-[#F8FAFC] rounded-lg border border-[#F1F5F9] p-2 shrink-0 flex items-center justify-center overflow-hidden mx-auto sm:mx-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F8FAFC] rounded-xl border border-[#F1F5F9] p-1.5 sm:p-2 shrink-0 flex items-center justify-center overflow-hidden mx-auto sm:mx-0">
                     <ProductImage
                       src={item.image}
                       alt={item.name}
@@ -340,16 +364,16 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   {/* Details */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
-                        <h2 className="font-['Outfit'] text-base sm:text-lg font-bold text-[#111827] leading-snug break-words min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4">
+                        <h2 className="font-['Outfit'] text-sm sm:text-base font-bold text-[#111827] leading-snug break-words min-w-0">
                           {item.name}
                         </h2>
                         <div className="text-left sm:text-right shrink-0">
-                          <span className="font-['Outfit'] text-base sm:text-lg font-bold text-[#111827] whitespace-nowrap">
+                          <span className="font-['Outfit'] text-sm sm:text-base font-bold text-[#111827] whitespace-nowrap">
                             ₹{itemSubtotal.toLocaleString('en-IN')}
                           </span>
                           {item.quantity > 1 && (
-                            <p className="text-xs text-[#64748B] whitespace-nowrap">
+                            <p className="text-[11px] text-[#64748B] whitespace-nowrap">
                               ₹{item.price.toLocaleString('en-IN')} each
                             </p>
                           )}
@@ -358,11 +382,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
                       {/* Product Configuration Display (if supported) */}
                       {hasConfig && item.configuration && (
-                        <div className="mt-2 text-xs text-[#64748B] space-y-1 bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-2.5">
+                        <div className="mt-1.5 text-xs text-[#64748B] space-y-0.5 bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-2">
                           <span className="font-semibold text-[#475569] uppercase tracking-wider text-[10px]">
                             Configuration:
                           </span>
-                          <div className="space-y-1 mt-1">
+                          <div className="space-y-0.5 mt-0.5">
                             {Object.entries(item.configuration).map(([key, val]) => (
                               <div key={key} className="flex flex-wrap items-baseline gap-1.5 text-xs break-words">
                                 <span className="font-medium text-[#475569] shrink-0">{key}:</span>
@@ -375,23 +399,23 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                     </div>
 
                     {/* Quantity & Removal Controls */}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#F1F5F9]">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-[#64748B]">Quantity:</span>
-                          <div className="flex items-center border border-[#CBD5E1] rounded-lg bg-[#F8FAFC] overflow-hidden">
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F1F5F9]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-[#64748B]">Qty:</span>
+                          <div className="flex items-center border border-[#CBD5E1] rounded-lg bg-[#F8FAFC] overflow-hidden h-8">
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                               disabled={item.quantity <= 1}
                               aria-label={`Decrease quantity of ${item.name}`}
-                              className="w-11 h-11 flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:z-10 disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
-                              <Minus className="w-4 h-4" aria-hidden="true" />
+                              <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                             <span
                               aria-label={`Current quantity: ${item.quantity}`}
-                              className="w-10 text-center font-['Outfit'] text-sm font-semibold text-[#111827] select-none"
+                              className="w-8 text-center font-['Outfit'] text-xs font-semibold text-[#111827] select-none"
                             >
                               {item.quantity}
                             </span>
@@ -401,15 +425,15 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                               disabled={item.quantity >= MAX_ITEM_QUANTITY}
                               aria-label={`Increase quantity of ${item.name}`}
                               title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
-                              className="w-11 h-11 flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:z-10 disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
-                              <Plus className="w-4 h-4" aria-hidden="true" />
+                              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
                         {item.quantity >= MAX_ITEM_QUANTITY && (
-                          <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2.5 py-1 rounded-md">
-                            Max limit ({MAX_ITEM_QUANTITY}) reached
+                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                            Max limit ({MAX_ITEM_QUANTITY})
                           </span>
                         )}
                       </div>
@@ -420,9 +444,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
                         aria-label={`Remove ${item.name} from cart`}
-                        className="text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] min-h-[44px] px-3 text-xs font-medium gap-1.5 focus-visible:ring-2 focus-visible:ring-[#DC2626] focus-visible:ring-offset-2"
+                        className="text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] h-8 px-2.5 text-xs font-medium gap-1 focus-visible:ring-2 focus-visible:ring-[#DC2626] focus-visible:ring-offset-2"
                       >
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Remove</span>
                       </Button>
                     </div>
@@ -434,7 +458,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
           {/* Order Summary Sidebar */}
           <aside aria-label="Order summary" className="lg:col-span-1">
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs lg:sticky lg:top-28">
+            <div ref={summaryRef} className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs lg:sticky lg:top-28">
               <h2 className="font-['Outfit'] text-xl font-bold text-[#111827] mb-5">
                 Order Summary
               </h2>
