@@ -55,17 +55,35 @@ const CATEGORY_MAP: Record<string, ProductCategory> = {
   'automatic-bbq': 'Automatic BBQ',
 };
 
-export function categoryIdToName(categoryId: string): ProductCategory {
+const VALID_CATEGORIES: ProductCategory[] = [
+  'Collapsible BBQ',
+  'Rocket Stoves',
+  'Automatic BBQ',
+  'Santa Maria Series',
+  'Suitcase BBQ',
+  'Accessories',
+];
+
+export function categoryIdToName(categoryId?: string): ProductCategory {
+  if (!categoryId) return 'Collapsible BBQ';
+  if (VALID_CATEGORIES.includes(categoryId as ProductCategory)) {
+    return categoryId as ProductCategory;
+  }
   if (CATEGORY_MAP[categoryId]) {
     return CATEGORY_MAP[categoryId];
   }
   const normalized = categoryId.toLowerCase();
+  for (const cat of VALID_CATEGORIES) {
+    if (normalized.includes(cat.toLowerCase()) || cat.toLowerCase().includes(normalized)) {
+      return cat;
+    }
+  }
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return val;
     }
   }
-  return 'Accessories';
+  return 'Collapsible BBQ';
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,16 +138,19 @@ export function toStorefrontProduct(apiProduct: any): Product {
         ? Math.round(Number(apiProduct.pricePaise) / 100)
         : (local?.price ?? 0));
 
+  const rawCat = apiProduct.category || apiProduct.categoryId;
+  const resolvedCategory = rawCat ? categoryIdToName(rawCat) : (local?.category || 'Collapsible BBQ');
+
   return {
     ...(local || {}),
     id: apiProduct.id,
-    slug: apiProduct.slug || local?.slug,
+    slug: apiProduct.slug || local?.slug || apiProduct.id,
     name: apiProduct.name || local?.name || '',
     description: apiProduct.description || local?.description || '',
     price: priceRupees,
     image: primaryImage,
-    images,
-    category: categoryIdToName(apiProduct.categoryId || apiProduct.category || '') || local?.category || 'Collapsible BBQ',
+    images: images.length > 0 ? images : (local?.images || [primaryImage]),
+    category: resolvedCategory,
     features: (Array.isArray(apiProduct.features) && apiProduct.features.length > 0) ? apiProduct.features : (local?.features || []),
     specifications,
     video: local?.video,

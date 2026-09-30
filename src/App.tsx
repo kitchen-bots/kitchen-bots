@@ -1,3 +1,4 @@
+import { useProducts } from './hooks/use-products';
 import { useEffect, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { gsap } from 'gsap';
@@ -43,6 +44,7 @@ interface IntendedDestination {
 }
 
 function MainAppContent() {
+  const { products } = useProducts();
   const { user, loading: isAuthLoading } = useAuth();
   
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -218,6 +220,7 @@ function MainAppContent() {
           <>
             <HeroSection onNavigate={navigateTo} />
             <ProductFleetSection 
+              products={products}
               onBrowse={() => browseCatalog()}
               onProductClick={(id) => navigateTo('product-detail', id)} 
               onCartOpen={() => setIsCartOpen(true)} 
