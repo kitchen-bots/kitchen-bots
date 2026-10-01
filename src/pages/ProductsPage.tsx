@@ -24,6 +24,7 @@ import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import QuickViewModal from '../components/QuickViewModal';
 import { fetchCatalogProducts } from '../lib/api';
+import { getMediaUrl } from '../lib/cdn';
 
 interface ProductsPageProps {
   onProductClick: (id: string) => void;
@@ -85,6 +86,30 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  // Preload and decode secondary card images during idle so card hover preview is instantaneous
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    const preload = () => {
+      products.forEach(p => {
+        if (p.images && p.images.length > 1) {
+          const resolved = getMediaUrl(p.images[1]);
+          if (resolved) {
+            const link = new Image();
+            link.src = resolved;
+            if (typeof link.decode === 'function') {
+              link.decode().catch(() => {});
+            }
+          }
+        }
+      });
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(preload);
+    } else {
+      setTimeout(preload, 150);
+    }
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const terms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -263,7 +288,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                         <ProductImage
                           src={displayImage}
                           alt={product.name}
-                          className="h-full w-full object-contain transition-all duration-300 group-hover:scale-105"
+                          className="h-full w-full object-contain will-change-transform transition-transform duration-150 ease-out group-hover:scale-105"
                         />
                       </button>
 

@@ -63,50 +63,63 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [tab, setTab] = useState<Tab>('Description');
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxScale, setLightboxScale] = useState(1);
 
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
-  const rafIdRef = useRef<number | null>(null);
+  const zoomBadgeRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showToast } = useToast();
 
-  const updateZoomPosition = (clientX: number, clientY: number) => {
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const container = zoomContainerRef.current;
     const target = zoomImageRef.current;
     if (!container || !target) return;
     const rect = container.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
-    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
-    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
-  };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    updateZoomPosition(e.clientX, e.clientY);
-    setIsZoomed(true);
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    // Instantly anchor transformOrigin to cursor position without transition lag
+    target.style.transition = 'none';
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    // Force browser to commit origin before transition begins
+    void target.offsetHeight;
+    // Snappy, instant hardware-accelerated scale-up (0 lag)
+    target.style.transition = 'transform 80ms cubic-bezier(0.2, 0, 0, 1)';
+    target.style.transform = 'scale(2.4)';
+
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0';
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
-    rafIdRef.current = requestAnimationFrame(() => {
-      updateZoomPosition(clientX, clientY);
-    });
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
   };
 
   const handleMouseLeave = () => {
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'transform 100ms ease-out';
+      target.style.transform = 'scale(1)';
     }
-    setIsZoomed(false);
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0.9';
+    }
   };
 
   const loadProduct = useCallback(async () => {
@@ -138,7 +151,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     loadProduct();
     setActiveMediaMode('photos');
     setActiveImage(0);
-    setIsZoomed(false);
     setIsLightboxOpen(false);
     setLightboxScale(1);
   }, [loadProduct]);
@@ -148,7 +160,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     [product]
   );
 
-  // Preload all product gallery images eagerly to eliminate network delays on zoom & photo switches
+  // Preload and hardware-decode all product gallery images eagerly to eliminate network & rasterization delays
   useEffect(() => {
     if (!images || images.length === 0) return;
     images.forEach(img => {
@@ -156,18 +168,25 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
       if (resolved) {
         const link = new Image();
         link.src = resolved;
+        if (typeof link.decode === 'function') {
+          link.decode().catch(() => {});
+        }
       }
     });
   }, [images]);
 
-  // Clean up RAF on unmount
+  // Reset zoom state cleanly on photo or product change
   useEffect(() => {
-    return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
-  }, []);
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'none';
+      target.style.transform = 'scale(1)';
+      target.style.transformOrigin = '50% 50%';
+    }
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0.9';
+    }
+  }, [activeImage, product?.id]);
 
   // Handle keyboard shortcuts and body scroll locking for the fullscreen photo lightbox
   useEffect(() => {
@@ -437,22 +456,22 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                 >
                   <div
                     ref={zoomImageRef}
-                    className="h-full w-full will-change-transform transition-transform duration-150 ease-out"
-                    style={{
-                      transformOrigin: '50% 50%',
-                      transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
-                    }}
+                    className="h-full w-full will-change-transform select-none"
                   >
                     <ProductImage
                       src={images[activeImage]}
                       alt={product.name}
                       loading="eager"
                       fetchPriority="high"
+                      decoding="sync"
                       className="h-full w-full object-contain pointer-events-none"
                     />
                   </div>
 
-                  <div className={`pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-150 ${isZoomed ? 'opacity-0' : 'opacity-90'}`}>
+                  <div
+                    ref={zoomBadgeRef}
+                    className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-100 opacity-90 group-hover:opacity-0"
+                  >
                     <ZoomIn size={14} /> Hover to zoom &bull; Click to expand
                   </div>
                 </div>
@@ -504,7 +523,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     onClick={() => {
                       setActiveImage(index);
                       setActiveMediaMode('photos');
-                      setIsZoomed(false);
                     }}
                     aria-pressed={activeMediaMode === 'photos' && activeImage === index}
                     title={`View photo ${index + 1}`}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, ShoppingCart, Minus, Plus, ArrowRight, Camera, RotateCw, Film, Shield, Truck, ZoomIn } from 'lucide-react';
 import type { Product } from '../types/product';
 import { useCart } from '../hooks/use-cart';
@@ -9,6 +9,7 @@ import ProductImage from './ProductImage';
 import Product360Viewer from './Product360Viewer';
 import ProductVideoPlayer from './ProductVideoPlayer';
 import { cn } from '../lib/utils';
+import { getMediaUrl } from '../lib/cdn';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -37,56 +38,91 @@ export default function QuickViewModal({
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [prevProductId, setPrevProductId] = useState(product?.id);
 
-  // Smooth hover zoom state and refs for Quick View photo viewer
-  const [isZoomed, setIsZoomed] = useState(false);
+  // Ultra-fast zero-latency direct DOM zoom engine for Quick View
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
-  const rafIdRef = useRef<number | null>(null);
+  const zoomBadgeRef = useRef<HTMLDivElement>(null);
 
-  const updateZoomPosition = useCallback((clientX: number, clientY: number) => {
-    if (!zoomContainerRef.current || !zoomImageRef.current) return;
-    const rect = zoomContainerRef.current.getBoundingClientRect();
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
 
-    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-    const xPercent = (x / rect.width) * 100;
-    const yPercent = (y / rect.height) * 100;
+    // Instantly lock origin to cursor position without transition lag
+    target.style.transition = 'none';
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    void target.offsetHeight;
+    target.style.transition = 'transform 80ms cubic-bezier(0.2, 0, 0, 1)';
+    target.style.transform = 'scale(2.4)';
 
-    zoomImageRef.current.style.transformOrigin = `${xPercent}% ${yPercent}%`;
-  }, []);
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0';
+    }
+  };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const { clientX, clientY } = e;
-    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    rafIdRef.current = requestAnimationFrame(() => {
-      updateZoomPosition(clientX, clientY);
-    });
-  }, [updateZoomPosition]);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    updateZoomPosition(e.clientX, e.clientY);
-    setIsZoomed(true);
-  }, [updateZoomPosition]);
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-  const handleMouseLeave = useCallback(() => {
-    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    setIsZoomed(false);
-  }, []);
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+  };
 
+  const handleMouseLeave = () => {
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'transform 100ms ease-out';
+      target.style.transform = 'scale(1)';
+    }
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0.85';
+    }
+  };
+
+  // Reset zoom on product, photo, or tab change
   useEffect(() => {
-    return () => {
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    };
-  }, []);
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'none';
+      target.style.transform = 'scale(1)';
+      target.style.transformOrigin = '50% 50%';
+    }
+    if (zoomBadgeRef.current) {
+      zoomBadgeRef.current.style.opacity = '0.85';
+    }
+  }, [activeImageIdx, product?.id, activeMediaTab]);
 
   if (product && product.id !== prevProductId) {
     setPrevProductId(product.id);
     setActiveMediaTab('photos');
     setActiveImageIdx(0);
-    setIsZoomed(false);
   }
+
+  // Preload and hardware-decode all product gallery photos on modal open to eliminate zoom and preview delay
+  useEffect(() => {
+    if (!isOpen || !product) return;
+    const gallery = product.images?.length ? product.images : [product.image];
+    gallery.forEach(img => {
+      const resolved = getMediaUrl(img);
+      if (resolved) {
+        const link = new Image();
+        link.src = resolved;
+        if (typeof link.decode === 'function') {
+          link.decode().catch(() => {});
+        }
+      }
+    });
+  }, [isOpen, product]);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { showToast } = useToast();
@@ -161,10 +197,7 @@ export default function QuickViewModal({
                 id="quick-tab-photos"
                 aria-selected={activeMediaTab === 'photos'}
                 aria-controls="quick-panel-photos"
-                onClick={() => {
-                  setActiveMediaTab('photos');
-                  setIsZoomed(false);
-                }}
+                onClick={() => setActiveMediaTab('photos')}
                 className={cn(
                   'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                   activeMediaTab === 'photos'
@@ -182,10 +215,7 @@ export default function QuickViewModal({
                   id="quick-tab-360"
                   aria-selected={activeMediaTab === '360'}
                   aria-controls="quick-panel-360"
-                  onClick={() => {
-                    setActiveMediaTab('360');
-                    setIsZoomed(false);
-                  }}
+                  onClick={() => setActiveMediaTab('360')}
                   className={cn(
                     'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                     activeMediaTab === '360'
@@ -204,10 +234,7 @@ export default function QuickViewModal({
                   id="quick-tab-video"
                   aria-selected={activeMediaTab === 'video'}
                   aria-controls="quick-panel-video"
-                  onClick={() => {
-                    setActiveMediaTab('video');
-                    setIsZoomed(false);
-                  }}
+                  onClick={() => setActiveMediaTab('video')}
                   className={cn(
                     'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                     activeMediaTab === 'video'
@@ -231,31 +258,27 @@ export default function QuickViewModal({
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 className={cn(
-                  'relative h-full w-full flex items-center justify-center overflow-hidden cursor-zoom-in select-none',
+                  'relative h-full w-full flex items-center justify-center overflow-hidden cursor-zoom-in select-none group',
                   activeMediaTab === 'photos' ? 'block' : 'hidden'
                 )}
               >
                 <div
                   ref={zoomImageRef}
-                  className="h-full w-full will-change-transform transition-transform duration-150 ease-out flex items-center justify-center"
-                  style={{
-                    transformOrigin: '50% 50%',
-                    transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
-                  }}
+                  className="h-full w-full will-change-transform flex items-center justify-center select-none"
                 >
                   <ProductImage
                     src={images[activeImageIdx]}
                     alt={product.name}
                     loading="eager"
                     fetchPriority="high"
+                    decoding="sync"
                     className="h-full w-full object-contain pointer-events-none"
                   />
                 </div>
 
                 <div
-                  className={`pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/75 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-150 ${
-                    isZoomed ? 'opacity-0' : 'opacity-85'
-                  }`}
+                  ref={zoomBadgeRef}
+                  className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/75 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-100 opacity-85 group-hover:opacity-0"
                 >
                   <ZoomIn size={12} />
                   <span>Hover to zoom</span>
@@ -308,7 +331,6 @@ export default function QuickViewModal({
                     onClick={() => {
                       setActiveImageIdx(i);
                       setActiveMediaTab('photos');
-                      setIsZoomed(false);
                     }}
                     title={`View photo ${i + 1}`}
                     className={cn(
