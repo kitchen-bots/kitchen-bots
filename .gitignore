@@ -8,6 +8,9 @@ node_modules/
 dist/
 dist-ssr/
 build/
+.turbo/
+.next/
+.pnpm-store/
 
 # Local Environment & Secrets
 .env
