@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useWishlist } from '../hooks/use-wishlist';
 import { PRODUCTS } from '../data/products';
-import { Heart, ArrowRight, Trash2, ShoppingBag, Package } from 'lucide-react';
+import type { Product } from '../types/product';
+import { Heart, ArrowRight, Trash2, ShoppingBag, Package, Eye } from 'lucide-react';
 import type { Page } from '../App';
 import { useCart } from '../hooks/use-cart';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
+import QuickViewModal from '../components/QuickViewModal';
 
 interface WishlistPageProps {
   onProductClick: (id: string) => void;
@@ -13,6 +16,7 @@ interface WishlistPageProps {
 }
 
 export default function WishlistPage({ onProductClick, onNavigate }: WishlistPageProps) {
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const { wishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -27,8 +31,8 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
     }).format(price);
 
   return (
-    <section className="pt-24 sm:pt-28 min-h-screen bg-[#FAFAFA]">
-      <div className="container mx-auto px-6 md:px-[80px] py-12 md:py-20">
+    <section className="pt-20 sm:pt-24 min-h-screen bg-[#FAFAFA]">
+      <div className="container mx-auto px-6 md:px-[80px] pt-4 sm:pt-6 pb-16">
         <div className="max-w-6xl mx-auto">
           {/* HEADER */}
           <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#F1F5F9] pb-8">
@@ -62,7 +66,7 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                 >
                   <div 
                     className="relative aspect-[4/3] bg-[#F8FAFC] cursor-pointer overflow-hidden p-8 flex items-center justify-center"
-                    onClick={() => onProductClick(product.id)}
+                    onClick={() => setQuickViewProduct(product)}
                   >
                     <ProductImage
                       src={product.image}
@@ -81,6 +85,22 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                     >
                       <Trash2 size={20} />
                     </Button>
+
+                    {/* Floating Quick View Bar on Hover */}
+                    <div className="absolute inset-x-6 bottom-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickViewProduct(product);
+                        }}
+                        className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98 text-xs py-2"
+                      >
+                        <Eye size={14} className="mr-1.5 text-[#C2410C]" /> Quick View (360° / Video)
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="p-8">
@@ -94,7 +114,13 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                           In Stock
                         </span>
                       </div>
-                      <h3 className="text-[20px] font-bold text-[#111827] leading-tight font-['Outfit'] group-hover:text-kb-tertiary transition-colors">{product.name}</h3>
+                      <button
+                        type="button"
+                        className="text-left"
+                        onClick={() => setQuickViewProduct(product)}
+                      >
+                        <h3 className="text-[20px] font-bold text-[#111827] leading-tight font-['Outfit'] group-hover:text-kb-tertiary transition-colors">{product.name}</h3>
+                      </button>
                     </div>
                     
                     <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#F1F5F9]">
@@ -146,6 +172,18 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
           )}
         </div>
       </div>
+
+      {/* Quick View Interactive Turntable & Zoom Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={Boolean(quickViewProduct)}
+        onClose={() => setQuickViewProduct(null)}
+        onViewDetails={(id) => {
+          setQuickViewProduct(null);
+          onProductClick(id);
+        }}
+        onCartOpen={() => onNavigate('cart')}
+      />
     </section>
   );
 }

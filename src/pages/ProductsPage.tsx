@@ -12,7 +12,6 @@ import {
   RefreshCw,
   RotateCw,
   Film,
-  Eye,
 } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
@@ -22,8 +21,8 @@ import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
-import QuickViewModal from '../components/QuickViewModal';
 import { fetchCatalogProducts } from '../lib/api';
+import { getMediaUrl } from '../lib/cdn';
 
 interface ProductsPageProps {
   onProductClick: (id: string) => void;
@@ -63,9 +62,6 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Quick View Modal state
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
@@ -89,6 +85,30 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
     loadProducts();
   }, [loadProducts]);
 
+  // Preload and decode secondary card images during idle so card hover preview is instantaneous
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    const preload = () => {
+      products.forEach(p => {
+        if (p.images && p.images.length > 1) {
+          const resolved = getMediaUrl(p.images[1]);
+          if (resolved) {
+            const link = new Image();
+            link.src = resolved;
+            if (typeof link.decode === 'function') {
+              link.decode().catch(() => {});
+            }
+          }
+        }
+      });
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(preload);
+    } else {
+      setTimeout(preload, 150);
+    }
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     const terms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return products.filter(product => {
@@ -109,7 +129,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Unified Header & Catalog Controls (Seamless, no gap below navbar) */}
-      <section className="border-b border-[#E2E8F0] bg-white pb-8 pt-24 sm:pt-28">
+      <section className="border-b border-[#E2E8F0] bg-white pb-8 pt-20 sm:pt-24">
         <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
           <nav className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#94A3B8]" aria-label="Breadcrumb">
             <button className="hover:text-[#111827]" onClick={() => onNavigate?.('home')}>Home</button>
@@ -259,6 +279,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
 
                       {/* Main Image Clickable */}
                       <button
+                        type="button"
                         onClick={() => onProductClick(product.id)}
                         className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
                         aria-label={`View details for ${product.name}`}
@@ -266,22 +287,9 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                         <ProductImage
                           src={displayImage}
                           alt={product.name}
-                          className="h-full w-full object-contain transition-all duration-300 group-hover:scale-105"
+                          className="h-full w-full object-contain will-change-transform transition-transform duration-150 ease-out group-hover:scale-105"
                         />
                       </button>
-
-                      {/* Quick View Floating Action on Hover */}
-                      <div className="absolute inset-x-4 bottom-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setQuickViewProduct(product)}
-                          className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98"
-                        >
-                          <Eye size={15} className="mr-1.5 text-[#C2410C]" /> Quick View (360° / Video)
-                        </Button>
-                      </div>
                     </div>
 
                     {/* Product Info Block */}
@@ -297,7 +305,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                         )}
                       </div>
 
-                      <button className="text-left mt-1.5" onClick={() => onProductClick(product.id)}>
+                      <button type="button" className="text-left mt-1.5" onClick={() => onProductClick(product.id)}>
                         <h2 className="font-['Outfit'] text-[20px] font-bold leading-snug text-[#0F172A] hover:text-[#C2410C] transition-colors">
                           {product.name}
                         </h2>
@@ -406,17 +414,6 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
         </div>
       </section>
 
-      {/* Quick View Modal */}
-      <QuickViewModal
-        product={quickViewProduct}
-        isOpen={Boolean(quickViewProduct)}
-        onClose={() => setQuickViewProduct(null)}
-        onViewDetails={(id) => {
-          setQuickViewProduct(null);
-          onProductClick(id);
-        }}
-        onCartOpen={onCartOpen}
-      />
     </div>
   );
 }

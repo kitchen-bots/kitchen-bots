@@ -7,9 +7,18 @@ export interface ImageProps {
   alt: string;
   className?: string;
   loading?: 'lazy' | 'eager';
+  fetchPriority?: 'high' | 'low' | 'auto';
+  decoding?: 'async' | 'sync' | 'auto';
 }
 
-export function ContentImage({ src, alt, className = '', loading = 'lazy' }: ImageProps) {
+export function ContentImage({
+  src,
+  alt,
+  className = '',
+  loading = 'lazy',
+  fetchPriority,
+  decoding = 'async',
+}: ImageProps) {
   const [failed, setFailed] = useState(false);
 
   // If local logo or already full URL, use as is; otherwise route through getMediaUrl
@@ -34,6 +43,8 @@ export function ContentImage({ src, alt, className = '', loading = 'lazy' }: Ima
       src={resolvedSrc}
       alt={alt}
       loading={loading}
+      fetchPriority={fetchPriority}
+      decoding={decoding}
       className={className}
       onError={() => setFailed(true)}
     />

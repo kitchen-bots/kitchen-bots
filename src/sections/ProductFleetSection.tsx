@@ -1,12 +1,13 @@
-import { ArrowRight, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, Minus, Plus, ShoppingCart, Eye, RotateCw, Film } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
 import { PRODUCTS } from '../data/products';
+import type { Product } from '../types/product';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
-
-import type { Product } from '../types/product';
+import QuickViewModal from '../components/QuickViewModal';
 
 interface ProductFleetSectionProps {
   onBrowse?: () => void;
@@ -22,6 +23,7 @@ const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
 }).format(price);
 
 export default function ProductFleetSection({ onBrowse, onProductClick, onCartOpen, products }: ProductFleetSectionProps) {
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const { addToCart, items, updateQuantity } = useCart();
   const sourceProducts = products && products.length > 0 ? products : PRODUCTS;
   const featuredList = sourceProducts.filter(p => p.featured).slice(0, 4);
@@ -51,17 +53,70 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
             const quantityInCart = cartItem?.quantity ?? 0;
 
             return (
-              <article key={product.id} className="group flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-md">
-                <button
-                  className="aspect-square overflow-hidden bg-[#F8FAFC] p-8 text-center"
-                  onClick={() => onProductClick?.(product.id)}
-                  aria-label={`View ${product.name}`}
-                >
-                  <ProductImage src={product.image} alt={product.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
-                </button>
+              <article key={product.id} className="group flex flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-xl">
+                {/* Media Container with Badges & Quick View Action */}
+                <div className="relative aspect-square overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] p-6 text-center">
+                  {/* Media Badges */}
+                  <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5 pointer-events-none">
+                    {product.sequenceId && (
+                      <span className="flex items-center gap-1 rounded-lg bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs backdrop-blur-md">
+                        <RotateCw size={10} className="text-[#FDBA74] animate-spin-slow" /> 360° 3D
+                      </span>
+                    )}
+                    {product.video && (
+                      <span className="flex items-center gap-1 rounded-lg bg-[#C2410C]/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs backdrop-blur-md">
+                        <Film size={10} /> Video
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Corner Quick View Icon Button (touch-friendly & instant click) */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setQuickViewProduct(product);
+                    }}
+                    title={`Quick View ${product.name}`}
+                    aria-label={`Quick View ${product.name}`}
+                    className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#475569] shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-[#C2410C] hover:scale-110 active:scale-95 cursor-pointer opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    <Eye size={15} />
+                  </button>
+
+                  {/* Clickable Product Image */}
+                  <button
+                    type="button"
+                    className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
+                    onClick={() => setQuickViewProduct(product)}
+                    aria-label={`Quick View ${product.name}`}
+                  >
+                    <ProductImage
+                      src={product.image}
+                      alt={product.name}
+                      className="h-full w-full object-contain will-change-transform transition-transform duration-200 group-hover:scale-105"
+                    />
+                  </button>
+
+                  {/* Floating Quick View Bar on Hover */}
+                  <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickViewProduct(product);
+                      }}
+                      className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98 text-xs py-2 h-9"
+                    >
+                      <Eye size={14} className="mr-1.5 text-[#C2410C]" /> Quick View (360° / Video)
+                    </Button>
+                  </div>
+                </div>
                 <div className="flex flex-1 flex-col p-6">
-                  <button className="text-left" onClick={() => onProductClick?.(product.id)}>
-                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-kb-tertiary">{product.name}</h3>
+                  <button type="button" className="text-left" onClick={() => setQuickViewProduct(product)}>
+                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-kb-tertiary transition-colors">{product.name}</h3>
                   </button>
                   <p className="mt-2.5 line-clamp-2 font-['DM_Sans'] text-sm leading-relaxed text-[#64748B]">{product.description}</p>
                   <div className="mt-5 font-['Outfit'] text-[20px] font-bold text-[#111827]">{formatPrice(product.price)}</div>
@@ -113,6 +168,18 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
           })}
         </div>
       </div>
+
+      {/* Quick View Interactive Turntable & Zoom Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={Boolean(quickViewProduct)}
+        onClose={() => setQuickViewProduct(null)}
+        onViewDetails={(id) => {
+          setQuickViewProduct(null);
+          onProductClick?.(id);
+        }}
+        onCartOpen={onCartOpen}
+      />
     </section>
   );
 }
