@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useWishlist } from '../hooks/use-wishlist';
 import { PRODUCTS } from '../data/products';
-import { Heart, ArrowRight, Trash2, ShoppingBag, Package } from 'lucide-react';
+import type { Product } from '../types/product';
+import { Heart, ArrowRight, Trash2, ShoppingBag, Package, Eye } from 'lucide-react';
 import type { Page } from '../App';
 import { useCart } from '../hooks/use-cart';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
+import QuickViewModal from '../components/QuickViewModal';
 
 interface WishlistPageProps {
   onProductClick: (id: string) => void;
@@ -13,6 +16,7 @@ interface WishlistPageProps {
 }
 
 export default function WishlistPage({ onProductClick, onNavigate }: WishlistPageProps) {
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const { wishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -81,6 +85,22 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                     >
                       <Trash2 size={20} />
                     </Button>
+
+                    {/* Floating Quick View Bar on Hover */}
+                    <div className="absolute inset-x-6 bottom-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickViewProduct(product);
+                        }}
+                        className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98 text-xs py-2"
+                      >
+                        <Eye size={14} className="mr-1.5 text-[#C2410C]" /> Quick View (360° / Video)
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="p-8">
@@ -146,6 +166,18 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
           )}
         </div>
       </div>
+
+      {/* Quick View Interactive Turntable & Zoom Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={Boolean(quickViewProduct)}
+        onClose={() => setQuickViewProduct(null)}
+        onViewDetails={(id) => {
+          setQuickViewProduct(null);
+          onProductClick(id);
+        }}
+        onCartOpen={() => onNavigate('cart')}
+      />
     </section>
   );
 }
