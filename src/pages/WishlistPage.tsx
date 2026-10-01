@@ -66,7 +66,7 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                 >
                   <div 
                     className="relative aspect-[4/3] bg-[#F8FAFC] cursor-pointer overflow-hidden p-8 flex items-center justify-center"
-                    onClick={() => onProductClick(product.id)}
+                    onClick={() => setQuickViewProduct(product)}
                   >
                     <ProductImage
                       src={product.image}
@@ -114,7 +114,13 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
                           In Stock
                         </span>
                       </div>
-                      <h3 className="text-[20px] font-bold text-[#111827] leading-tight font-['Outfit'] group-hover:text-kb-tertiary transition-colors">{product.name}</h3>
+                      <button
+                        type="button"
+                        className="text-left"
+                        onClick={() => setQuickViewProduct(product)}
+                      >
+                        <h3 className="text-[20px] font-bold text-[#111827] leading-tight font-['Outfit'] group-hover:text-kb-tertiary transition-colors">{product.name}</h3>
+                      </button>
                     </div>
                     
                     <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#F1F5F9]">

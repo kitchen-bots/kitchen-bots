@@ -279,11 +279,26 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                         )}
                       </div>
 
+                      {/* Corner Quick View Icon Button (touch-friendly & instant click) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickViewProduct(product);
+                        }}
+                        title={`Quick View ${product.name}`}
+                        aria-label={`Quick View ${product.name}`}
+                        className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#475569] shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-[#C2410C] hover:scale-110 active:scale-95 cursor-pointer opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                      >
+                        <Eye size={15} />
+                      </button>
+
                       {/* Main Image Clickable */}
                       <button
-                        onClick={() => onProductClick(product.id)}
+                        type="button"
+                        onClick={() => setQuickViewProduct(product)}
                         className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
-                        aria-label={`View details for ${product.name}`}
+                        aria-label={`Quick View ${product.name}`}
                       >
                         <ProductImage
                           src={displayImage}
@@ -319,7 +334,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                         )}
                       </div>
 
-                      <button className="text-left mt-1.5" onClick={() => onProductClick(product.id)}>
+                      <button type="button" className="text-left mt-1.5" onClick={() => setQuickViewProduct(product)}>
                         <h2 className="font-['Outfit'] text-[20px] font-bold leading-snug text-[#0F172A] hover:text-[#C2410C] transition-colors">
                           {product.name}
                         </h2>

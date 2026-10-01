@@ -34,6 +34,7 @@ import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import Product360Viewer from '../components/Product360Viewer';
 import ProductVideoPlayer from '../components/ProductVideoPlayer';
+import QuickViewModal from '../components/QuickViewModal';
 import { cn } from '../lib/utils';
 import { fetchCatalogProduct } from '../lib/api';
 import { getMediaUrl } from '../lib/cdn';
@@ -65,6 +66,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [copied, setCopied] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxScale, setLightboxScale] = useState(1);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
@@ -786,8 +788,9 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
             {PRODUCTS.filter(item => item.id !== product.id && item.category === product.category).slice(0, 4).map(item => (
               <button
                 key={item.id}
-                onClick={() => onNavigate ? onNavigate('product-detail', item.id) : (window.location.href = `/product-detail?id=${encodeURIComponent(item.id)}`)}
-                className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-left transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-md"
+                type="button"
+                onClick={() => setQuickViewProduct(item)}
+                className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-left transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-md cursor-pointer"
               >
                 <div className="aspect-[4/3] bg-[#F8FAFC] p-5 text-center">
                   <ProductImage src={item.image} alt={item.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
@@ -934,6 +937,22 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
           )}
         </div>
       )}
+
+      {/* Quick View Interactive Turntable & Zoom Modal for Related Products */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={Boolean(quickViewProduct)}
+        onClose={() => setQuickViewProduct(null)}
+        onViewDetails={(id) => {
+          setQuickViewProduct(null);
+          if (onNavigate) {
+            onNavigate('product-detail', id);
+          } else {
+            window.location.href = `/product-detail?id=${encodeURIComponent(id)}`;
+          }
+        }}
+        onCartOpen={() => onNavigate?.('cart')}
+      />
     </section>
   );
 }

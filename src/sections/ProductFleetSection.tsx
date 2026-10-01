@@ -86,8 +86,8 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
                   <button
                     type="button"
                     className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
-                    onClick={() => onProductClick?.(product.id)}
-                    aria-label={`View details for ${product.name}`}
+                    onClick={() => setQuickViewProduct(product)}
+                    aria-label={`Quick View ${product.name}`}
                   >
                     <ProductImage
                       src={product.image}
@@ -113,8 +113,8 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col p-6">
-                  <button className="text-left" onClick={() => onProductClick?.(product.id)}>
-                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-kb-tertiary">{product.name}</h3>
+                  <button type="button" className="text-left" onClick={() => setQuickViewProduct(product)}>
+                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-kb-tertiary transition-colors">{product.name}</h3>
                   </button>
                   <p className="mt-2.5 line-clamp-2 font-['DM_Sans'] text-sm leading-relaxed text-[#64748B]">{product.description}</p>
                   <div className="mt-5 font-['Outfit'] text-[20px] font-bold text-[#111827]">{formatPrice(product.price)}</div>
