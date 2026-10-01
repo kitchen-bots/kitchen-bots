@@ -188,7 +188,10 @@ function App() {
                 currentPage={currentPage}
                 onNavigate={navigateTo}
                 onCatalog={browseCatalog}
-                onCartClick={() => setIsCartOpen(true)}
+                onCartClick={() => {
+                  setIsCartOpen(false);
+                  navigateTo('cart');
+                }}
               />
               
               <main>
@@ -205,7 +208,7 @@ function App() {
                 </AnimatePresence>
               </main>
 
-              <Footer onNavigate={navigateTo} />
+              {currentPage !== 'contact' && <Footer onNavigate={navigateTo} />}
               
               <CartDrawer 
                 isOpen={isCartOpen} 
@@ -213,7 +216,10 @@ function App() {
                 onNavigate={navigateTo}
               />
               
-              <MobileStickyCart onOpenCart={() => setIsCartOpen(true)} />
+              <MobileStickyCart onOpenCart={() => {
+                setIsCartOpen(false);
+                navigateTo('cart');
+              }} />
 
               {/* Scroll to Top Button */}
               <button

@@ -125,7 +125,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
           {/* LEFT: Info & Benefits */}
           <div className="lg:col-span-5 space-y-6">
             {items.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-[#64748B] font-['Outfit']">
@@ -140,132 +140,113 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                   </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="max-h-[360px] sm:max-h-[390px] overflow-y-auto pr-2 pl-0.5 py-1 space-y-2.5 thin-scrollbar">
                   {items.map((item, index) => (
                     <div
                       key={item.id}
-                      className="bg-white border border-[#E2E8F0] rounded-[24px] sm:rounded-[28px] p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
+                      className="bg-white border border-[#E2E8F0] rounded-2xl p-3 sm:p-3.5 shadow-xs hover:border-[#CBD5E1] transition-all flex items-center gap-3 sm:gap-3.5"
                     >
-                      {/* Top: Item Index, Product Name & Remove button */}
-                      <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit'] block">
-                            Item {index + 1} of {items.length}
-                          </span>
-                          <h3
-                            className="font-['Outfit'] font-bold text-base sm:text-lg text-[#111827] truncate mt-0.5"
-                            title={item.name}
-                          >
-                            {item.name}
-                          </h3>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] font-['Outfit']">
-                            In Cart
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-[#94A3B8] hover:text-[#EF4444] p-1.5 rounded-lg hover:bg-[#FEF2F2] transition-colors"
-                            title={`Remove ${item.name} from quotation`}
-                            aria-label={`Remove ${item.name}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Center: Product Image */}
-                      <div className="w-full h-44 sm:h-52 flex items-center justify-center py-3 my-1">
+                      {/* Left: Thumbnail Image */}
+                      <div className="w-16 h-16 sm:w-18 sm:h-18 bg-[#F8FAFC] rounded-xl p-1.5 flex items-center justify-center shrink-0 border border-[#F1F5F9]">
                         <ProductImage
                           src={item.image}
                           alt={item.name}
-                          className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
+                          className="w-full h-full object-contain"
                         />
                       </div>
 
-                      {/* Bottom: Price & Quantity */}
-                      <div className="pt-3 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit'] block">
-                            Price
+                      {/* Middle: Product Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit']">
+                            Item {index + 1} of {items.length}
                           </span>
-                          <div className="text-xl sm:text-2xl font-bold text-[#111827] font-['Outfit']">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] font-['Outfit']">
+                            In Cart
+                          </span>
+                        </div>
+                        <h4
+                          className="font-['Outfit'] font-bold text-sm sm:text-base text-[#111827] truncate"
+                          title={item.name}
+                        >
+                          {item.name}
+                        </h4>
+                        <div className="flex items-baseline gap-2 mt-0.5">
+                          <span className="text-sm sm:text-base font-bold text-[#111827] font-['Outfit']">
                             ₹{item.price.toLocaleString('en-IN')}
-                          </div>
+                          </span>
                           {item.quantity > 1 && (
-                            <span className="text-xs text-[#64748B] font-['DM_Sans'] block">
-                              Subtotal: ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                            <span className="text-[11px] text-[#64748B] font-['DM_Sans']">
+                              (Subtotal: ₹{(item.price * item.quantity).toLocaleString('en-IN')})
                             </span>
                           )}
                         </div>
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[#64748B] font-['Outfit']">Qty:</span>
-                          <div className="flex items-center border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] overflow-hidden h-9">
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                              aria-label="Decrease quantity"
-                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <Minus size={13} />
-                            </button>
-                            <span className="w-8 text-center text-sm font-bold text-[#111827] font-['Outfit'] select-none">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= MAX_ITEM_QUANTITY}
-                              aria-label="Increase quantity"
-                              title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items` : undefined}
-                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <Plus size={13} />
-                            </button>
-                          </div>
+                      {/* Right: Quantity Stepper & Remove */}
+                      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                        <div className="flex items-center border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] overflow-hidden h-8">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            aria-label="Decrease quantity"
+                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="w-7 text-center text-xs font-bold text-[#111827] font-['Outfit'] select-none">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= MAX_ITEM_QUANTITY}
+                            aria-label="Increase quantity"
+                            title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items` : undefined}
+                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Plus size={12} />
+                          </button>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-[#94A3B8] hover:text-[#EF4444] p-1.5 rounded-lg hover:bg-[#FEF2F2] transition-colors"
+                          title={`Remove ${item.name} from quotation`}
+                          aria-label={`Remove ${item.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : selectedFallbackProduct ? (
-              <div className="bg-white border border-[#E2E8F0] rounded-[28px] p-6 sm:p-7 shadow-sm">
-                <div className="w-full flex items-center justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
-                  <div className="min-w-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit'] block">
-                      Quotation Item
-                    </span>
-                    <h3 className="font-['Outfit'] font-bold text-base sm:text-lg text-[#111827] truncate mt-0.5">
-                      {selectedFallbackProduct.name}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="w-full h-48 sm:h-56 flex items-center justify-center py-3 my-2">
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-3.5 sm:p-4 shadow-xs flex items-center gap-3.5">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 bg-[#F8FAFC] rounded-xl p-1.5 flex items-center justify-center shrink-0 border border-[#F1F5F9]">
                   <ProductImage
                     src={selectedFallbackProduct.image}
                     alt={selectedFallbackProduct.name}
                     className="w-full h-full object-contain"
                   />
                 </div>
-
-                <div className="pt-3 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit'] block">
-                      Price
-                    </span>
-                    <div className="text-xl sm:text-2xl font-bold text-[#111827] font-['Outfit']">
-                      {selectedFallbackProduct.price ? `₹${selectedFallbackProduct.price.toLocaleString('en-IN')}` : 'Price on Request'}
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] font-bold text-sm text-[#111827] font-['Outfit']">
-                    Qty: 1
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] font-['Outfit'] block mb-0.5">
+                    Quotation Item
                   </span>
+                  <h4 className="font-['Outfit'] font-bold text-sm sm:text-base text-[#111827] truncate">
+                    {selectedFallbackProduct.name}
+                  </h4>
+                  <div className="text-sm sm:text-base font-bold text-[#111827] font-['Outfit'] mt-0.5">
+                    {selectedFallbackProduct.price ? `₹${selectedFallbackProduct.price.toLocaleString('en-IN')}` : 'Price on Request'}
+                  </div>
                 </div>
+                <span className="px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] font-bold text-xs text-[#111827] font-['Outfit'] shrink-0">
+                  Qty: 1
+                </span>
               </div>
             ) : (
               <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden bg-white border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center p-8 text-center">

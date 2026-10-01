@@ -290,3 +290,24 @@
 .dash-sidebar-scroll::-webkit-scrollbar { width: 4px; }
 .dash-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
 .dash-sidebar-scroll::-webkit-scrollbar-thumb { background: var(--dash-border); border-radius: 4px; }
+
+/* Space-saving thin scrollbar */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

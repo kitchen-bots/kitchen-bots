@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -79,6 +80,57 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     pincode: '',
     notes: '',
   });
+
+  // Freeze background scroll and handle Escape key when checkout modal is active
+  useEffect(() => {
+    if (!showCheckout) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowCheckout(false);
+        setFormErrors({});
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCheckout]);
+
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [summaryHeight, setSummaryHeight] = useState<number | undefined>(undefined);
+
+  // Equalize cart items list container height with Order Summary sidebar on desktop
+  useEffect(() => {
+    if (!summaryRef.current) return;
+    const updateHeight = () => {
+      if (summaryRef.current && window.innerWidth >= 1024) {
+        setSummaryHeight(summaryRef.current.offsetHeight);
+      } else {
+        setSummaryHeight(undefined);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(summaryRef.current);
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (!Number.isFinite(newQuantity)) return;
@@ -234,7 +286,12 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
   // ─── Cart with items ──────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-[#FAFAFA] pt-24 sm:pt-28">
+    <main
+      className={`min-h-screen bg-[#FAFAFA] pt-24 sm:pt-28 transition-opacity duration-300 ${
+        showCheckout ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'
+      }`}
+      aria-hidden={showCheckout}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
@@ -266,7 +323,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
               Shopping Cart
             </h1>
             <p className="mt-1 text-sm text-[#64748B] font-['DM_Sans']">
-              Review your items, then place a direct order or request a commercial quote.
+              Review your items, then place an order or request a commercial quote.
             </p>
           </div>
           <span className="text-sm font-medium text-[#64748B] shrink-0">
@@ -277,7 +334,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Cart Items List */}
-          <section aria-label="Cart items" className="lg:col-span-2 space-y-4">
+          <section
+            aria-label="Cart items"
+            style={summaryHeight ? { maxHeight: `${summaryHeight}px` } : undefined}
+            className="lg:col-span-2 max-h-[460px] overflow-y-auto pr-2 sm:pr-3 space-y-2.5 sm:space-y-3 thin-scrollbar"
+          >
             {items.map((item) => {
               const itemSubtotal = item.price * item.quantity;
               const hasConfig = Boolean(
@@ -289,10 +350,10 @@ export default function CartPage({ onNavigate }: CartPageProps) {
               return (
                 <article
                   key={item.id}
-                  className="bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:gap-5 shadow-xs"
+                  className="bg-white border border-[#E2E8F0] rounded-xl p-3 sm:p-3.5 flex flex-col sm:flex-row gap-3 sm:gap-4 shadow-xs hover:border-[#CBD5E1] transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 bg-[#F8FAFC] rounded-lg border border-[#F1F5F9] p-2 shrink-0 flex items-center justify-center overflow-hidden mx-auto sm:mx-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F8FAFC] rounded-xl border border-[#F1F5F9] p-1.5 sm:p-2 shrink-0 flex items-center justify-center overflow-hidden mx-auto sm:mx-0">
                     <ProductImage
                       src={item.image}
                       alt={item.name}
@@ -303,16 +364,16 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   {/* Details */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
-                        <h2 className="font-['Outfit'] text-base sm:text-lg font-bold text-[#111827] leading-snug break-words min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4">
+                        <h2 className="font-['Outfit'] text-sm sm:text-base font-bold text-[#111827] leading-snug break-words min-w-0">
                           {item.name}
                         </h2>
                         <div className="text-left sm:text-right shrink-0">
-                          <span className="font-['Outfit'] text-base sm:text-lg font-bold text-[#111827] whitespace-nowrap">
+                          <span className="font-['Outfit'] text-sm sm:text-base font-bold text-[#111827] whitespace-nowrap">
                             ₹{itemSubtotal.toLocaleString('en-IN')}
                           </span>
                           {item.quantity > 1 && (
-                            <p className="text-xs text-[#64748B] whitespace-nowrap">
+                            <p className="text-[11px] text-[#64748B] whitespace-nowrap">
                               ₹{item.price.toLocaleString('en-IN')} each
                             </p>
                           )}
@@ -321,11 +382,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
                       {/* Product Configuration Display (if supported) */}
                       {hasConfig && item.configuration && (
-                        <div className="mt-2 text-xs text-[#64748B] space-y-1 bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-2.5">
+                        <div className="mt-1.5 text-xs text-[#64748B] space-y-0.5 bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-2">
                           <span className="font-semibold text-[#475569] uppercase tracking-wider text-[10px]">
                             Configuration:
                           </span>
-                          <div className="space-y-1 mt-1">
+                          <div className="space-y-0.5 mt-0.5">
                             {Object.entries(item.configuration).map(([key, val]) => (
                               <div key={key} className="flex flex-wrap items-baseline gap-1.5 text-xs break-words">
                                 <span className="font-medium text-[#475569] shrink-0">{key}:</span>
@@ -338,23 +399,23 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                     </div>
 
                     {/* Quantity & Removal Controls */}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#F1F5F9]">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-[#64748B]">Quantity:</span>
-                          <div className="flex items-center border border-[#CBD5E1] rounded-lg bg-[#F8FAFC] overflow-hidden">
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F1F5F9]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-[#64748B]">Qty:</span>
+                          <div className="flex items-center border border-[#CBD5E1] rounded-lg bg-[#F8FAFC] overflow-hidden h-8">
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                               disabled={item.quantity <= 1}
                               aria-label={`Decrease quantity of ${item.name}`}
-                              className="w-11 h-11 flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:z-10 disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
-                              <Minus className="w-4 h-4" aria-hidden="true" />
+                              <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                             <span
                               aria-label={`Current quantity: ${item.quantity}`}
-                              className="w-10 text-center font-['Outfit'] text-sm font-semibold text-[#111827] select-none"
+                              className="w-8 text-center font-['Outfit'] text-xs font-semibold text-[#111827] select-none"
                             >
                               {item.quantity}
                             </span>
@@ -364,15 +425,15 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                               disabled={item.quantity >= MAX_ITEM_QUANTITY}
                               aria-label={`Increase quantity of ${item.name}`}
                               title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
-                              className="w-11 h-11 flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:z-10 disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
-                              <Plus className="w-4 h-4" aria-hidden="true" />
+                              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
                         {item.quantity >= MAX_ITEM_QUANTITY && (
-                          <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2.5 py-1 rounded-md">
-                            Max limit ({MAX_ITEM_QUANTITY}) reached
+                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                            Max limit ({MAX_ITEM_QUANTITY})
                           </span>
                         )}
                       </div>
@@ -383,9 +444,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
                         aria-label={`Remove ${item.name} from cart`}
-                        className="text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] min-h-[44px] px-3 text-xs font-medium gap-1.5 focus-visible:ring-2 focus-visible:ring-[#DC2626] focus-visible:ring-offset-2"
+                        className="text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] h-8 px-2.5 text-xs font-medium gap-1 focus-visible:ring-2 focus-visible:ring-[#DC2626] focus-visible:ring-offset-2"
                       >
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Remove</span>
                       </Button>
                     </div>
@@ -397,7 +458,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
           {/* Order Summary Sidebar */}
           <aside aria-label="Order summary" className="lg:col-span-1">
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs lg:sticky lg:top-28">
+            <div ref={summaryRef} className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs lg:sticky lg:top-28">
               <h2 className="font-['Outfit'] text-xl font-bold text-[#111827] mb-5">
                 Order Summary
               </h2>
@@ -441,7 +502,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   size="lg"
                   className="w-full text-base font-bold flex items-center justify-center gap-2 bg-kb-primary hover:bg-[#145e2e] text-white focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:ring-offset-2"
                 >
-                  Place Direct Order
+                  Place Order
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Button>
 
@@ -458,15 +519,25 @@ export default function CartPage({ onNavigate }: CartPageProps) {
           </aside>
         </div>
 
-        {/* ─── Direct Checkout Panel ─────────────────────────────────────────── */}
-        {showCheckout && (
+        {/* ─── Direct Checkout Panel Modal ─────────────────────────────────────── */}
+        {showCheckout && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0F172A]/50 p-4"
+            className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-4 overscroll-contain animate-fade-in"
             role="dialog"
             aria-modal="true"
-            aria-label="Place direct order"
+            aria-label="Delivery Details"
           >
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[92vh]">
+            {/* Backdrop: Hides and obscures background, covering header and floating buttons */}
+            <div
+              className="fixed inset-0 bg-[#0B0F19]/85 backdrop-blur-md transition-opacity duration-300 touch-none"
+              onClick={() => { setShowCheckout(false); setFormErrors({}); }}
+              aria-hidden="true"
+            />
+
+            <div
+              className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[92vh] overscroll-contain animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Modal header */}
               <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#F1F5F9]">
                 <div>
@@ -481,7 +552,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   className="text-[#94A3B8] hover:text-[#475569] p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors"
                   aria-label="Close checkout"
                 >
-                  <ChevronDown size={20} />
+                  <X size={20} />
                 </button>
               </div>
 
@@ -655,7 +726,8 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </main>

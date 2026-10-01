@@ -301,7 +301,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
               size="icon"
               className="relative rounded-xl text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]"
               onClick={onCartClick}
-              aria-label={`Open cart, ${totalItems} items`}
+              aria-label={`View cart, ${totalItems} items`}
             >
               <ShoppingBag size={20} />
               {totalItems > 0 && (
@@ -411,6 +411,19 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                 onClick={() => navigate('contact')}
               >
                 Contact
+              </button>
+              <button
+                className={`w-full rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors flex items-center justify-between ${currentPage === 'cart' ? 'bg-[#FFF7ED] text-[#C2410C]' : 'text-[#334155] hover:bg-[#F8FAFC]'}`}
+                onClick={() => navigate('cart')}
+              >
+                <span className="flex items-center gap-2.5">
+                  <ShoppingBag size={18} /> Cart
+                </span>
+                {totalItems > 0 && (
+                  <span className="rounded-md bg-[#C2410C] px-2 py-0.5 text-[11px] font-bold text-white">
+                    {totalItems}
+                  </span>
+                )}
               </button>
             </div>
 

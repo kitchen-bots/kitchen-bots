@@ -22,7 +22,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             >
               <div className="inline-flex items-center justify-center transition-transform duration-200 group-hover:scale-[1.02]">
                 <img
-                  src="/images/kitchenbots-logo-white.svg"
+                  src="/images/kitchenbots-logo-white.svg?v=2"
                   alt="KitchenBots"
                   className="h-8 md:h-9 w-auto object-contain"
                 />
