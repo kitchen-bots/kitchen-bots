@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -59,18 +59,75 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLDivElement>(null);
+  const containerRectRef = useRef<DOMRect | null>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showToast } = useToast();
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = zoomContainerRef.current;
+    const image = zoomImageRef.current;
+    if (!container || !image) return;
+
+    const rect = container.getBoundingClientRect();
+    containerRectRef.current = rect;
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    setZoomPos({ x, y });
+
+    image.style.transformOrigin = `${x}% ${y}%`;
+    image.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+    image.style.transform = 'scale(2.2)';
+    setIsZoomed(true);
   };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const image = zoomImageRef.current;
+    if (!image) return;
+
+    let rect = containerRectRef.current;
+    if (!rect) {
+      const container = zoomContainerRef.current;
+      if (!container) return;
+      rect = container.getBoundingClientRect();
+      containerRectRef.current = rect;
+    }
+
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    image.style.transformOrigin = `${x}% ${y}%`;
+
+    if (!isZoomed) {
+      image.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+      image.style.transform = 'scale(2.2)';
+      setIsZoomed(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    containerRectRef.current = null;
+    const image = zoomImageRef.current;
+    if (image) {
+      image.style.transition = 'transform 120ms ease-out';
+      image.style.transform = 'scale(1)';
+    }
+    setIsZoomed(false);
+  };
+
+  useEffect(() => {
+    containerRectRef.current = null;
+    const image = zoomImageRef.current;
+    if (image) {
+      image.style.transition = 'none';
+      image.style.transform = 'scale(1)';
+      image.style.transformOrigin = '50% 50%';
+    }
+    setIsZoomed(false);
+  }, [activeImage, activeMediaMode, productId]);
 
   const loadProduct = useCallback(async () => {
     setIsLoading(true);
@@ -323,18 +380,21 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                 className={cn('h-full w-full', activeMediaMode === 'photos' ? 'block' : 'hidden')}
               >
                 <div
+                  ref={zoomContainerRef}
                   className="relative h-full w-full cursor-crosshair select-none"
-                  onMouseEnter={() => setIsZoomed(true)}
-                  onMouseLeave={() => setIsZoomed(false)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                   onMouseMove={handleMouseMove}
                   role="region"
                   aria-label={`Interactive zoom for ${product.name}`}
                 >
                   <div
-                    className="h-full w-full transition-transform duration-100 ease-out"
+                    ref={zoomImageRef}
+                    className="h-full w-full"
                     style={{
-                      transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                      transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
+                      transform: 'scale(1)',
+                      transformOrigin: '50% 50%',
+                      willChange: 'transform, transform-origin',
                     }}
                   >
                     <ProductImage
