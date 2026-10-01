@@ -243,7 +243,10 @@ function MainAppContent() {
           currentPage={activePage}
           onNavigate={navigateTo}
           onCatalog={browseCatalog}
-          onCartClick={() => setIsCartOpen(true)}
+          onCartClick={() => {
+            setIsCartOpen(false);
+            navigateTo('cart');
+          }}
         />
         
         <main>
@@ -260,7 +263,7 @@ function MainAppContent() {
           </AnimatePresence>
         </main>
 
-        <Footer onNavigate={navigateTo} />
+        {activePage !== 'contact' && <Footer onNavigate={navigateTo} />}
         
         <CartDrawer 
           isOpen={isCartOpen} 
@@ -268,7 +271,10 @@ function MainAppContent() {
           onNavigate={navigateTo}
         />
         
-        <MobileStickyCart onOpenCart={() => setIsCartOpen(true)} />
+        <MobileStickyCart onOpenCart={() => {
+          setIsCartOpen(false);
+          navigateTo('cart');
+        }} />
 
         {/* Scroll to Top Button */}
         <button
