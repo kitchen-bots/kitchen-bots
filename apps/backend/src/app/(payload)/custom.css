@@ -1,0 +1,47 @@
+/* Kitchen Bots Payload CMS Custom Admin Theme */
+
+:root,
+[data-theme='dark'] {
+  --theme-bg: #09090b !important;
+  --theme-elevation-0: #09090b !important;
+  --theme-elevation-50: #121215 !important;
+  --theme-elevation-100: #18181b !important;
+  --theme-elevation-150: #202024 !important;
+  --theme-elevation-200: #27272a !important;
+  
+  --theme-border-color: #27272a !important;
+  --theme-text: #fafafa !important;
+  --theme-text-secondary: #a1a1aa !important;
+
+  /* Brand accent: Kitchen Bots Amber */
+  --theme-primary: #f97316 !important;
+  --theme-primary-hover: #ea580c !important;
+  --theme-primary-active: #c2410c !important;
+  --theme-accent-500: #f97316 !important;
+
+  --theme-success-500: #22c55e !important;
+  --theme-warning-500: #f59e0b !important;
+  --theme-error-500: #ef4444 !important;
+}
+
+/* Rounded corners consistency */
+.btn {
+  border-radius: 6px !important;
+}
+
+/* Sidebar styling */
+.nav {
+  border-right: 1px solid #27272a !important;
+}
+
+/* Input fields */
+input, textarea, select {
+  border-color: #27272a !important;
+  background-color: #121215 !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #f97316 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px #f97316 !important;
+}

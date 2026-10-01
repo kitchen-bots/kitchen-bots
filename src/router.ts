@@ -20,8 +20,8 @@ export default {
       });
     }
 
-    // 2. Route /admin and /api to Payload CMS backend
-    if (pathname.startsWith('/admin') || pathname.startsWith('/api')) {
+    // 2. Route /admin, /api, and /_next (Next.js assets) to Payload CMS backend
+    if (pathname.startsWith('/admin') || pathname.startsWith('/api') || pathname.startsWith('/_next')) {
       // If service binding is configured
       if (env.BACKEND_SERVICE) {
         return env.BACKEND_SERVICE.fetch(request);

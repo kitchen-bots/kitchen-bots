@@ -26,8 +26,22 @@ const connectionString = isRemoteDb ? rawDbUri.replace(/([?&])sslmode=[^&]+(&|$)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    theme: 'dark',
     meta: {
       titleSuffix: '- Kitchen Bots Admin',
+    },
+    autoLogin: {
+      email: 'admin@kitchenbots.com',
+      password: 'admin123456',
+      prefillOnly: true,
+    },
+    components: {
+      graphics: {
+        Logo: '@/components/Logo#Logo',
+        Icon: '@/components/Icon#Icon',
+      },
+      beforeDashboard: ['@/components/AdminDashboard#AdminDashboard'],
+      actions: ['@/components/StorefrontLink#StorefrontLink'],
     },
   },
   collections: [

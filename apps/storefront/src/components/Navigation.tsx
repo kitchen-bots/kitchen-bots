@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ChevronDown, LogOut, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, Search, ShoppingBag, User, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
 import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
@@ -274,7 +274,21 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                     <div className="px-3 py-2 border-b border-[#F1F5F9] mb-1">
                       <p className="text-xs font-bold text-[#111827] truncate">{user.name}</p>
                       <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
+                      {user.role && (
+                        <span className="inline-block mt-1 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">
+                          {user.role}
+                        </span>
+                      )}
                     </div>
+                    {(user.role === 'admin' || user.role === 'operations') && (
+                      <a
+                        href="/admin"
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#C2410C] hover:bg-[#FFF7ED] transition-colors"
+                      >
+                        <ShieldCheck size={15} />
+                        Admin Operations
+                      </a>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
@@ -427,15 +441,25 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
               </button>
             </div>
 
-            <div className="mt-4 border-t border-[#F1F5F9] pt-4">
+            <div className="mt-4 border-t border-[#F1F5F9] pt-4 flex flex-col gap-2">
               {user ? (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start rounded-xl text-[#DC2626] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
-                  onClick={handleLogout}
-                >
-                  <LogOut size={16} className="mr-2" /> Logout
-                </Button>
+                <>
+                  {(user.role === 'admin' || user.role === 'operations') && (
+                    <a
+                      href="/admin"
+                      className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#C2410C] bg-[#FFF7ED] hover:bg-[#FFEDD5] transition-colors"
+                    >
+                      <ShieldCheck size={18} /> Admin Operations
+                    </a>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start rounded-xl text-[#DC2626] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={16} className="mr-2" /> Logout
+                  </Button>
+                </>
               ) : (
                 <Button asChild variant="outline" className="w-full rounded-xl">
                   <a href="#login" onClick={(e) => { e.preventDefault(); navigate('login'); }}>

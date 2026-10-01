@@ -184,6 +184,14 @@ export default function Footer({ onNavigate }: FooterProps) {
             >
               Support
             </button>
+            <a
+              href="/admin"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#64748B] hover:text-[#F97316] transition-colors"
+              title="Kitchen Bots Operations Hub"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/90 inline-block"></span>
+              Admin Portal
+            </a>
           </div>
         </div>
       </div>

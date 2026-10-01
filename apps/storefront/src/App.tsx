@@ -53,6 +53,11 @@ function App() {
       const path = rawPath as Page;
       const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry'];
       
+      if (rawPath === 'admin' || rawPath.startsWith('admin/')) {
+        window.location.reload();
+        return;
+      }
+
       if (rawPath === '' || rawPath === 'home') {
         setCurrentPage('home');
       } else if (validPages.includes(path)) {
