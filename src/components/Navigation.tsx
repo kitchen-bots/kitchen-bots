@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ChevronDown, LogOut, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
+import { ChevronDown, Menu, Search, ShoppingBag, User, X, LogOut, ExternalLink } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
 import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
+import { getPortalUrl } from '../lib/portal';
 
 interface NavigationProps {
   currentPage: Page;
@@ -15,20 +16,22 @@ interface NavigationProps {
 }
 
 const CATEGORIES = ['All', ...new Set(PRODUCTS.map(product => product.category))];
+const ACCOUNT_URL = getPortalUrl(import.meta.env.VITE_PORTAL_URL);
 
 export default function Navigation({ currentPage, onNavigate, onCartClick, onCatalog }: NavigationProps) {
+  const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const { totalItems } = useCart();
-  const { user, logout } = useAuth();
+
   const productMenu = useRef<HTMLDivElement>(null);
   const productButton = useRef<HTMLButtonElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const searchButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  const userMenu = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
       if (!productMenu.current?.contains(event.target as Node)) {
         setProductsOpen(false);
       }
-      if (!userMenu.current?.contains(event.target as Node)) {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
     };
@@ -87,8 +90,8 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     setMobileOpen(false);
     setProductsOpen(false);
-    setSearchOpen(false);
     setUserMenuOpen(false);
+    setSearchOpen(false);
     onNavigate(page);
   };
 
@@ -96,6 +99,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     setMobileOpen(false);
     setProductsOpen(false);
+    setUserMenuOpen(false);
     setSearchOpen(false);
     onCatalog('', category);
   };
@@ -107,12 +111,19 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
     onCatalog(query);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleSignOut = async () => {
     setUserMenuOpen(false);
     setMobileOpen(false);
-    navigate('home');
+    try {
+      await signOut();
+      onNavigate('home');
+    } catch {
+      // Ignore
+    }
   };
+
+  const userInitial = user?.email?.charAt(0).toUpperCase() || 'U';
+  const userName = user?.displayName || user?.email?.split('@')[0] || 'Account';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
@@ -256,7 +267,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
 
             {/* Desktop: Account / User Menu */}
             {user ? (
-              <div ref={userMenu} className="relative hidden sm:block">
+              <div ref={userMenuRef} className="relative hidden sm:block">
                 <Button
                   variant="ghost"
                   className="rounded-xl flex items-center gap-2 text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]"
@@ -264,35 +275,49 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                   aria-expanded={userMenuOpen}
                 >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#C2410C] text-white text-xs font-bold uppercase shrink-0">
-                    {user.name.charAt(0)}
+                    {userInitial}
                   </span>
-                  <span className="max-w-[100px] truncate text-sm font-semibold text-[#334155]">{user.name}</span>
+                  <span className="max-w-[110px] truncate text-sm font-semibold text-[#334155]">{userName}</span>
                   <ChevronDown size={14} className="text-[#94A3B8]" />
                 </Button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-56 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-2 z-50">
                     <div className="px-3 py-2 border-b border-[#F1F5F9] mb-1">
-                      <p className="text-xs font-bold text-[#111827] truncate">{user.name}</p>
-                      <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Signed in as</p>
+                      <p className="text-xs font-semibold text-[#111827] truncate mt-0.5">{user.email}</p>
                     </div>
-                    <button
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
-                    >
-                      <LogOut size={15} />
-                      Logout
-                    </button>
+
+                    <div className="py-1">
+                      <a
+                        href={ACCOUNT_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#111827] rounded-lg transition-colors"
+                      >
+                        <span>Dashboard Portal</span>
+                        <ExternalLink size={14} className="text-[#94A3B8]" />
+                      </a>
+                    </div>
+
+                    <div className="pt-1 border-t border-[#F1F5F9]">
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-[#DC2626] hover:bg-[#FEF2F2] rounded-lg transition-colors"
+                      >
+                        <LogOut size={14} />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
-              <Button asChild variant="ghost" className="hidden rounded-xl sm:flex text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]">
-                <a
-                  href="#login"
-                  onClick={(e) => { e.preventDefault(); navigate('login'); }}
-                >
-                  <User size={18} /> Login
-                </a>
+              <Button
+                variant="ghost"
+                className="hidden rounded-xl sm:flex text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]"
+                onClick={() => navigate('login')}
+              >
+                <User size={18} /> Login / Sign Up
               </Button>
             )}
 
@@ -353,7 +378,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
           onClick={() => setMobileOpen(false)}
           aria-label="Close navigation"
         />
-        <div className={`absolute bottom-0 right-0 top-0 w-[min(88%,360px)] bg-white shadow-2xl transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className={`absolute bottom-0 right-0 top-0 w-[min(88%,360px)] bg-white shadow-2xl transition-transform duration-200 overflow-y-auto ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex items-center justify-between border-b border-[#F1F5F9] p-5">
             <img src="/images/kitchenbots-logo.svg" alt="KitchenBots" className="h-10 w-auto" />
             <Button variant="ghost" size="icon" className="rounded-xl text-[#64748B]" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X /></Button>
@@ -363,10 +388,10 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
           {user && (
             <div className="mx-4 mt-4 mb-1 flex items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA]">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">
-                {user.name.charAt(0)}
+                {userInitial}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#111827] truncate">{user.name}</p>
+                <p className="text-sm font-bold text-[#111827] truncate">{userName}</p>
                 <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
               </div>
             </div>
@@ -429,18 +454,23 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
 
             <div className="mt-4 border-t border-[#F1F5F9] pt-4">
               {user ? (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start rounded-xl text-[#DC2626] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
-                  onClick={handleLogout}
-                >
-                  <LogOut size={16} className="mr-2" /> Logout
-                </Button>
+                <div className="space-y-2">
+                  <Button asChild variant="outline" className="w-full justify-start rounded-xl">
+                    <a href={ACCOUNT_URL} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink size={16} className="mr-2" /> Dashboard Portal
+                    </a>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start rounded-xl text-[#DC2626] hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut size={16} className="mr-2" /> Sign Out
+                  </Button>
+                </div>
               ) : (
-                <Button asChild variant="outline" className="w-full rounded-xl">
-                  <a href="#login" onClick={(e) => { e.preventDefault(); navigate('login'); }}>
-                    <User size={18} className="mr-2" /> Login / Sign Up
-                  </a>
+                <Button variant="outline" className="w-full rounded-xl" onClick={() => navigate('login')}>
+                  <User size={18} className="mr-2" /> Login / Sign Up
                 </Button>
               )}
             </div>

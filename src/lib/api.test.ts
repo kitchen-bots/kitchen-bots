@@ -6,6 +6,7 @@ import {
   toStorefrontProduct,
   type ApiProduct,
 } from './api';
+import { getMediaUrl } from './cdn';
 
 const mockApiProduct: ApiProduct = {
   id: 'prod-1',
@@ -41,6 +42,31 @@ describe('Storefront API Client', () => {
     expect(product.image).toBe('https://assets.example.com/grill.webp');
     expect(product.images).toEqual(['https://assets.example.com/grill.webp']);
     expect(product.category).toBe('Santa Maria Series');
+  });
+
+  it('toStorefrontProduct normalizes ImageItem[] to string[] and SpecificationItem[] to Record<string, string>', () => {
+    const rawApiProduct = {
+      id: 'prod-1',
+      name: 'Commercial BBQ Grill',
+      price: 1382,
+      images: [
+        { id: 'img-1', url: '/images/img1.jpg', isPrimary: true },
+        { id: 'img-2', url: '/images/img2.jpg', isPrimary: false }
+      ],
+      specifications: [
+        { id: 'spec-1', name: 'Material', value: '304 Stainless Steel' },
+        { id: 'spec-2', label: 'Grate Type', value: 'V-Groove Grate' }
+      ],
+      features: ['Heavy Duty']
+    };
+
+    const product = toStorefrontProduct(rawApiProduct);
+    expect(product.images).toEqual([getMediaUrl('/images/img1.jpg'), getMediaUrl('/images/img2.jpg')]);
+    expect(product.image).toBe(getMediaUrl('/images/img1.jpg'));
+    expect(product.specifications).toEqual({
+      Material: '304 Stainless Steel',
+      'Grate Type': 'V-Groove Grate'
+    });
   });
 
   it('fetchCatalogProducts fetches from API when API_BASE_URL is set', async () => {
@@ -128,5 +154,18 @@ describe('Storefront API Client', () => {
         'https://api.kitchenbots.in'
       )
     ).rejects.toThrow('Invalid email address provided.');
+  });
+
+  it('submitEnquiry throws error when turnstileToken is missing', async () => {
+    await expect(
+      submitEnquiry(
+        {
+          name: 'Rahul',
+          email: 'rahul@example.com',
+          message: 'Short message',
+        },
+        'https://api.kitchenbots.in'
+      )
+    ).rejects.toThrow('Please complete the security verification.');
   });
 });

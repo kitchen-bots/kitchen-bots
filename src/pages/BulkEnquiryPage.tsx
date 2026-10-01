@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   NotebookPen,
   Send,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
+import TurnstileWidget, { type TurnstileWidgetRef } from '../components/TurnstileWidget';
 import { submitEnquiry } from '../lib/api';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
@@ -41,9 +42,16 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!turnstileToken) {
+      setErrorMessage('Please complete the security verification.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -61,13 +69,15 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
         city: formData.city || undefined,
         message: formData.requirements,
         items: enquiryItems,
+        turnstileToken: turnstileToken,
       });
 
-      setSubmittedRef(response.reference);
+      setSubmittedRef(response.reference || response.id);
+      setTurnstileToken('');
       try {
         const itemSummaries = items.map(item => `${item.name} (${item.quantity}x)`);
         const newRecord = {
-          reference: response.reference,
+          reference: response.reference || response.id,
           date: new Date().toISOString().split('T')[0],
           name: formData.name,
           company: formData.company || 'Commercial Client',
@@ -83,6 +93,8 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to submit enquiry. Please try again.';
       setErrorMessage(message);
+      setTurnstileToken('');
+      turnstileRef.current?.reset();
     } finally {
       setIsSubmitting(false);
     }
@@ -97,7 +109,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
             variant="ghost"
             size="sm"
             onClick={() => onNavigate('home')}
-            className="h-auto p-0 text-[13px] font-medium text-[#64748B] hover:text-kb-primary hover:bg-transparent"
+            className="h-auto p-0 text-[13px] font-medium text-[#64748B] hover:text-[#C2410C] hover:bg-transparent"
           >
             Home
           </Button>
@@ -269,14 +281,14 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-6 bg-white rounded-2xl border border-[#F1F5F9] shadow-sm">
-                <div className="w-10 h-10 bg-[#FFF7EC] rounded-xl flex items-center justify-center mb-4 text-kb-tertiary">
+                <div className="w-10 h-10 bg-[#FFF7EC] rounded-xl flex items-center justify-center mb-4 text-[#C2410C]">
                   <MessageCircle size={20} />
                 </div>
                 <h4 className="font-bold text-[#111827] mb-1 font-['Outfit']">Expert Consult</h4>
                 <p className="text-[13px] text-[#64748B] font-['DM_Sans']">Personalized kitchen planning support.</p>
               </div>
               <div className="p-6 bg-white rounded-2xl border border-[#F1F5F9] shadow-sm">
-                <div className="w-10 h-10 bg-[#F0FDF4] rounded-xl flex items-center justify-center mb-4 text-kb-primary">
+                <div className="w-10 h-10 bg-[#F0FDF4] rounded-xl flex items-center justify-center mb-4 text-[#16A34A]">
                   <CheckCircle size={20} />
                 </div>
                 <h4 className="font-bold text-[#111827] mb-1 font-['Outfit']">GST Invoicing</h4>
@@ -291,10 +303,10 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
               {submittedRef ? (
                 <div className="text-center py-20">
                   <div className="w-20 h-20 bg-[#F0FDF4] rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="text-kb-primary" size={40} />
+                    <CheckCircle className="text-[#16A34A]" size={40} />
                   </div>
                   <h3 className="text-[24px] font-bold text-[#111827] mb-2 font-['Outfit']">Enquiry Received</h3>
-                  <p className="text-kb-primary font-bold text-[18px] mb-3 font-['Outfit']">Reference: {submittedRef}</p>
+                  <p className="text-[#C2410C] font-bold text-[18px] mb-3 font-['Outfit']">Reference: {submittedRef}</p>
                   <p className="text-[#64748B] font-['DM_Sans'] mb-8 max-w-md mx-auto">
                     We have received your requirements and assigned them to our sales engineering team. A formal quote will be delivered to your email within 24 hours.
                   </p>
@@ -304,7 +316,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                       setSubmittedRef(null);
                       setFormData({ name: '', email: '', phone: '', company: '', city: '', requirements: '' });
                     }}
-                    className="font-bold"
+                    className="font-bold rounded-xl"
                   >
                     Submit another enquiry
                   </Button>
@@ -312,7 +324,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
               ) : (
                 <>
                   <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-kb-tertiary rounded-xl flex items-center justify-center text-white">
+                    <div className="w-10 h-10 bg-[#C2410C] rounded-xl flex items-center justify-center text-white">
                       <NotebookPen size={20} />
                     </div>
                     <div>
@@ -344,7 +356,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           placeholder="e.g. Rahul Sharma"
                           required
                           disabled={isSubmitting}
-                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] disabled:opacity-50"
+                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] disabled:opacity-50"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                         />
@@ -356,7 +368,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           placeholder="rahul@hotel.com"
                           required
                           disabled={isSubmitting}
-                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] disabled:opacity-50"
+                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] disabled:opacity-50"
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                         />
@@ -370,7 +382,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           type="tel"
                           placeholder="+91 94907 01421"
                           disabled={isSubmitting}
-                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] disabled:opacity-50"
+                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] disabled:opacity-50"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         />
@@ -381,7 +393,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           type="text"
                           placeholder="Restaurant or Hotel name"
                           disabled={isSubmitting}
-                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] disabled:opacity-50"
+                          className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] disabled:opacity-50"
                           value={formData.company}
                           onChange={(e) => setFormData({...formData, company: e.target.value})}
                         />
@@ -394,7 +406,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                         type="text"
                         placeholder="e.g. Mumbai, Maharashtra"
                         disabled={isSubmitting}
-                        className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] disabled:opacity-50"
+                        className="w-full h-[52px] px-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] disabled:opacity-50"
                         value={formData.city}
                         onChange={(e) => setFormData({...formData, city: e.target.value})}
                       />
@@ -406,18 +418,33 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                         required
                         disabled={isSubmitting}
                         placeholder="Mention products, quantities, and custom specifications (at least 10 characters)..."
-                        className="w-full h-[140px] p-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--kb-primary)]/20 focus:border-kb-primary transition-all font-['DM_Sans'] resize-none disabled:opacity-50"
+                        className="w-full h-[140px] p-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C] transition-all font-['DM_Sans'] resize-none disabled:opacity-50"
                         value={formData.requirements}
                         onChange={(e) => setFormData({...formData, requirements: e.target.value})}
                       />
                     </div>
 
+                    <div className="py-1">
+                      <TurnstileWidget
+                        ref={turnstileRef}
+                        onVerify={(token) => {
+                          setTurnstileToken(token);
+                          setErrorMessage(null);
+                        }}
+                        onError={() => {
+                          setTurnstileToken('');
+                          setErrorMessage('Security verification failed. Please refresh and try again.');
+                        }}
+                        onExpire={() => {
+                          setTurnstileToken('');
+                        }}
+                      />
+                    </div>
                     <Button
                       type="submit"
-                      variant="accent"
+                      disabled={isSubmitting || !turnstileToken}
                       size="lg"
-                      disabled={isSubmitting}
-                      className="w-full h-[60px] gap-3"
+                      className="w-full h-[60px] gap-3 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>

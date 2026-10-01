@@ -6,28 +6,25 @@ import {
   ShieldCheck,
   Mail,
   Lock,
-  Building2,
   LogOut,
   Clock,
   Wrench,
   PhoneCall,
   User,
   ShoppingBag,
-  FileText
+  FileText,
+  AlertCircle,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import type { Page } from '../App';
 import { useAuth } from '../context/AuthContext';
+import { getPortalUrl } from '../lib/portal';
 
 interface LoginPageProps {
   onNavigate: (page: Page) => void;
-}
-
-interface UserAccount {
-  name: string;
-  email: string;
-  company: string;
 }
 
 interface StoredEnquiry {
@@ -53,29 +50,54 @@ interface StoredOrder {
   status: string;
 }
 
-export default function LoginPage({ onNavigate }: LoginPageProps) {
-  const { showToast } = useToast();
-  const { login, logout } = useAuth();
-  const [showLoginPass, setShowLoginPass] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+const ACCOUNT_URL = getPortalUrl(import.meta.env.VITE_PORTAL_URL);
 
-  // Load existing session if any
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    try {
-      const stored = localStorage.getItem('kb_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          name: parsed.name || 'Customer',
-          email: parsed.email || '',
-          company: parsed.company || 'Direct Customer',
-        };
-      }
-      return null;
-    } catch {
-      return null;
+function formatAuthError(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = String((error as { code: string }).code);
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'Invalid email address or password.';
+      case 'auth/email-already-in-use':
+        return 'An account with this email address already exists.';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/too-many-requests':
+        return 'Too many unsuccessful attempts. Please try again later.';
+      default:
+        return 'Authentication failed. Please check your credentials.';
     }
-  });
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unexpected authentication error occurred.';
+}
+
+export default function LoginPage({ onNavigate }: LoginPageProps) {
+  const { user, signIn, signUp, signOut, loading: isAuthLoading } = useAuth();
+  const { showToast } = useToast();
+
+  const [showLoginPass, setShowLoginPass] = useState(false);
+  const [showSignupPass, setShowSignupPass] = useState(false);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  
+  // Login State
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Signup State
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+
+  // Form handling state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load stored customer enquiries
   const [enquiries] = useState<StoredEnquiry[]>(() => {
@@ -97,65 +119,66 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
     }
   });
 
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Signup form state
-  const [signupName, setSignupName] = useState('');
-  const [signupCompany, setSignupCompany] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emailToUse = loginEmail.trim() || 'operator@commercialkitchens.in';
-    const namePart = emailToUse.split('@')[0];
-    const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    
-    const account: UserAccount = {
-      name: capitalized,
-      email: emailToUse,
-      company: 'Direct Customer',
-    };
+    setErrorMessage(null);
+    setIsSubmitting(true);
 
-    login(account.email, account.name);
-    setCurrentUser(account);
-    showToast(`Welcome back, ${account.name}!`);
+    try {
+      await signIn(loginEmail.trim(), loginPassword);
+      showToast('Signed in successfully');
+      onNavigate('home');
+    } catch (err) {
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const account: UserAccount = {
-      name: signupName.trim() || 'Kitchen Customer',
-      email: signupEmail.trim() || 'customer@kitchenbots.in',
-      company: signupCompany.trim() || 'Direct Customer',
-    };
+    setErrorMessage(null);
+    setIsSubmitting(true);
 
-    login(account.email, account.name);
-    setCurrentUser(account);
-    showToast(`Account created for ${account.name}!`);
+    try {
+      await signUp(signupEmail.trim(), signupPassword);
+      showToast('Account created successfully');
+      onNavigate('home');
+    } catch (err) {
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSignOut = () => {
-    logout();
-    setCurrentUser(null);
-    showToast('Signed out successfully');
+  const handleSignOut = async () => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      await signOut();
+      showToast('Signed out successfully');
+    } catch (err) {
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDemoSignIn = () => {
-    const demoAccount: UserAccount = {
-      name: 'Operations Director',
-      email: 'operations@commercialkitchens.in',
-      company: 'AeroBake Commercial Facilities',
-    };
-    login(demoAccount.email, demoAccount.name);
-    setCurrentUser(demoAccount);
-    showToast('Signed in with Demo Engineering Account');
-  };
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#C2410C] mx-auto mb-4" />
+          <p className="text-sm font-medium text-[#64748B] font-['DM_Sans']">Verifying security session...</p>
+        </div>
+      </div>
+    );
+  }
 
   // If user is logged in, show the Customer Portal
-  if (currentUser) {
+  if (user) {
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Customer';
+
     return (
       <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
         <div className="mx-auto w-full max-w-[1200px] px-6 lg:px-12">
@@ -167,18 +190,23 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-['Outfit'] text-2xl font-bold text-[#0F172A]">{currentUser.name}</h1>
+                  <h1 className="font-['Outfit'] text-2xl font-bold text-[#0F172A]">{displayName}</h1>
                   <span className="rounded-md bg-[#F0FDF4] px-2 py-0.5 text-xs font-bold text-[#16A34A] border border-[#DCFCE7]">
-                    Verified Customer
+                    Authenticated User
                   </span>
                 </div>
                 <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
-                  {currentUser.email} • {currentUser.company}
+                  {user.email}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button asChild variant="outline" className="rounded-xl border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC]">
+                <a href={ACCOUNT_URL} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={16} className="mr-1.5 text-[#C2410C]" /> Dashboard Portal
+                </a>
+              </Button>
               <Button
                 variant="outline"
                 className="rounded-xl border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC]"
@@ -189,6 +217,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
               <Button
                 variant="ghost"
                 className="rounded-xl text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2]"
+                disabled={isSubmitting}
                 onClick={handleSignOut}
               >
                 <LogOut size={16} className="mr-1.5" /> Sign out
@@ -438,7 +467,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                 Customer & Commercial Orders Portal
               </h1>
               <p className="mt-4 font-['DM_Sans'] text-sm leading-relaxed text-slate-300">
-                Track order shipments, review equipment quotations, and coordinate directly with KitchenBots engineering.
+                Log in to access your orders, track custom equipment quotations, and coordinate directly with KitchenBots engineering.
               </p>
             </div>
 
@@ -458,7 +487,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
             <div className="mb-8 flex gap-8 border-b border-[#F1F5F9]">
               <button
                 type="button"
-                onClick={() => setActiveTab('login')}
+                onClick={() => { setActiveTab('login'); setErrorMessage(null); }}
                 className={`relative pb-3 font-['Outfit'] text-sm font-bold uppercase tracking-wider transition-colors ${
                   activeTab === 'login' ? 'text-[#0F172A]' : 'text-[#94A3B8] hover:text-[#0F172A]'
                 }`}
@@ -470,7 +499,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('signup')}
+                onClick={() => { setActiveTab('signup'); setErrorMessage(null); }}
                 className={`relative pb-3 font-['Outfit'] text-sm font-bold uppercase tracking-wider transition-colors ${
                   activeTab === 'signup' ? 'text-[#0F172A]' : 'text-[#94A3B8] hover:text-[#0F172A]'
                 }`}
@@ -482,11 +511,18 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
               </button>
             </div>
 
+            {errorMessage && (
+              <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-3.5 text-xs text-[#DC2626] font-['DM_Sans']">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {activeTab === 'login' ? (
-              <form onSubmit={handleLogin} className="space-y-5">
+              <form onSubmit={handleLoginSubmit} className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]">
-                    Work Email Address
+                    Email Address
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={17} />
@@ -535,61 +571,40 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl font-semibold">
-                  Sign In to Portal <ArrowRight size={17} className="ml-1.5" />
-                </Button>
-
-                <div className="relative my-4 text-center">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#E2E8F0]" />
-                  </div>
-                  <span className="relative bg-white px-2 text-xs text-[#94A3B8] font-['DM_Sans']">or</span>
-                </div>
-
                 <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleDemoSignIn}
-                  className="w-full rounded-xl border-[#CBD5E1] font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl font-semibold bg-[#C2410C] hover:bg-[#9A3412]"
                 >
-                  Quick Sign In with Demo Account
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing In...
+                    </>
+                  ) : (
+                    <>
+                      Sign In to Account <ArrowRight size={17} className="ml-1.5" />
+                    </>
+                  )}
                 </Button>
               </form>
             ) : (
-              <form onSubmit={handleSignup} className="space-y-4">
+              <form onSubmit={handleSignupSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]">
                     Full Name
                   </label>
                   <input
                     type="text"
-                    required
                     value={signupName}
                     onChange={(e) => setSignupName(e.target.value)}
-                    placeholder="Enter full name"
+                    placeholder="Vijay Sharma"
                     className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white px-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]">
-                    Organization or City (Optional)
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={17} />
-                    <input
-                      type="text"
-                      value={signupCompany}
-                      onChange={(e) => setSignupCompany(e.target.value)}
-                      placeholder="Company, restaurant, or city"
-                      className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]">
-                    Work Email
+                    Email Address
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={17} />
@@ -598,7 +613,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                       required
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="name@organization.com"
+                      placeholder="name@company.com"
                       className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]"
                     />
                   </div>
@@ -611,18 +626,39 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={17} />
                     <input
-                      type="password"
+                      type={showSignupPass ? 'text' : 'password'}
                       required
+                      minLength={6}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="Minimum 8 characters"
-                      className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]"
+                      placeholder="Minimum 6 characters"
+                      className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white pl-10 pr-10 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C]"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPass(!showSignupPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+                      aria-label={showSignupPass ? 'Hide password' : 'Show password'}
+                    >
+                      {showSignupPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl font-semibold">
-                  Create Commercial Account <ArrowRight size={17} className="ml-1.5" />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl font-semibold bg-[#C2410C] hover:bg-[#9A3412]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account <ArrowRight size={17} className="ml-1.5" />
+                    </>
+                  )}
                 </Button>
 
                 <p className="pt-1 text-center font-['DM_Sans'] text-xs text-[#94A3B8]">

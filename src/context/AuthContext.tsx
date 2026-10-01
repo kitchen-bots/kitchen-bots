@@ -1,53 +1,80 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  auth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  firebaseSignOut,
+  type User,
+  type UserCredential
+} from '../lib/firebase';
 
-export interface AuthUser {
-  name: string;
-  email: string;
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  signIn: (email: string, pass: string) => Promise<UserCredential>;
+  signUp: (email: string, pass: string) => Promise<UserCredential>;
+  signOut: () => Promise<void>;
+  getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+  // Aliases for compatibility
+  login?: (email: string, pass: string) => Promise<UserCredential>;
+  logout?: () => Promise<void>;
 }
 
-interface AuthContextValue {
-  user: AuthUser | null;
-  login: (email: string, name?: string) => void;
-  logout: () => void;
-}
-
-const AuthCtx = createContext<AuthContextValue>({
-  user: null,
-  login: () => {},
-  logout: () => {},
-});
-
-const STORAGE_KEY = 'kb_user';
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as AuthUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((email: string, name?: string) => {
-    const u: AuthUser = { email, name: name || email.split('@')[0] };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    setUser(u);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
+  const signIn = useCallback((email: string, pass: string) => {
+    return signInWithEmailAndPassword(auth, email, pass);
   }, []);
+
+  const signUp = useCallback((email: string, pass: string) => {
+    return createUserWithEmailAndPassword(auth, email, pass);
+  }, []);
+
+  const signOut = useCallback(() => {
+    return firebaseSignOut(auth);
+  }, []);
+
+  const getIdToken = useCallback(async (forceRefresh = false): Promise<string | null> => {
+    if (!auth.currentUser) return null;
+    return auth.currentUser.getIdToken(forceRefresh);
+  }, []);
+
+  const value: AuthContextType = {
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    getIdToken,
+    login: signIn,
+    logout: signOut,
+  };
 
   return (
-    <AuthCtx.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
-    </AuthCtx.Provider>
+    </AuthContext.Provider>
   );
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useAuth() {
-  return useContext(AuthCtx);
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
