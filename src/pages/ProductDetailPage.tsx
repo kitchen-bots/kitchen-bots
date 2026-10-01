@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -10,6 +10,10 @@ import {
   AlertCircle,
   RefreshCw,
   ZoomIn,
+  ZoomOut,
+  X,
+  ChevronLeft,
+  RotateCcw,
   Shield,
   Truck,
   RotateCw,
@@ -30,8 +34,10 @@ import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import Product360Viewer from '../components/Product360Viewer';
 import ProductVideoPlayer from '../components/ProductVideoPlayer';
+import QuickViewModal from '../components/QuickViewModal';
 import { cn } from '../lib/utils';
 import { fetchCatalogProduct } from '../lib/api';
+import { getMediaUrl } from '../lib/cdn';
 
 interface ProductDetailPageProps {
   productId: string;
@@ -58,18 +64,58 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [tab, setTab] = useState<Tab>('Description');
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxScale, setLightboxScale] = useState(1);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showToast } = useToast();
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    setZoomPos({ x, y });
+
+    target.style.transition = 'none';
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    void target.offsetHeight;
+    target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+    target.style.transform = 'scale(2.4)';
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    if (target.style.transform !== 'scale(2.4)') {
+      target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+      target.style.transform = 'scale(2.4)';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'transform 150ms ease-out';
+      target.style.transform = 'scale(1)';
+      target.style.transformOrigin = '50% 50%';
+    }
   };
 
   const loadProduct = useCallback(async () => {
@@ -101,7 +147,66 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     loadProduct();
     setActiveMediaMode('photos');
     setActiveImage(0);
+    setIsLightboxOpen(false);
+    setLightboxScale(1);
   }, [loadProduct]);
+
+  const images = useMemo(
+    () => (product ? (product.images?.length ? product.images : [product.image]) : []),
+    [product]
+  );
+
+  // Preload and hardware-decode all product gallery images eagerly to eliminate network & rasterization delays
+  useEffect(() => {
+    if (!images || images.length === 0) return;
+    images.forEach(img => {
+      const resolved = getMediaUrl(img);
+      if (resolved) {
+        const link = new Image();
+        link.src = resolved;
+        if (typeof link.decode === 'function') {
+          link.decode().catch(() => {});
+        }
+      }
+    });
+  }, [images]);
+
+  // Reset zoom state cleanly on photo or product change
+  useEffect(() => {
+    const target = zoomImageRef.current;
+    if (target) {
+      target.style.transition = 'none';
+      target.style.transform = 'scale(1)';
+      target.style.transformOrigin = '50% 50%';
+    }
+  }, [activeImage, product?.id]);
+
+  // Handle keyboard shortcuts and body scroll locking for the fullscreen photo lightbox
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+        setLightboxScale(1);
+      } else if (e.key === 'ArrowLeft' && images.length > 1) {
+        setActiveImage(idx => (idx > 0 ? idx - 1 : images.length - 1));
+        setLightboxScale(1);
+      } else if (e.key === 'ArrowRight' && images.length > 1) {
+        setActiveImage(idx => (idx < images.length - 1 ? idx + 1 : 0));
+        setLightboxScale(1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, images.length]);
 
   if (isLoading && !product) {
     return (
@@ -132,7 +237,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     );
   }
 
-  const images = product.images?.length ? product.images : [product.image];
   const specifications = Object.entries(product.specifications || {});
 
   const addProduct = () => {
@@ -202,7 +306,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const quantityInCart = cartItem?.quantity ?? 0;
 
   return (
-    <section className="min-h-screen overflow-x-hidden bg-[#FAFAFA] pb-24 pt-24 sm:pt-28">
+    <section className="min-h-screen overflow-x-hidden bg-[#FAFAFA] pb-24 pt-20 sm:pt-24">
       <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
         {error && (
           <div className="mb-6 flex items-center justify-between rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-[#991B1B]">
@@ -253,9 +357,9 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
         </div>
 
         {/* Main Grid: Left Stage (Media), Right Stage (Product Info) */}
-        <div className="grid gap-10 lg:grid-cols-12 xl:gap-16">
-          {/* Left Column: Media Stage (7 cols) */}
-          <div className="flex flex-col lg:col-span-7">
+        <div className="grid gap-10 lg:grid-cols-12 xl:gap-14 items-start">
+          {/* Left Column: Media Stage (6 cols) */}
+          <div className="flex flex-col lg:col-span-6">
             {/* Media Mode Switcher Tabs */}
             <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Product Media Options">
               <button
@@ -287,7 +391,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     'flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all select-none',
                     activeMediaMode === '360'
                       ? 'bg-[#C2410C] text-white shadow-md shadow-[#C2410C]/20 border border-[#C2410C]'
-                      : 'bg-white text-[#475569] border border-[#CBD5E1] hover:bg-[#FFF7ED]/50 hover:text-[#C2410C] hover:border-[#FDBA74]'
+                    : 'bg-white text-[#475569] border border-[#CBD5E1] hover:bg-[#FFF7ED]/50 hover:text-[#C2410C] hover:border-[#FDBA74]'
                   )}
                 >
                   <RotateCw size={16} /> Interactive 360° 3D
@@ -314,8 +418,8 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
               )}
             </div>
 
-            {/* Media Display Container */}
-            <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm">
+            {/* Media Display Container (Reduced Frame Size) */}
+            <div className="relative aspect-[4/3] max-h-[440px] sm:max-h-[480px] w-full max-w-[560px] overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 sm:p-6 shadow-sm mx-auto lg:mx-0 flex items-center justify-center">
               <div
                 id="media-panel-photos"
                 role="tabpanel"
@@ -323,29 +427,38 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                 className={cn('h-full w-full', activeMediaMode === 'photos' ? 'block' : 'hidden')}
               >
                 <div
-                  className="relative h-full w-full cursor-crosshair select-none"
-                  onMouseEnter={() => setIsZoomed(true)}
-                  onMouseLeave={() => setIsZoomed(false)}
+                  ref={zoomContainerRef}
+                  className="relative h-full w-full cursor-zoom-in select-none overflow-hidden rounded-2xl flex items-center justify-center"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                   onMouseMove={handleMouseMove}
-                  role="region"
-                  aria-label={`Interactive zoom for ${product.name}`}
+                  onClick={() => {
+                    setIsLightboxOpen(true);
+                    setLightboxScale(1);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsLightboxOpen(true);
+                      setLightboxScale(1);
+                    }
+                  }}
+                  aria-label={`Interactive zoom for ${product.name}. Click to open fullscreen photo viewer.`}
                 >
                   <div
-                    className="h-full w-full transition-transform duration-100 ease-out"
-                    style={{
-                      transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                      transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
-                    }}
+                    ref={zoomImageRef}
+                    className="h-full w-full will-change-transform select-none flex items-center justify-center"
                   >
                     <ProductImage
                       src={images[activeImage]}
                       alt={product.name}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="sync"
                       className="h-full w-full object-contain pointer-events-none"
                     />
-                  </div>
-
-                  <div className={`pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-3 py-1 text-xs font-medium text-white backdrop-blur-md transition-opacity duration-200 ${isZoomed ? 'opacity-0' : 'opacity-85'}`}>
-                    <ZoomIn size={14} /> Hover to zoom
                   </div>
                 </div>
               </div>
@@ -357,13 +470,15 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                   aria-labelledby="media-tab-360"
                   className={cn('h-full w-full', activeMediaMode === '360' ? 'block' : 'hidden')}
                 >
-                  <Product360Viewer
-                    sequenceId={product.sequenceId}
-                    frameCount={product.sequenceFrameCount || 40}
-                    productName={product.name}
-                    posterImage={product.image}
-                    className="h-full w-full border-0"
-                  />
+                  {activeMediaMode === '360' && (
+                    <Product360Viewer
+                      sequenceId={product.sequenceId}
+                      frameCount={product.sequenceFrameCount || 40}
+                      productName={product.name}
+                      posterImage={product.image}
+                      className="h-full w-full border-0"
+                    />
+                  )}
                 </div>
               )}
 
@@ -387,7 +502,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
 
             {/* Gallery Thumbnails (active under photos mode, or click to switch to photos) */}
             {images.length > 1 && (
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              <div className="mt-3.5 flex gap-2.5 overflow-x-auto pb-2 max-w-[560px] mx-auto lg:mx-0">
                 {images.map((image, index) => (
                   <button
                     key={image}
@@ -398,7 +513,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     aria-pressed={activeMediaMode === 'photos' && activeImage === index}
                     title={`View photo ${index + 1}`}
                     className={cn(
-                      'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 bg-white p-1.5 transition-all cursor-pointer',
+                      'h-16 w-16 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 transition-all cursor-pointer',
                       activeMediaMode === 'photos' && activeImage === index
                         ? 'border-[#C2410C] shadow-sm scale-105'
                         : 'border-[#E2E8F0] hover:border-[#CBD5E1]',
@@ -411,8 +526,8 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
             )}
           </div>
 
-          {/* Right Column: Commercial Specifications & Actions (5 cols) */}
-          <div className="flex flex-col lg:col-span-5">
+          {/* Right Column: Commercial Specifications & Actions (6 cols) */}
+          <div className="flex flex-col lg:col-span-6">
             <div className="flex items-center gap-2">
               <span className="rounded-md bg-[#FFF7ED] px-2.5 py-1 text-xs font-bold text-[#C2410C] border border-[#FFEDD5]">
                 {product.category}
@@ -673,8 +788,9 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
             {PRODUCTS.filter(item => item.id !== product.id && item.category === product.category).slice(0, 4).map(item => (
               <button
                 key={item.id}
-                onClick={() => onNavigate ? onNavigate('product-detail', item.id) : (window.location.href = `/product-detail?id=${encodeURIComponent(item.id)}`)}
-                className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-left transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-md"
+                type="button"
+                onClick={() => setQuickViewProduct(item)}
+                className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-left transition-all duration-200 hover:border-[#CBD5E1] hover:shadow-md cursor-pointer"
               >
                 <div className="aspect-[4/3] bg-[#F8FAFC] p-5 text-center">
                   <ProductImage src={item.image} alt={item.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
@@ -688,6 +804,155 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
           </div>
         </section>
       </div>
+
+      {/* Fullscreen Photo Lightbox Modal */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 p-4 sm:p-6 backdrop-blur-md animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${product.name} photo lightbox`}
+        >
+          {/* Lightbox Top Bar */}
+          <div className="flex w-full max-w-6xl items-center justify-between py-2 text-white">
+            <div className="flex items-center gap-3">
+              <span className="font-['Outfit'] font-bold text-base sm:text-lg text-white truncate max-w-[200px] sm:max-w-md">
+                {product.name}
+              </span>
+              <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-[#CBD5E1]">
+                {activeImage + 1} / {images.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLightboxScale(s => Math.min(3, +(s + 0.5).toFixed(1)))}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                title="Zoom In"
+                aria-label="Zoom In"
+              >
+                <ZoomIn size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightboxScale(s => Math.max(1, +(s - 0.5).toFixed(1)))}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                title="Zoom Out"
+                aria-label="Zoom Out"
+              >
+                <ZoomOut size={18} />
+              </button>
+              {lightboxScale !== 1 && (
+                <button
+                  type="button"
+                  onClick={() => setLightboxScale(1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                  title="Reset Zoom"
+                  aria-label="Reset Zoom"
+                >
+                  <RotateCcw size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLightboxOpen(false);
+                  setLightboxScale(1);
+                }}
+                className="ml-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer"
+                title="Close (Esc)"
+                aria-label="Close Lightbox"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Main Viewport */}
+          <div className="relative flex flex-1 w-full max-w-6xl items-center justify-center overflow-hidden my-2">
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveImage(idx => (idx > 0 ? idx - 1 : images.length - 1));
+                  setLightboxScale(1);
+                }}
+                className="absolute left-2 sm:left-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            <div
+              className="flex h-full w-full items-center justify-center transition-transform duration-200 ease-out select-none"
+              style={{ transform: `scale(${lightboxScale})` }}
+            >
+              <ProductImage
+                src={images[activeImage]}
+                alt={product.name}
+                loading="eager"
+                fetchPriority="high"
+                className="max-h-[75vh] max-w-[90vw] object-contain"
+              />
+            </div>
+
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveImage(idx => (idx < images.length - 1 ? idx + 1 : 0));
+                  setLightboxScale(1);
+                }}
+                className="absolute right-2 sm:right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                aria-label="Next photo"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Bar */}
+          {images.length > 1 && (
+            <div className="flex gap-2.5 overflow-x-auto py-2 max-w-full">
+              {images.map((img, i) => (
+                <button
+                  key={img}
+                  type="button"
+                  onClick={() => {
+                    setActiveImage(i);
+                    setLightboxScale(1);
+                  }}
+                  className={cn(
+                    'h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white/5 p-1 transition-all cursor-pointer',
+                    activeImage === i ? 'border-[#C2410C] scale-105 shadow-md' : 'border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'
+                  )}
+                  title={`Photo ${i + 1}`}
+                >
+                  <ProductImage src={img} alt="" className="h-full w-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick View Interactive Turntable & Zoom Modal for Related Products */}
+      <QuickViewModal
+        product={quickViewProduct}
+        isOpen={Boolean(quickViewProduct)}
+        onClose={() => setQuickViewProduct(null)}
+        onViewDetails={(id) => {
+          setQuickViewProduct(null);
+          if (onNavigate) {
+            onNavigate('product-detail', id);
+          } else {
+            window.location.href = `/product-detail?id=${encodeURIComponent(id)}`;
+          }
+        }}
+        onCartOpen={() => onNavigate?.('cart')}
+      />
     </section>
   );
 }
