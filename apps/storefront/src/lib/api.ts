@@ -1,7 +1,7 @@
 import { PRODUCTS, getProductById } from '../data/products';
 import { getMediaUrl } from './cdn';
-import type { Product, ProductCategory } from '../types/product';
-import type { Order, Quote, Enquiry } from '@kitchen-bots/types';
+export type { Product, ProductCategory, Order, Quote, Enquiry } from '@kitchen-bots/types';
+import type { Product, ProductCategory } from '@kitchen-bots/types';
 
 export const DEFAULT_API_BASE_URL = '';
 export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
