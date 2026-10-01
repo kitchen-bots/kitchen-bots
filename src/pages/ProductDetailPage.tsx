@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -10,6 +10,10 @@ import {
   AlertCircle,
   RefreshCw,
   ZoomIn,
+  ZoomOut,
+  X,
+  ChevronLeft,
+  RotateCcw,
   Shield,
   Truck,
   RotateCw,
@@ -32,6 +36,7 @@ import Product360Viewer from '../components/Product360Viewer';
 import ProductVideoPlayer from '../components/ProductVideoPlayer';
 import { cn } from '../lib/utils';
 import { fetchCatalogProduct } from '../lib/api';
+import { getMediaUrl } from '../lib/cdn';
 
 interface ProductDetailPageProps {
   productId: string;
@@ -59,17 +64,49 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxScale, setLightboxScale] = useState(1);
+
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showToast } = useToast();
 
+  const updateZoomPosition = (clientX: number, clientY: number) => {
+    const container = zoomContainerRef.current;
+    const target = zoomImageRef.current;
+    if (!container || !target) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+    target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    updateZoomPosition(e.clientX, e.clientY);
+    setIsZoomed(true);
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    setZoomPos({ x, y });
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    rafIdRef.current = requestAnimationFrame(() => {
+      updateZoomPosition(clientX, clientY);
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    setIsZoomed(false);
   };
 
   const loadProduct = useCallback(async () => {
@@ -101,7 +138,63 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     loadProduct();
     setActiveMediaMode('photos');
     setActiveImage(0);
+    setIsZoomed(false);
+    setIsLightboxOpen(false);
+    setLightboxScale(1);
   }, [loadProduct]);
+
+  const images = useMemo(
+    () => (product ? (product.images?.length ? product.images : [product.image]) : []),
+    [product]
+  );
+
+  // Preload all product gallery images eagerly to eliminate network delays on zoom & photo switches
+  useEffect(() => {
+    if (!images || images.length === 0) return;
+    images.forEach(img => {
+      const resolved = getMediaUrl(img);
+      if (resolved) {
+        const link = new Image();
+        link.src = resolved;
+      }
+    });
+  }, [images]);
+
+  // Clean up RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
+  // Handle keyboard shortcuts and body scroll locking for the fullscreen photo lightbox
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+        setLightboxScale(1);
+      } else if (e.key === 'ArrowLeft' && images.length > 1) {
+        setActiveImage(idx => (idx > 0 ? idx - 1 : images.length - 1));
+        setLightboxScale(1);
+      } else if (e.key === 'ArrowRight' && images.length > 1) {
+        setActiveImage(idx => (idx < images.length - 1 ? idx + 1 : 0));
+        setLightboxScale(1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, images.length]);
 
   if (isLoading && !product) {
     return (
@@ -132,7 +225,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     );
   }
 
-  const images = product.images?.length ? product.images : [product.image];
   const specifications = Object.entries(product.specifications || {});
 
   const addProduct = () => {
@@ -323,29 +415,45 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                 className={cn('h-full w-full', activeMediaMode === 'photos' ? 'block' : 'hidden')}
               >
                 <div
-                  className="relative h-full w-full cursor-crosshair select-none"
-                  onMouseEnter={() => setIsZoomed(true)}
-                  onMouseLeave={() => setIsZoomed(false)}
+                  ref={zoomContainerRef}
+                  className="relative h-full w-full cursor-zoom-in select-none group"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                   onMouseMove={handleMouseMove}
-                  role="region"
-                  aria-label={`Interactive zoom for ${product.name}`}
+                  onClick={() => {
+                    setIsLightboxOpen(true);
+                    setLightboxScale(1);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsLightboxOpen(true);
+                      setLightboxScale(1);
+                    }
+                  }}
+                  aria-label={`Interactive zoom for ${product.name}. Click to open fullscreen photo viewer.`}
                 >
                   <div
-                    className="h-full w-full transition-transform duration-100 ease-out"
+                    ref={zoomImageRef}
+                    className="h-full w-full will-change-transform transition-transform duration-150 ease-out"
                     style={{
-                      transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                      transformOrigin: '50% 50%',
                       transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
                     }}
                   >
                     <ProductImage
                       src={images[activeImage]}
                       alt={product.name}
+                      loading="eager"
+                      fetchPriority="high"
                       className="h-full w-full object-contain pointer-events-none"
                     />
                   </div>
 
-                  <div className={`pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-3 py-1 text-xs font-medium text-white backdrop-blur-md transition-opacity duration-200 ${isZoomed ? 'opacity-0' : 'opacity-85'}`}>
-                    <ZoomIn size={14} /> Hover to zoom
+                  <div className={`pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-150 ${isZoomed ? 'opacity-0' : 'opacity-90'}`}>
+                    <ZoomIn size={14} /> Hover to zoom &bull; Click to expand
                   </div>
                 </div>
               </div>
@@ -394,6 +502,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     onClick={() => {
                       setActiveImage(index);
                       setActiveMediaMode('photos');
+                      setIsZoomed(false);
                     }}
                     aria-pressed={activeMediaMode === 'photos' && activeImage === index}
                     title={`View photo ${index + 1}`}
@@ -688,6 +797,139 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
           </div>
         </section>
       </div>
+
+      {/* Fullscreen Photo Lightbox Modal */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 p-4 sm:p-6 backdrop-blur-md animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${product.name} photo lightbox`}
+        >
+          {/* Lightbox Top Bar */}
+          <div className="flex w-full max-w-6xl items-center justify-between py-2 text-white">
+            <div className="flex items-center gap-3">
+              <span className="font-['Outfit'] font-bold text-base sm:text-lg text-white truncate max-w-[200px] sm:max-w-md">
+                {product.name}
+              </span>
+              <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-[#CBD5E1]">
+                {activeImage + 1} / {images.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLightboxScale(s => Math.min(3, +(s + 0.5).toFixed(1)))}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                title="Zoom In"
+                aria-label="Zoom In"
+              >
+                <ZoomIn size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightboxScale(s => Math.max(1, +(s - 0.5).toFixed(1)))}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                title="Zoom Out"
+                aria-label="Zoom Out"
+              >
+                <ZoomOut size={18} />
+              </button>
+              {lightboxScale !== 1 && (
+                <button
+                  type="button"
+                  onClick={() => setLightboxScale(1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                  title="Reset Zoom"
+                  aria-label="Reset Zoom"
+                >
+                  <RotateCcw size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLightboxOpen(false);
+                  setLightboxScale(1);
+                }}
+                className="ml-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer"
+                title="Close (Esc)"
+                aria-label="Close Lightbox"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Main Viewport */}
+          <div className="relative flex flex-1 w-full max-w-6xl items-center justify-center overflow-hidden my-2">
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveImage(idx => (idx > 0 ? idx - 1 : images.length - 1));
+                  setLightboxScale(1);
+                }}
+                className="absolute left-2 sm:left-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            <div
+              className="flex h-full w-full items-center justify-center transition-transform duration-200 ease-out select-none"
+              style={{ transform: `scale(${lightboxScale})` }}
+            >
+              <ProductImage
+                src={images[activeImage]}
+                alt={product.name}
+                loading="eager"
+                fetchPriority="high"
+                className="max-h-[75vh] max-w-[90vw] object-contain"
+              />
+            </div>
+
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveImage(idx => (idx < images.length - 1 ? idx + 1 : 0));
+                  setLightboxScale(1);
+                }}
+                className="absolute right-2 sm:right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                aria-label="Next photo"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Bar */}
+          {images.length > 1 && (
+            <div className="flex gap-2.5 overflow-x-auto py-2 max-w-full">
+              {images.map((img, i) => (
+                <button
+                  key={img}
+                  type="button"
+                  onClick={() => {
+                    setActiveImage(i);
+                    setLightboxScale(1);
+                  }}
+                  className={cn(
+                    'h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white/5 p-1 transition-all cursor-pointer',
+                    activeImage === i ? 'border-[#C2410C] scale-105 shadow-md' : 'border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'
+                  )}
+                  title={`Photo ${i + 1}`}
+                >
+                  <ProductImage src={img} alt="" className="h-full w-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

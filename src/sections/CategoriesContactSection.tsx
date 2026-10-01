@@ -41,37 +41,52 @@ export default function CategoriesContactSection({ onCatalog }: CategoriesContac
         <div>
           <h2 className="font-['Outfit'] text-[22px] font-bold text-[#111827]">Direct kitchen support</h2>
           <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">Speak with an equipment specialist</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+
+          <div className="mt-6 flex flex-col gap-3.5">
+            {/* Direct Line */}
             <a
               href="tel:+919490701421"
-              className="flex items-center gap-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition-all hover:border-[#C2410C] hover:bg-[#FFF7ED]/40 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C2410C]"
+              className="flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition-all hover:border-[#C2410C] hover:bg-[#FFF7ED]/40 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C2410C]"
             >
-              <Phone size={20} className="shrink-0 text-[#C2410C]" aria-hidden="true" />
-              <span className="min-w-0">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Direct line</span>
-                <span className="block break-words font-['Outfit'] text-[15px] font-bold text-[#111827]">+91 94907 01421</span>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Phone size={20} className="shrink-0 text-[#C2410C]" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Direct line</span>
+                  <span className="block break-words font-['Outfit'] text-[15px] font-bold text-[#111827]">+91 94907 01421</span>
+                </span>
+              </div>
+              <span className="rounded-lg bg-[#C2410C]/10 px-3 py-1 text-xs font-bold text-[#C2410C]">
+                Call Now
               </span>
             </a>
-            <a
-              href="mailto:info@kitchenbots.in"
-              className="flex items-center gap-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition-all hover:border-[#C2410C] hover:bg-[#FFF7ED]/40 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C2410C]"
-            >
-              <Mail size={20} className="shrink-0 text-[#C2410C]" aria-hidden="true" />
-              <span className="min-w-0">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Email support</span>
-                <span className="block break-all font-['Outfit'] text-[15px] font-bold text-[#111827]">info@kitchenbots.in</span>
-              </span>
-            </a>
+
+            {/* WhatsApp (Left) & Email Support (Right) */}
+            <div className="grid gap-3.5 sm:grid-cols-2">
+              <a
+                href="https://wa.me/919490701421"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3.5 rounded-xl border border-[#22C55E]/30 bg-[#F0FDF4] p-4 transition-all hover:border-[#16A34A] hover:bg-[#DCFCE7]/60 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#166534]"
+              >
+                <MessageSquare size={20} className="shrink-0 text-[#16A34A]" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-[#166534]">WhatsApp</span>
+                  <span className="block break-words font-['Outfit'] text-[15px] font-bold text-[#14532D]">Chat with us</span>
+                </span>
+              </a>
+
+              <a
+                href="mailto:info@kitchenbots.in"
+                className="flex items-center gap-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 transition-all hover:border-[#C2410C] hover:bg-[#FFF7ED]/40 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C2410C]"
+              >
+                <Mail size={20} className="shrink-0 text-[#C2410C]" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Email support</span>
+                  <span className="block break-all font-['Outfit'] text-[15px] font-bold text-[#111827]">info@kitchenbots.in</span>
+                </span>
+              </a>
+            </div>
           </div>
-          <a
-            href="https://wa.me/919490701421"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#166534] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#14532D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#166534]"
-          >
-            <MessageSquare size={18} aria-hidden="true" />
-            WhatsApp us
-          </a>
         </div>
       </div>
     </section>

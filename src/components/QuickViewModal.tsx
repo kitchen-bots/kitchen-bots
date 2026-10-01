@@ -177,6 +177,8 @@ export default function QuickViewModal({
                 <ProductImage
                   src={images[activeImageIdx]}
                   alt={product.name}
+                  loading="eager"
+                  fetchPriority="high"
                   className="h-full w-full object-contain"
                 />
               </div>
