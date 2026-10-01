@@ -45,3 +45,25 @@ input:focus, textarea:focus, select:focus {
   outline: none !important;
   box-shadow: 0 0 0 1px #f97316 !important;
 }
+
+/* Storefront Link in Admin Header */
+.kb-storefront-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e4e4e7 !important;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  padding: 6px 12px;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+
+.kb-storefront-link:hover {
+  background-color: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #fafafa !important;
+}
