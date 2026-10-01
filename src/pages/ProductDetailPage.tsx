@@ -68,7 +68,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
 
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
-  const zoomBadgeRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -84,18 +83,11 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-    // Instantly anchor transformOrigin to cursor position without transition lag
     target.style.transition = 'none';
     target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
-    // Force browser to commit origin before transition begins
     void target.offsetHeight;
-    // Snappy, instant hardware-accelerated scale-up (0 lag)
-    target.style.transition = 'transform 80ms cubic-bezier(0.2, 0, 0, 1)';
+    target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
     target.style.transform = 'scale(2.4)';
-
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0';
-    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -109,16 +101,18 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
     target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    if (target.style.transform !== 'scale(2.4)') {
+      target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+      target.style.transform = 'scale(2.4)';
+    }
   };
 
   const handleMouseLeave = () => {
     const target = zoomImageRef.current;
     if (target) {
-      target.style.transition = 'transform 100ms ease-out';
+      target.style.transition = 'transform 150ms ease-out';
       target.style.transform = 'scale(1)';
-    }
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0.9';
+      target.style.transformOrigin = '50% 50%';
     }
   };
 
@@ -182,9 +176,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
       target.style.transition = 'none';
       target.style.transform = 'scale(1)';
       target.style.transformOrigin = '50% 50%';
-    }
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0.9';
     }
   }, [activeImage, product?.id]);
 
@@ -435,7 +426,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
               >
                 <div
                   ref={zoomContainerRef}
-                  className="relative h-full w-full cursor-zoom-in select-none group"
+                  className="relative h-full w-full cursor-zoom-in select-none overflow-hidden rounded-2xl flex items-center justify-center"
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                   onMouseMove={handleMouseMove}
@@ -456,7 +447,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                 >
                   <div
                     ref={zoomImageRef}
-                    className="h-full w-full will-change-transform select-none"
+                    className="h-full w-full will-change-transform select-none flex items-center justify-center"
                   >
                     <ProductImage
                       src={images[activeImage]}
@@ -466,13 +457,6 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                       decoding="sync"
                       className="h-full w-full object-contain pointer-events-none"
                     />
-                  </div>
-
-                  <div
-                    ref={zoomBadgeRef}
-                    className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-100 opacity-90 group-hover:opacity-0"
-                  >
-                    <ZoomIn size={14} /> Hover to zoom &bull; Click to expand
                   </div>
                 </div>
               </div>

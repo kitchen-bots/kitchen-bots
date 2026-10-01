@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, ShoppingCart, Minus, Plus, ArrowRight, Camera, RotateCw, Film, Shield, Truck, ZoomIn } from 'lucide-react';
+import { X, ShoppingCart, Minus, Plus, ArrowRight, Camera, RotateCw, Film, Shield, Truck } from 'lucide-react';
 import type { Product } from '../types/product';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
@@ -41,7 +41,6 @@ export default function QuickViewModal({
   // Ultra-fast zero-latency direct DOM zoom engine for Quick View
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
-  const zoomBadgeRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const container = zoomContainerRef.current;
@@ -53,16 +52,11 @@ export default function QuickViewModal({
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-    // Instantly lock origin to cursor position without transition lag
     target.style.transition = 'none';
     target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
     void target.offsetHeight;
-    target.style.transition = 'transform 80ms cubic-bezier(0.2, 0, 0, 1)';
+    target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
     target.style.transform = 'scale(2.4)';
-
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0';
-    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -76,16 +70,18 @@ export default function QuickViewModal({
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
     target.style.transformOrigin = `${x.toFixed(2)}% ${y.toFixed(2)}%`;
+    if (target.style.transform !== 'scale(2.4)') {
+      target.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+      target.style.transform = 'scale(2.4)';
+    }
   };
 
   const handleMouseLeave = () => {
     const target = zoomImageRef.current;
     if (target) {
-      target.style.transition = 'transform 100ms ease-out';
+      target.style.transition = 'transform 150ms ease-out';
       target.style.transform = 'scale(1)';
-    }
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0.85';
+      target.style.transformOrigin = '50% 50%';
     }
   };
 
@@ -96,9 +92,6 @@ export default function QuickViewModal({
       target.style.transition = 'none';
       target.style.transform = 'scale(1)';
       target.style.transformOrigin = '50% 50%';
-    }
-    if (zoomBadgeRef.current) {
-      zoomBadgeRef.current.style.opacity = '0.85';
     }
   }, [activeImageIdx, product?.id, activeMediaTab]);
 
@@ -274,14 +267,6 @@ export default function QuickViewModal({
                     decoding="sync"
                     className="h-full w-full object-contain pointer-events-none"
                   />
-                </div>
-
-                <div
-                  ref={zoomBadgeRef}
-                  className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/75 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-100 opacity-85 group-hover:opacity-0"
-                >
-                  <ZoomIn size={12} />
-                  <span>Hover to zoom</span>
                 </div>
               </div>
 
