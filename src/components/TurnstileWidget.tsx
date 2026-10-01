@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 
 declare global {
   interface Window {
@@ -8,7 +8,7 @@ declare global {
         options: {
           sitekey: string;
           callback?: (token: string) => void;
-          'error-callback'?: () => void;
+          'error-callback'?: (error?: string | number) => void;
           'expired-callback'?: () => void;
           theme?: 'light' | 'dark' | 'auto';
           size?: 'normal' | 'flexible' | 'compact';
@@ -20,7 +20,29 @@ declare global {
   }
 }
 
-export const DEFAULT_TURNSTILE_SITE_KEY = '0x4AAAAAAFAluzMr-1qmVr1-';
+const DEFAULT_PROD_TURNSTILE_SITE_KEY = '0x4AAAAAAFAluzMr-1qmVr1-';
+const CLOUDFLARE_TEST_SITE_KEY = '1x00000000000000000000AA';
+
+function getResolvedTurnstileSiteKey(explicitKey?: string): string {
+  if (explicitKey) return explicitKey;
+  if (import.meta.env.VITE_TURNSTILE_SITE_KEY) {
+    return import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  }
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0');
+
+  if (import.meta.env.DEV || isLocalhost) {
+    return CLOUDFLARE_TEST_SITE_KEY;
+  }
+  return DEFAULT_PROD_TURNSTILE_SITE_KEY;
+}
+
+export interface TurnstileWidgetRef {
+  reset: () => void;
+}
 
 interface TurnstileWidgetProps {
   onVerify: (token: string) => void;
@@ -30,15 +52,36 @@ interface TurnstileWidgetProps {
   className?: string;
 }
 
-export default function TurnstileWidget({
-  onVerify,
-  onError,
-  onExpire,
-  siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || DEFAULT_TURNSTILE_SITE_KEY,
-  className = '',
-}: TurnstileWidgetProps) {
+const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(function TurnstileWidget(
+  { onVerify, onError, onExpire, siteKey, className = '' },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+
+  const onVerifyRef = useRef(onVerify);
+  const onErrorRef = useRef(onError);
+  const onExpireRef = useRef(onExpire);
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+    onErrorRef.current = onError;
+    onExpireRef.current = onExpire;
+  }, [onVerify, onError, onExpire]);
+
+  const resolvedSiteKey = getResolvedTurnstileSiteKey(siteKey);
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      if (widgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+        } catch {
+          // Ignore reset errors
+        }
+      }
+    },
+  }));
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -50,15 +93,24 @@ export default function TurnstileWidget({
 
       try {
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
-          sitekey: siteKey,
+          sitekey: resolvedSiteKey,
           callback: (token: string) => {
-            if (isMounted) onVerify(token);
+            if (isMounted) onVerifyRef.current?.(token);
           },
           'error-callback': () => {
-            if (isMounted) onError?.();
+            if (isMounted) onErrorRef.current?.();
           },
           'expired-callback': () => {
-            if (isMounted) onExpire?.();
+            if (isMounted) {
+              onExpireRef.current?.();
+              if (widgetIdRef.current && window.turnstile) {
+                try {
+                  window.turnstile.reset(widgetIdRef.current);
+                } catch {
+                  // Ignore
+                }
+              }
+            }
           },
           theme: 'light',
         });
@@ -105,7 +157,9 @@ export default function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onVerify, onError, onExpire]);
+  }, [resolvedSiteKey]);
 
   return <div ref={containerRef} className={`my-2 min-h-[65px] ${className}`} />;
-}
+});
+
+export default TurnstileWidget;

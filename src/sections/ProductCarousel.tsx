@@ -9,13 +9,17 @@ import { PRODUCTS } from '../data/products';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const featuredProducts = PRODUCTS.filter(p => p.featured).slice(0, 6);
+import type { Product } from '../types/product';
 
 interface ProductCarouselProps {
   onProductClick: (id: string) => void;
+  products?: Product[];
 }
 
-export default function ProductCarousel({ onProductClick }: ProductCarouselProps) {
+export default function ProductCarousel({ onProductClick, products }: ProductCarouselProps) {
+  const sourceProducts = products && products.length > 0 ? products : PRODUCTS;
+  const featuredList = sourceProducts.filter(p => p.featured).slice(0, 6);
+  const featuredProducts = featuredList.length > 0 ? featuredList : sourceProducts.slice(0, 6);
   const sectionRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);

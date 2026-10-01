@@ -13,9 +13,8 @@ interface ProductFleetSectionProps {
   onBrowse?: () => void;
   onCartOpen?: () => void;
   onProductClick?: (id: string) => void;
+  products?: Product[];
 }
-
-const FEATURED_PRODUCTS = PRODUCTS.filter(product => product.featured).slice(0, 4);
 
 const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -23,9 +22,12 @@ const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 }).format(price);
 
-export default function ProductFleetSection({ onBrowse, onProductClick, onCartOpen }: ProductFleetSectionProps) {
+export default function ProductFleetSection({ onBrowse, onProductClick, onCartOpen, products }: ProductFleetSectionProps) {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const { addToCart, items, updateQuantity } = useCart();
+  const sourceProducts = products && products.length > 0 ? products : PRODUCTS;
+  const featuredList = sourceProducts.filter(p => p.featured).slice(0, 4);
+  const displayProducts = featuredList.length > 0 ? featuredList : sourceProducts.slice(0, 4);
   const { showToast } = useToast();
 
   return (
@@ -46,7 +48,7 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_PRODUCTS.map(product => {
+          {displayProducts.map(product => {
             const cartItem = items.find(item => item.id === product.id);
             const quantityInCart = cartItem?.quantity ?? 0;
 

@@ -2,7 +2,7 @@ import { PRODUCTS, getProductById } from '../data/products';
 import { getMediaUrl } from './cdn';
 import type { Product, ProductCategory } from '../types/product';
 export const DEFAULT_API_BASE_URL = '';
-export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
+export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || import.meta.env?.VITE_API_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 export const DEFAULT_ENQUIRY_API_URL = 'https://kitchen-bots-api.workofcharan.workers.dev';
 
 export interface ApiProduct {
@@ -55,50 +55,111 @@ const CATEGORY_MAP: Record<string, ProductCategory> = {
   'automatic-bbq': 'Automatic BBQ',
 };
 
-export function categoryIdToName(categoryId: string): ProductCategory {
+const VALID_CATEGORIES: ProductCategory[] = [
+  'Collapsible BBQ',
+  'Rocket Stoves',
+  'Automatic BBQ',
+  'Santa Maria Series',
+  'Suitcase BBQ',
+  'Accessories',
+];
+
+export function categoryIdToName(categoryId?: string): ProductCategory {
+  if (!categoryId) return 'Collapsible BBQ';
+  if (VALID_CATEGORIES.includes(categoryId as ProductCategory)) {
+    return categoryId as ProductCategory;
+  }
   if (CATEGORY_MAP[categoryId]) {
     return CATEGORY_MAP[categoryId];
   }
   const normalized = categoryId.toLowerCase();
+  for (const cat of VALID_CATEGORIES) {
+    if (normalized.includes(cat.toLowerCase()) || cat.toLowerCase().includes(normalized)) {
+      return cat;
+    }
+  }
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return val;
     }
   }
-  return 'Accessories';
+  return 'Collapsible BBQ';
 }
 
-export function toStorefrontProduct(apiProduct: ApiProduct): Product {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toStorefrontProduct(apiProduct: any): Product {
   const local = getProductById(apiProduct.id) || PRODUCTS.find((p) => p.slug === apiProduct.slug);
-  const rawImages = apiProduct.imageUrls && apiProduct.imageUrls.length > 0
-    ? apiProduct.imageUrls
-    : (local?.images || []);
-  const images = rawImages.map(img => getMediaUrl(img));
-  const primaryImage = images[0] || (local?.image ? getMediaUrl(local.image) : '');
+  const rawImages = (Array.isArray(apiProduct.images) && apiProduct.images.length > 0)
+    ? apiProduct.images
+    : ((Array.isArray(apiProduct.imageKeys) && apiProduct.imageKeys.length > 0)
+      ? apiProduct.imageKeys
+      : (Array.isArray(apiProduct.imageUrls) && apiProduct.imageUrls.length > 0
+        ? apiProduct.imageUrls
+        : (local?.images || [])));
+
+  const extractedImageUrls: string[] = rawImages
+    .map((img: unknown) => {
+      if (typeof img === 'string') return img;
+      if (img && typeof img === 'object' && 'url' in img && typeof (img as { url?: string }).url === 'string') {
+        return (img as { url: string }).url;
+      }
+      return '';
+    })
+    .filter(Boolean);
+
+  const images = extractedImageUrls.map((img) => getMediaUrl(img));
+
+  const primaryImage = (typeof apiProduct.image === 'string' && apiProduct.image)
+    ? getMediaUrl(apiProduct.image)
+    : (images[0] || (local?.image ? getMediaUrl(local.image) : ''));
+
+  let specifications: Record<string, string> = {};
+  if (Array.isArray(apiProduct.specifications) && apiProduct.specifications.length > 0) {
+    for (const spec of apiProduct.specifications) {
+      if (spec && typeof spec === 'object') {
+        const specObj = spec as Record<string, unknown>;
+        const key = typeof specObj.name === 'string'
+          ? specObj.name
+          : (typeof specObj.label === 'string' ? specObj.label : (typeof specObj.key === 'string' ? specObj.key : ''));
+        if (key && specObj.value !== undefined && specObj.value !== null) {
+          specifications[key] = String(specObj.value);
+        }
+      }
+    }
+  } else if (apiProduct.specifications && typeof apiProduct.specifications === 'object' && !Array.isArray(apiProduct.specifications) && Object.keys(apiProduct.specifications).length > 0) {
+    specifications = apiProduct.specifications as Record<string, string>;
+  } else {
+    specifications = local?.specifications || {};
+  }
   const priceRupees =
-    apiProduct.pricePaise !== null && apiProduct.pricePaise !== undefined
-      ? Math.round(apiProduct.pricePaise / 100)
-      : (local?.price ?? 0);
+    apiProduct.price !== undefined && apiProduct.price !== null
+      ? Number(apiProduct.price)
+      : (apiProduct.pricePaise !== undefined && apiProduct.pricePaise !== null
+        ? Math.round(Number(apiProduct.pricePaise) / 100)
+        : (local?.price ?? 0));
+
+  const rawCat = apiProduct.category || apiProduct.categoryId;
+  const resolvedCategory = rawCat ? categoryIdToName(rawCat) : (local?.category || 'Collapsible BBQ');
 
   return {
     ...(local || {}),
     id: apiProduct.id,
-    slug: apiProduct.slug || local?.slug,
+    slug: apiProduct.slug || local?.slug || apiProduct.id,
     name: apiProduct.name || local?.name || '',
     description: apiProduct.description || local?.description || '',
     price: priceRupees,
     image: primaryImage,
-    images,
-    category: categoryIdToName(apiProduct.categoryId) || local?.category || 'Collapsible BBQ',
-    features: (apiProduct.features && apiProduct.features.length > 0) ? apiProduct.features : (local?.features || []),
-    specifications: Object.keys(apiProduct.specifications || {}).length > 0 ? apiProduct.specifications : (local?.specifications || {}),
+    images: images.length > 0 ? images : (local?.images || [primaryImage]),
+    category: resolvedCategory,
+    features: (Array.isArray(apiProduct.features) && apiProduct.features.length > 0) ? apiProduct.features : (local?.features || []),
+    specifications,
     video: local?.video,
     videoPath: local?.videoPath,
     sequenceId: local?.sequenceId,
     sequenceFrameCount: local?.sequenceFrameCount,
     has3D: local?.has3D,
     hasVideo: local?.hasVideo,
-    featured: local?.featured ?? false,
+    featured: apiProduct.isFeatured ?? apiProduct.featured ?? local?.featured ?? false,
   };
 }
 
@@ -201,7 +262,11 @@ export async function submitEnquiry(
   payload: EnquiryPayload,
   baseUrl = API_BASE_URL || DEFAULT_ENQUIRY_API_URL
 ): Promise<EnquiryResponseData> {
-  const token = payload.turnstileToken || 'test-pass-token';
+  const token = payload.turnstileToken;
+  if (!token) {
+    throw new Error('Please complete the security verification.');
+  }
+
   const body = {
     name: payload.name.trim(),
     email: payload.email.trim(),
@@ -228,12 +293,26 @@ export async function submitEnquiry(
   const json = (await res.json()) as {
     data?: EnquiryResponseData;
     error?: { code: string; message: string };
+    message?: string;
+    success?: boolean;
+    reference?: string;
+    id?: string;
   };
 
-  if (!res.ok || !json.data) {
-    const errorMessage = json.error?.message || `Enquiry submission failed (${res.status})`;
+  if (!res.ok || (!json.data && !json.id)) {
+    const errorMessage = json.error?.message || json.message || `Enquiry submission failed (${res.status})`;
     throw new Error(errorMessage);
   }
 
-  return json.data;
+  const data = json.data || {
+    id: json.id || '',
+    reference: json.reference || json.id || '',
+    status: 'New',
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...data,
+    reference: data.reference || data.id,
+  };
 }
