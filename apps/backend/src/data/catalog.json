@@ -1,0 +1,1951 @@
+{
+  "meta": {
+    "syncedAt": "2026-09-24T15:18:35.959Z",
+    "productCount": 12,
+    "categoryCount": 6,
+    "source": "kitchen-bots-ecommerce"
+  },
+  "categories": [
+    {
+      "id": "collapsible-bbq",
+      "name": "Collapsible BBQ",
+      "headline": "Flat-Pack Performance. Zero Compromise.",
+      "intro": "The KitchenBots Collapsible BBQ range is engineered for people who demand professional-grade grilling without a permanent installation. Each unit folds completely flat in under 60 seconds, fits in the boot of any hatchback, and opens into a full-sized, high-heat cooking station.",
+      "technicalExplanation": "Constructed from precision-laser-cut mild steel with heat-resistant ceramic coating, our collapsible grills use an interlocking panel system that creates a rigid structural frame when open - without a single bolt. Internal airflow channels direct oxygen from the base through the charcoal bed to the cooking surface, achieving cooking temperatures of 250°C–400°C.",
+      "usageScenarios": [
+        "Backyard weekend BBQs and family gatherings",
+        "Rooftop and terrace cooking events",
+        "Camping, trekking, and beach cookouts",
+        "Catering events and outdoor food stalls",
+        "Commercial kitchen overflow capacity"
+      ],
+      "highlight": "Folds to 90mm flat. Sets up in under 60 seconds."
+    },
+    {
+      "id": "rocket-stoves",
+      "name": "Rocket Stoves",
+      "headline": "Maximum Heat. Minimum Fuel. Zero Smoke.",
+      "intro": "Rocket stoves are the most thermally efficient cooking technology ever designed for solid-fuel combustion. The KitchenBots Rocket Stove takes this concept to its engineering limit - delivering intense, consistent, low-smoke heat from a fraction of the wood or charcoal used by traditional open fires.",
+      "technicalExplanation": "Our rocket stoves use an L-shaped combustion chamber with a precision-engineered cross-section ratio. Preheated combustion air enters from the fuel feed, surrounds the burning material, and is directed vertically through the insulated riser. The result: secondary combustion of gases that would otherwise escape as smoke - a 60–75% improvement in thermal efficiency over open-fire cooking.",
+      "usageScenarios": [
+        "Off-grid outdoor cooking and jungle camping",
+        "Commercial tandoor and wok cooking stations",
+        "Agricultural and rural kitchen setups",
+        "Disaster relief and emergency field kitchens",
+        "Eco-conscious home outdoor cooking"
+      ],
+      "highlight": "Up to 75% less fuel than open fires. Rated to 1100°C."
+    },
+    {
+      "id": "automatic-bbq",
+      "name": "Automatic BBQ",
+      "headline": "Set It. Forget It. Serve Perfect Every Time.",
+      "intro": "The KitchenBots Automatic BBQ series introduces motorised rotation technology to Indian outdoor cooking. Dual-speed AC/DC motors keep multiple skewers at optimal distance from the charcoal bed - delivering uniform browning without manual attention.",
+      "technicalExplanation": "The motorised spit system operates on a 240V AC mains power with an optional 12V DC battery adapter for off-grid events. The rotation speed is engineered to create a continuous Maillard reaction across the entire surface of the food - eliminating hot spots and cold zones. Built entirely from 304-grade food-safe stainless steel with no painted internal surfaces.",
+      "usageScenarios": [
+        "Commercial restaurant rotisserie and shawarma counters",
+        "Event catering and banquet services",
+        "High-volume public cooking events",
+        "Professional outdoor kitchens",
+        "Wedding and hospitality catering"
+      ],
+      "highlight": "Feeds 20–30 people simultaneously. Food-grade SS throughout."
+    },
+    {
+      "id": "santa-maria",
+      "name": "Santa Maria Series",
+      "headline": "Argentinian Fire Mastery. Indian Engineering.",
+      "intro": "The Santa Maria Series is KitchenBots' flagship live-fire cooking system - inspired by the traditional Argentinian asado grill. A precision crank-wheel elevation mechanism lets the cook control cooking temperature by adjusting grate height above the fire, achieving results impossible with any other grill design.",
+      "technicalExplanation": "The elevation system uses a ratchet-lock wheel with 24 discrete positions across a 400mm height range. V-groove grates capture and redirect meat drip as flavour smoke rather than causing flare-ups. The main structure is constructed from heavy-gauge 3mm mild steel plate, stress-relieved by heat treatment after fabrication for maximum dimensional stability.",
+      "usageScenarios": [
+        "Centrepiece outdoor kitchen installation",
+        "Live-fire cooking demonstrations and restaurants",
+        "Large family gatherings and social events",
+        "Luxury catering and event hire",
+        "Serious home cook installations"
+      ],
+      "highlight": "Crank-wheel elevation. V-groove grates. 400mm height range."
+    },
+    {
+      "id": "suitcase-bbq",
+      "name": "Suitcase BBQ",
+      "headline": "The World's Most Portable Serious Grill.",
+      "intro": "The Suitcase BBQ is engineered for people who refuse to compromise on quality when cooking away from home. It folds to a slim 70–90mm profile with carry handles, and opens into a fully rigid BBQ station in under 30 seconds - no tools required.",
+      "technicalExplanation": "A proprietary dual-hinge folding system allows the entire unit - including the charcoal tray, cooking grate, and windshield panels - to collapse into a single flat case. The internal locking mechanism generates a structural rigidity equivalent to a fixed-base unit, distributing load evenly across the welded frame.",
+      "usageScenarios": [
+        "Adventure travel and road trips",
+        "Beach and riverside cookouts",
+        "Balcony and apartment terrace cooking",
+        "Picnics, parks, and campsite grilling",
+        "Gift for the serious outdoor cook"
+      ],
+      "highlight": "Folds to 70mm. Sets up in 30 seconds. No tools required."
+    },
+    {
+      "id": "accessories",
+      "name": "Accessories",
+      "headline": "The Right Tools for the Perfect Cook.",
+      "intro": "Every KitchenBots accessory is designed specifically to complement our grill systems. From heavy-duty grate brushes to stainless skewer sets and insulated carry covers - our accessories are built to the same standard as the grills themselves.",
+      "technicalExplanation": "KitchenBots accessories are manufactured from food-safe 304 stainless steel or premium heat-treated mild steel. All products are tested for compatibility with our full grill range. Where applicable, accessories carry the same heat-resistance certification as the main units.",
+      "usageScenarios": [
+        "Extending the functionality of an existing KitchenBots grill",
+        "Professional catering toolkit",
+        "Gifting and retail bundling",
+        "Replacement parts for extended product life"
+      ],
+      "highlight": "Engineered for KitchenBots. Compatible across the range."
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-1",
+      "sku": "KB-CBBQ-001",
+      "name": "Flip BBQ with Standard Base",
+      "category": "Collapsible BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Heavy-duty precision-engineered flip grill with an interlocking standard base. The dual-sided flip grate locks food securely for effortless 180° rotation without flare-ups or falling food.",
+      "description": "Heavy-duty precision-engineered flip grill with an interlocking standard base. The dual-sided flip grate locks food securely for effortless 180° rotation without flare-ups or falling food.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "collapsible-bbq",
+        "dual-sided-180°-flip-grate",
+        "solid-interlocking-base-frame",
+        "high-temp-powder-coated-steel",
+        "toolless-60-second-setup",
+        "removable-ash-tray",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-1-1",
+          "url": "/images/products/1_Visualise Files - Flip Base/Flip BBQ with Standard Base V1 2.png",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-1-2",
+          "url": "/images/products/1_Visualise Files - Flip Base/Flip BBQ with Standard Base V1 3.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-1-3",
+          "url": "/images/products/1_Visualise Files - Flip Base/Flip BBQ with Standard Base V1 4.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-1-4",
+          "url": "/images/products/1_Visualise Files - Flip Base/Flip BBQ with Standard Base V2.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-1-5",
+          "url": "/images/products/1_Visualise Files - Flip Base/Flip BBQ with Standard Base V3.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-1-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Heavy Gauge CR Steel & 304 Stainless Grates"
+        },
+        {
+          "id": "spec-prod-1-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "750 x 420 x 820 mm"
+        },
+        {
+          "id": "spec-prod-1-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "750 x 420 x 95 mm"
+        },
+        {
+          "id": "spec-prod-1-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "14.5 kg"
+        },
+        {
+          "id": "spec-prod-1-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "560 x 360 mm"
+        },
+        {
+          "id": "spec-prod-1-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Wood Briquettes"
+        },
+        {
+          "id": "spec-prod-1-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 900°C"
+        },
+        {
+          "id": "spec-prod-1-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 8-12 people"
+        },
+        {
+          "id": "spec-prod-1-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "VAR-001-NG",
+          "productId": "prod-1",
+          "sku": "KB-CBBQ-001-NG",
+          "name": "Commercial BBQ - Natural Gas",
+          "price": 13999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {
+            "fuelType": "Natural Gas"
+          }
+        },
+        {
+          "id": "VAR-001-LP",
+          "productId": "prod-1",
+          "sku": "KB-CBBQ-001-LP",
+          "name": "Commercial BBQ - LPG / Charcoal",
+          "price": 13999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {
+            "fuelType": "LPG"
+          }
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-2",
+      "sku": "KB-CBBQ-002",
+      "name": "Flip BBQ Height Adjustable",
+      "category": "Collapsible BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Commercial-grade flip grill mounted on a multi-tier height adjustable frame. Control searing intensity and radiant heat distance with precision notch settings while rotating both sides simultaneously.",
+      "description": "Commercial-grade flip grill mounted on a multi-tier height adjustable frame. Control searing intensity and radiant heat distance with precision notch settings while rotating both sides simultaneously.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "collapsible-bbq",
+        "4-level-height-adjustment",
+        "locking-dual-sided-flip-mechanism",
+        "high-temp-ceramic-coated-frame",
+        "reinforced-heavy-gauge-legs",
+        "rapid-charcoal-ash-release",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-2-1",
+          "url": "/images/products/2_Visualise Files - Flip Base Height Adjustable/Flip Height Adjustable Open Model Pint 3.png",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-2-2",
+          "url": "/images/products/2_Visualise Files - Flip Base Height Adjustable/Flip Height Adjustable Pinted 2.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-2-3",
+          "url": "/images/products/2_Visualise Files - Flip Base Height Adjustable/Flip Height Adjustable Pinted 3.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-2-4",
+          "url": "/images/products/2_Visualise Files - Flip Base Height Adjustable/Flip Height Adjustable Pinted 4.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-2-1",
+          "group": "General",
+          "name": "Material",
+          "value": "304 Stainless Steel & Heavy-Gauge Mild Steel"
+        },
+        {
+          "id": "spec-prod-2-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "820 x 460 x 960 mm"
+        },
+        {
+          "id": "spec-prod-2-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "820 x 460 x 110 mm"
+        },
+        {
+          "id": "spec-prod-2-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "17.8 kg"
+        },
+        {
+          "id": "spec-prod-2-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "600 x 380 mm"
+        },
+        {
+          "id": "spec-prod-2-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Hardwood"
+        },
+        {
+          "id": "spec-prod-2-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1000°C"
+        },
+        {
+          "id": "spec-prod-2-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 10-15 people"
+        },
+        {
+          "id": "spec-prod-2-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-2-std",
+          "productId": "prod-2",
+          "sku": "KB-CBBQ-002-STD",
+          "name": "Flip BBQ Height Adjustable - Standard",
+          "price": 16499,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-3",
+      "sku": "KB-CBBQ-003",
+      "name": "Collapsible BBQ Large (SS)",
+      "category": "Collapsible BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Full 304 food-grade stainless steel collapsible BBQ engineered for large volume events. Folds completely flat to 85mm without bolts or tools, delivering uncompromising commercial durability on the go.",
+      "description": "Full 304 food-grade stainless steel collapsible BBQ engineered for large volume events. Folds completely flat to 85mm without bolts or tools, delivering uncompromising commercial durability on the go.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "collapsible-bbq",
+        "100%-304-food-safe-stainless-steel",
+        "interchangeable-grill-&-hot-plate",
+        "laser-cut-venting-for-max-airflow",
+        "flat-pack-fold-in-45-seconds",
+        "includes-charcoal-chimney-starter",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-3-1",
+          "url": "/images/products/3_Visualise Files - Collapsible_BBQ/Collapasible Big with Grill Plate.png",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-3-2",
+          "url": "/images/products/3_Visualise Files - Collapsible_BBQ/Collapasible Big with Hot Plate.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-3-3",
+          "url": "/images/products/3_Visualise Files - Collapsible_BBQ/Coal Jug 3.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-3-4",
+          "url": "/images/products/3_Visualise Files - Collapsible_BBQ/Coal Jug 4.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-3-5",
+          "url": "/images/products/3_Visualise Files - Collapsible_BBQ/Untitled Project.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-3-1",
+          "group": "General",
+          "name": "Material",
+          "value": "304 Food-Grade Stainless Steel"
+        },
+        {
+          "id": "spec-prod-3-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "780 x 440 x 780 mm"
+        },
+        {
+          "id": "spec-prod-3-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "780 x 440 x 85 mm"
+        },
+        {
+          "id": "spec-prod-3-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "13.2 kg"
+        },
+        {
+          "id": "spec-prod-3-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "720 x 400 mm"
+        },
+        {
+          "id": "spec-prod-3-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Lump Wood"
+        },
+        {
+          "id": "spec-prod-3-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1100°C"
+        },
+        {
+          "id": "spec-prod-3-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 12-18 people"
+        },
+        {
+          "id": "spec-prod-3-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "2 Year Structural Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-3-std",
+          "productId": "prod-3",
+          "sku": "KB-CBBQ-003-STD",
+          "name": "Collapsible BBQ Large (SS) - Standard",
+          "price": 12499,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-4",
+      "sku": "KB-CBBQ-004",
+      "name": "Collapsible Flip Combo",
+      "category": "Collapsible BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "The pinnacle of mobile barbecue engineering: combines the boltless flat-pack collapsible chassis with a precision counterbalanced flip-grill head. Pack flat into your car trunk and cook like a pitmaster anywhere.",
+      "description": "The pinnacle of mobile barbecue engineering: combines the boltless flat-pack collapsible chassis with a precision counterbalanced flip-grill head. Pack flat into your car trunk and cook like a pitmaster anywhere.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "collapsible-bbq",
+        "integrated-flip-grate-mechanism",
+        "bolt-free-interlocking-panels",
+        "laser-cut-heat-shield-handles",
+        "compact-travel-footprint",
+        "adjustable-draft-vents",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-4-1",
+          "url": "/images/products/4_Visualise Files  - Collapsible_Flip/Collapsible BBQ and Flip 2.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-4-2",
+          "url": "/images/products/4_Visualise Files  - Collapsible_Flip/Collapsible BBQ and Flip 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-4-3",
+          "url": "/images/products/4_Visualise Files  - Collapsible_Flip/Collapsible BBQ and Flip 4.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-4-4",
+          "url": "/images/products/4_Visualise Files  - Collapsible_Flip/Collapsible BBQ and Flip 5.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-4-1",
+          "group": "General",
+          "name": "Material",
+          "value": "High-Grade Mild Steel & SS 304 Grates"
+        },
+        {
+          "id": "spec-prod-4-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "800 x 450 x 850 mm"
+        },
+        {
+          "id": "spec-prod-4-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "800 x 450 x 100 mm"
+        },
+        {
+          "id": "spec-prod-4-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "16.2 kg"
+        },
+        {
+          "id": "spec-prod-4-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "620 x 380 mm"
+        },
+        {
+          "id": "spec-prod-4-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Briquettes"
+        },
+        {
+          "id": "spec-prod-4-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 950°C"
+        },
+        {
+          "id": "spec-prod-4-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 10-14 people"
+        },
+        {
+          "id": "spec-prod-4-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-4-std",
+          "productId": "prod-4",
+          "sku": "KB-CBBQ-004-STD",
+          "name": "Collapsible Flip Combo - Standard",
+          "price": 18999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-5",
+      "sku": "KB-CBBQ-005",
+      "name": "Collapsible BBQ Small",
+      "category": "Collapsible BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Ultra-compact flat-pack barbecue designed for balcony cookouts, rooftop sundowners, and weekend picnics. Assembles in 30 seconds into an ultra-rigid steel charcoal grill.",
+      "description": "Ultra-compact flat-pack barbecue designed for balcony cookouts, rooftop sundowners, and weekend picnics. Assembles in 30 seconds into an ultra-rigid steel charcoal grill.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": false,
+      "tags": [
+        "collapsible-bbq",
+        "folds-to-60mm-ultra-slim",
+        "tool-free-30-second-assembly",
+        "high-temp-rust-proof-coating",
+        "internal-oxygen-flow-vents",
+        "lightweight-&-highly-portable",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-5-1",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 2.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-5-2",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-5-3",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 4.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-5-4",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 5.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-5-5",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 6.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        },
+        {
+          "id": "img-prod-5-6",
+          "url": "/images/products/5_Visualise Files  - Collapsible_BBQ Small/Collapsible BBQ Small - Paint Version 7.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 5
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-5-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Precision Laser-Cut Coated Steel"
+        },
+        {
+          "id": "spec-prod-5-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "480 x 320 x 420 mm"
+        },
+        {
+          "id": "spec-prod-5-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "480 x 320 x 60 mm"
+        },
+        {
+          "id": "spec-prod-5-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "6.8 kg"
+        },
+        {
+          "id": "spec-prod-5-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "440 x 300 mm"
+        },
+        {
+          "id": "spec-prod-5-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Wood"
+        },
+        {
+          "id": "spec-prod-5-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 800°C"
+        },
+        {
+          "id": "spec-prod-5-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 4-6 people"
+        },
+        {
+          "id": "spec-prod-5-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-5-std",
+          "productId": "prod-5",
+          "sku": "KB-CBBQ-005-STD",
+          "name": "Collapsible BBQ Small - Standard",
+          "price": 6499,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-6",
+      "sku": "KB-RS-006",
+      "name": "Rocket Stove 150MM",
+      "category": "Rocket Stoves",
+      "brand": "KitchenBots",
+      "shortDescription": "High-efficiency 150mm vertical vortex rocket stove. Achieves secondary gas combustion for virtually smokeless high-temperature flame using twigs, wood scraps, or charcoal.",
+      "description": "High-efficiency 150mm vertical vortex rocket stove. Achieves secondary gas combustion for virtually smokeless high-temperature flame using twigs, wood scraps, or charcoal.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "rocket-stoves",
+        "150mm-vertical-combustion-chimney",
+        "l-shaped-high-draft-airflow",
+        "cast-iron-pot-support-crosshead",
+        "insulated-dual-wall-chamber",
+        "uses-70%-less-wood-than-open-fires",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-6-1",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 2.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-6-2",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-6-3",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 4.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-6-4",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 6.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-6-5",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 7.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        },
+        {
+          "id": "img-prod-6-6",
+          "url": "/images/products/6_Visualise Files - Rocket Stove_150MM/Rocket Stove 150MM Painted Model 8.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 5
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-6-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Heavy Wall Structural Steel"
+        },
+        {
+          "id": "spec-prod-6-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "350 x 220 x 540 mm"
+        },
+        {
+          "id": "spec-prod-6-3",
+          "group": "General",
+          "name": "Weight",
+          "value": "8.2 kg"
+        },
+        {
+          "id": "spec-prod-6-4",
+          "group": "General",
+          "name": "Chimney Diameter",
+          "value": "150 mm"
+        },
+        {
+          "id": "spec-prod-6-5",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Twigs / Wood Branches / Charcoal / Biomass"
+        },
+        {
+          "id": "spec-prod-6-6",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1100°C"
+        },
+        {
+          "id": "spec-prod-6-7",
+          "group": "General",
+          "name": "Boil Time",
+          "value": "1L water in under 4 minutes"
+        },
+        {
+          "id": "spec-prod-6-8",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-6-std",
+          "productId": "prod-6",
+          "sku": "KB-RS-006-STD",
+          "name": "Rocket Stove 150MM - Standard",
+          "price": 4499,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-7",
+      "sku": "KB-RS-007",
+      "name": "Rocket Stove Collapsible",
+      "category": "Rocket Stoves",
+      "brand": "KitchenBots",
+      "shortDescription": "Modular flat-pack rocket stove for backpackers, trekkers, and overlanding expeditions. Assembles from flat laser-cut steel plates into a high-powered vortex stove in 40 seconds.",
+      "description": "Modular flat-pack rocket stove for backpackers, trekkers, and overlanding expeditions. Assembles from flat laser-cut steel plates into a high-powered vortex stove in 40 seconds.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": false,
+      "tags": [
+        "rocket-stoves",
+        "packs-100%-flat-to-35mm",
+        "interlocking-tab-&-slot-construction",
+        "universal-pot-cross-support",
+        "clean-low-smoke-combustion",
+        "fuel-scavenge-capable",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-7-1",
+          "url": "/images/products/7_Visualise Files - Rocket Stove_Collapsible/Rocket Stove Collapsible Small 2.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-7-2",
+          "url": "/images/products/7_Visualise Files - Rocket Stove_Collapsible/Rocket Stove Collapsible Small 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-7-3",
+          "url": "/images/products/7_Visualise Files - Rocket Stove_Collapsible/Rocket Stove Collapsible Small 4.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-7-4",
+          "url": "/images/products/7_Visualise Files - Rocket Stove_Collapsible/Rocket Stove Collapsible Small 5.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-7-5",
+          "url": "/images/products/7_Visualise Files - Rocket Stove_Collapsible/Rocket Stove Collapsible Small 6.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-7-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Laser-Cut Hardened Mild Steel"
+        },
+        {
+          "id": "spec-prod-7-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "260 x 180 x 380 mm"
+        },
+        {
+          "id": "spec-prod-7-3",
+          "group": "General",
+          "name": "Dimensions (Folded)",
+          "value": "380 x 260 x 35 mm"
+        },
+        {
+          "id": "spec-prod-7-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "4.5 kg"
+        },
+        {
+          "id": "spec-prod-7-5",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Dry Wood / Biomass / Pellets"
+        },
+        {
+          "id": "spec-prod-7-6",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1000°C"
+        },
+        {
+          "id": "spec-prod-7-7",
+          "group": "General",
+          "name": "Capacity",
+          "value": "Supports up to 20kg cookware"
+        },
+        {
+          "id": "spec-prod-7-8",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-7-std",
+          "productId": "prod-7",
+          "sku": "KB-RS-007-STD",
+          "name": "Rocket Stove Collapsible - Standard",
+          "price": 3999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-8",
+      "sku": "KB-ABBQ-008",
+      "name": "Automatic BBQ Rotisserie (SS)",
+      "category": "Automatic BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Commercial automated rotisserie grill engineered with food-grade 304 stainless steel and dual-speed synchronized motor drive. Continuous gear-driven skewer rotation ensures self-basting succulent meats and uniform char without burning.",
+      "description": "Commercial automated rotisserie grill engineered with food-grade 304 stainless steel and dual-speed synchronized motor drive. Continuous gear-driven skewer rotation ensures self-basting succulent meats and uniform char without burning.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "automatic-bbq",
+        "high-torque-dual-speed-gear-motor",
+        "synchronized-multi-skewer-gearbox",
+        "304-food-safe-stainless-steel-body",
+        "even-radiant-heat-distribution",
+        "operates-on-230v-ac-or-12v-dc-battery",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-8-1",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 2.png",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-8-2",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 3.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-8-3",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 4.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-8-4",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 5.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        },
+        {
+          "id": "img-prod-8-5",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 6.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 4
+        },
+        {
+          "id": "img-prod-8-6",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ SS Model 7.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 5
+        },
+        {
+          "id": "img-prod-8-7",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ Paint Model V2.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 6
+        },
+        {
+          "id": "img-prod-8-8",
+          "url": "/images/products/8_Visualise Renders  - Automatic BBQ/Automatic BBQ Paint Model.png",
+          "type": "image",
+          "isPrimary": false,
+          "order": 7
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-8-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Full 304 Food-Grade Stainless Steel"
+        },
+        {
+          "id": "spec-prod-8-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "880 x 480 x 620 mm"
+        },
+        {
+          "id": "spec-prod-8-3",
+          "group": "General",
+          "name": "Weight",
+          "value": "21.5 kg"
+        },
+        {
+          "id": "spec-prod-8-4",
+          "group": "General",
+          "name": "Motor Rating",
+          "value": "15W Synchronous High-Torque"
+        },
+        {
+          "id": "spec-prod-8-5",
+          "group": "General",
+          "name": "Skewer Capacity",
+          "value": "Up to 9 simultaneous skewers"
+        },
+        {
+          "id": "spec-prod-8-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal Bed"
+        },
+        {
+          "id": "spec-prod-8-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1000°C"
+        },
+        {
+          "id": "spec-prod-8-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 15-25 people"
+        },
+        {
+          "id": "spec-prod-8-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Motor & Frame Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-8-std",
+          "productId": "prod-8",
+          "sku": "KB-ABBQ-008-STD",
+          "name": "Automatic BBQ Rotisserie (SS) - Standard",
+          "price": 21999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-9",
+      "sku": "KB-SM-009",
+      "name": "Santa Maria Grill Medium",
+      "category": "Santa Maria Series",
+      "brand": "KitchenBots",
+      "shortDescription": "Traditional Argentinian live-fire cooking system equipped with an engineering-grade crank wheel elevation system. Infinite height control lets pitmasters adjust the grate from intense sear to gentle smoke above glowing wood coals.",
+      "description": "Traditional Argentinian live-fire cooking system equipped with an engineering-grade crank wheel elevation system. Infinite height control lets pitmasters adjust the grate from intense sear to gentle smoke above glowing wood coals.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "santa-maria-series",
+        "precision-crank-wheel-&-ratchet-lock",
+        "400mm-height-range-for-thermal-control",
+        "v-groove-grate-with-drip-capture-trough",
+        "heavy-3mm-firebox-construction",
+        "caster-wheels-for-mobility",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-9-1",
+          "url": "/images/products/9_Visualise Files -Santa Maria Grill Medium/SantaMaria BBQ Meduim- Paint Model 1.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-9-2",
+          "url": "/images/products/9_Visualise Files -Santa Maria Grill Medium/SantaMaria BBQ Meduim- Paint Model 2.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-9-3",
+          "url": "/images/products/9_Visualise Files -Santa Maria Grill Medium/SantaMaria BBQ Meduim- Paint Model 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-9-1",
+          "group": "General",
+          "name": "Material",
+          "value": "3mm Heavy-Gauge Plate & 304 Stainless Grates"
+        },
+        {
+          "id": "spec-prod-9-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "1050 x 600 x 1450 mm"
+        },
+        {
+          "id": "spec-prod-9-3",
+          "group": "General",
+          "name": "Weight",
+          "value": "54 kg"
+        },
+        {
+          "id": "spec-prod-9-4",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "850 x 500 mm"
+        },
+        {
+          "id": "spec-prod-9-5",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Hardwood Logs / Lump Charcoal"
+        },
+        {
+          "id": "spec-prod-9-6",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1200°C"
+        },
+        {
+          "id": "spec-prod-9-7",
+          "group": "General",
+          "name": "Elevation Travel",
+          "value": "400 mm continuous"
+        },
+        {
+          "id": "spec-prod-9-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 20-35 people"
+        },
+        {
+          "id": "spec-prod-9-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "3 Year Structural Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-9-std",
+          "productId": "prod-9",
+          "sku": "KB-SM-009-STD",
+          "name": "Santa Maria Grill Medium - Standard",
+          "price": 48000,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-10",
+      "sku": "KB-SM-010",
+      "name": "Santa Maria Grill Small",
+      "category": "Santa Maria Series",
+      "brand": "KitchenBots",
+      "shortDescription": "Compact version of our iconic Santa Maria grill. Designed for home patios and garden terraces, featuring the same counterweighted crank wheel and V-groove grates as commercial units.",
+      "description": "Compact version of our iconic Santa Maria grill. Designed for home patios and garden terraces, featuring the same counterweighted crank wheel and V-groove grates as commercial units.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": false,
+      "tags": [
+        "santa-maria-series",
+        "smooth-handwheel-elevation",
+        "v-groove-stainless-steel-grate",
+        "removable-ash-pan",
+        "heavy-duty-lockable-casters",
+        "compact-patio-footprint",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-10-1",
+          "url": "/images/products/10_Visualise Files -Santa Maria Grill Small/SantaMaria BBQ Meduim- Paint Model 2.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-10-2",
+          "url": "/images/products/10_Visualise Files -Santa Maria Grill Small/SantaMaria BBQ Meduim- Paint Model 1.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-10-3",
+          "url": "/images/products/10_Visualise Files -Santa Maria Grill Small/SantaMaria BBQ Meduim- Paint Model 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-10-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Heavy Gauge Heat-Coated Steel & SS Grate"
+        },
+        {
+          "id": "spec-prod-10-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "800 x 520 x 1320 mm"
+        },
+        {
+          "id": "spec-prod-10-3",
+          "group": "General",
+          "name": "Weight",
+          "value": "38 kg"
+        },
+        {
+          "id": "spec-prod-10-4",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "650 x 420 mm"
+        },
+        {
+          "id": "spec-prod-10-5",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Hardwood / Charcoal"
+        },
+        {
+          "id": "spec-prod-10-6",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 1100°C"
+        },
+        {
+          "id": "spec-prod-10-7",
+          "group": "General",
+          "name": "Elevation Travel",
+          "value": "350 mm continuous"
+        },
+        {
+          "id": "spec-prod-10-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 10-18 people"
+        },
+        {
+          "id": "spec-prod-10-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "2 Year Structural Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-10-std",
+          "productId": "prod-10",
+          "sku": "KB-SM-010-STD",
+          "name": "Santa Maria Grill Small - Standard",
+          "price": 34999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-11",
+      "sku": "KB-SBBQ-011",
+      "name": "Suitcase BBQ Large",
+      "category": "Suitcase BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Full-sized portable grill engineered inside an ergonomic briefcase format. Unlatches and folds out into an ultra-stable cooking station with integrated side vents and charcoal rack in 20 seconds.",
+      "description": "Full-sized portable grill engineered inside an ergonomic briefcase format. Unlatches and folds out into an ultra-stable cooking station with integrated side vents and charcoal rack in 20 seconds.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": true,
+      "tags": [
+        "suitcase-bbq",
+        "dual-latch-suitcase-enclosure",
+        "integrated-heat-insulated-carry-handle",
+        "ventilated-elevated-charcoal-bed",
+        "sets-up-in-20-seconds-with-no-tools",
+        "easy-clean-slide-ash-catch",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-11-1",
+          "url": "/images/products/11_Visualise Files - Suitcase BBQ Big/1_Suitcase BBQ Big Painted 4.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-11-2",
+          "url": "/images/products/11_Visualise Files - Suitcase BBQ Big/2_Suitcase BBQ Big Painted 5.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-11-3",
+          "url": "/images/products/11_Visualise Files - Suitcase BBQ Big/3_Suitcase BBQ Big Painted 2.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-11-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Cold-Rolled Steel with 800°C Thermal Coating"
+        },
+        {
+          "id": "spec-prod-11-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "680 x 360 x 580 mm"
+        },
+        {
+          "id": "spec-prod-11-3",
+          "group": "General",
+          "name": "Dimensions (Closed Briefcase)",
+          "value": "680 x 360 x 95 mm"
+        },
+        {
+          "id": "spec-prod-11-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "9.8 kg"
+        },
+        {
+          "id": "spec-prod-11-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "600 x 320 mm"
+        },
+        {
+          "id": "spec-prod-11-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal / Wood Briquettes"
+        },
+        {
+          "id": "spec-prod-11-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 850°C"
+        },
+        {
+          "id": "spec-prod-11-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 8-12 people"
+        },
+        {
+          "id": "spec-prod-11-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-11-std",
+          "productId": "prod-11",
+          "sku": "KB-SBBQ-011-STD",
+          "name": "Suitcase BBQ Large - Standard",
+          "price": 9999,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "prod-12",
+      "sku": "KB-SBBQ-012",
+      "name": "Suitcase BBQ Compact",
+      "category": "Suitcase BBQ",
+      "brand": "KitchenBots",
+      "shortDescription": "Ultra-portable briefcase grill built for quick tailgating, solo camping, and small family cookouts. Slim 75mm folded profile stores easily under car seats or in closet shelves.",
+      "description": "Ultra-portable briefcase grill built for quick tailgating, solo camping, and small family cookouts. Slim 75mm folded profile stores easily under car seats or in closet shelves.",
+      "status": "Active",
+      "visibility": "Public",
+      "isFeatured": false,
+      "tags": [
+        "suitcase-bbq",
+        "ultra-slim-75mm-closed-profile",
+        "fold-out-solid-steel-kickstand-legs",
+        "food-grade-chrome-plated-cooking-grid",
+        "ergonomic-carry-handle",
+        "rapid-15-second-deployment",
+        "kitchenbots"
+      ],
+      "images": [
+        {
+          "id": "img-prod-12-1",
+          "url": "/images/products/12_Visualise Files - Suitcase BBQ Small/Suitcase BBQ Small - Paint Model.jpg",
+          "type": "image",
+          "isPrimary": true,
+          "order": 0
+        },
+        {
+          "id": "img-prod-12-2",
+          "url": "/images/products/12_Visualise Files - Suitcase BBQ Small/Suitcase BBQ Small - Paint Model 2.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 1
+        },
+        {
+          "id": "img-prod-12-3",
+          "url": "/images/products/12_Visualise Files - Suitcase BBQ Small/Suitcase BBQ Small - Paint Model 3.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 2
+        },
+        {
+          "id": "img-prod-12-4",
+          "url": "/images/products/12_Visualise Files - Suitcase BBQ Small/Suitcase BBQ Small - Paint Model 4.jpg",
+          "type": "image",
+          "isPrimary": false,
+          "order": 3
+        }
+      ],
+      "specifications": [
+        {
+          "id": "spec-prod-12-1",
+          "group": "General",
+          "name": "Material",
+          "value": "Coated Heavy Steel Plate"
+        },
+        {
+          "id": "spec-prod-12-2",
+          "group": "General",
+          "name": "Dimensions (Assembled)",
+          "value": "460 x 280 x 420 mm"
+        },
+        {
+          "id": "spec-prod-12-3",
+          "group": "General",
+          "name": "Dimensions (Closed Briefcase)",
+          "value": "460 x 280 x 75 mm"
+        },
+        {
+          "id": "spec-prod-12-4",
+          "group": "General",
+          "name": "Weight",
+          "value": "5.2 kg"
+        },
+        {
+          "id": "spec-prod-12-5",
+          "group": "General",
+          "name": "Cooking Area",
+          "value": "400 x 260 mm"
+        },
+        {
+          "id": "spec-prod-12-6",
+          "group": "General",
+          "name": "Fuel Type",
+          "value": "Charcoal"
+        },
+        {
+          "id": "spec-prod-12-7",
+          "group": "General",
+          "name": "Heat Resistance",
+          "value": "Up to 800°C"
+        },
+        {
+          "id": "spec-prod-12-8",
+          "group": "General",
+          "name": "Cooking Capacity",
+          "value": "Feeds 3-5 people"
+        },
+        {
+          "id": "spec-prod-12-9",
+          "group": "General",
+          "name": "Warranty",
+          "value": "1 Year Manufacturer Warranty"
+        }
+      ],
+      "variants": [
+        {
+          "id": "var-prod-12-std",
+          "productId": "prod-12",
+          "sku": "KB-SBBQ-012-STD",
+          "name": "Suitcase BBQ Compact - Standard",
+          "price": 5499,
+          "status": "Active",
+          "images": [],
+          "specifications": [],
+          "weightUnit": "kg",
+          "attributes": {}
+        }
+      ],
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "updatedAt": "2026-09-23T00:00:00.000Z"
+    }
+  ],
+  "inventory": [
+    {
+      "id": "INV-001",
+      "variantId": "VAR-001-NG",
+      "warehouseId": "WH-001",
+      "currentStock": 45,
+      "reservedStock": 5,
+      "availableStock": 40,
+      "minimumStock": 10,
+      "maximumStock": 100,
+      "reorderLevel": 15,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-002",
+      "variantId": "VAR-001-LP",
+      "warehouseId": "WH-001",
+      "currentStock": 25,
+      "reservedStock": 2,
+      "availableStock": 23,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 10,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-2",
+      "variantId": "var-prod-2-std",
+      "warehouseId": "WH-001",
+      "currentStock": 17,
+      "reservedStock": 1,
+      "availableStock": 16,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-2",
+      "variantId": "var-prod-2-std",
+      "warehouseId": "WH-002",
+      "currentStock": 8,
+      "reservedStock": 0,
+      "availableStock": 8,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-3",
+      "variantId": "var-prod-3-std",
+      "warehouseId": "WH-001",
+      "currentStock": 24,
+      "reservedStock": 1,
+      "availableStock": 23,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-3",
+      "variantId": "var-prod-3-std",
+      "warehouseId": "WH-002",
+      "currentStock": 11,
+      "reservedStock": 0,
+      "availableStock": 11,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-4",
+      "variantId": "var-prod-4-std",
+      "warehouseId": "WH-001",
+      "currentStock": 31,
+      "reservedStock": 1,
+      "availableStock": 30,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-4",
+      "variantId": "var-prod-4-std",
+      "warehouseId": "WH-002",
+      "currentStock": 14,
+      "reservedStock": 0,
+      "availableStock": 14,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-5",
+      "variantId": "var-prod-5-std",
+      "warehouseId": "WH-001",
+      "currentStock": 38,
+      "reservedStock": 1,
+      "availableStock": 37,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-5",
+      "variantId": "var-prod-5-std",
+      "warehouseId": "WH-002",
+      "currentStock": 17,
+      "reservedStock": 0,
+      "availableStock": 17,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-6",
+      "variantId": "var-prod-6-std",
+      "warehouseId": "WH-001",
+      "currentStock": 15,
+      "reservedStock": 1,
+      "availableStock": 14,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-6",
+      "variantId": "var-prod-6-std",
+      "warehouseId": "WH-002",
+      "currentStock": 20,
+      "reservedStock": 0,
+      "availableStock": 20,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-7",
+      "variantId": "var-prod-7-std",
+      "warehouseId": "WH-001",
+      "currentStock": 22,
+      "reservedStock": 1,
+      "availableStock": 21,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-7",
+      "variantId": "var-prod-7-std",
+      "warehouseId": "WH-002",
+      "currentStock": 23,
+      "reservedStock": 0,
+      "availableStock": 23,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-8",
+      "variantId": "var-prod-8-std",
+      "warehouseId": "WH-001",
+      "currentStock": 29,
+      "reservedStock": 1,
+      "availableStock": 28,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-8",
+      "variantId": "var-prod-8-std",
+      "warehouseId": "WH-002",
+      "currentStock": 6,
+      "reservedStock": 0,
+      "availableStock": 6,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-9",
+      "variantId": "var-prod-9-std",
+      "warehouseId": "WH-001",
+      "currentStock": 36,
+      "reservedStock": 1,
+      "availableStock": 35,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-9",
+      "variantId": "var-prod-9-std",
+      "warehouseId": "WH-002",
+      "currentStock": 9,
+      "reservedStock": 0,
+      "availableStock": 9,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-10",
+      "variantId": "var-prod-10-std",
+      "warehouseId": "WH-001",
+      "currentStock": 13,
+      "reservedStock": 1,
+      "availableStock": 12,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-10",
+      "variantId": "var-prod-10-std",
+      "warehouseId": "WH-002",
+      "currentStock": 12,
+      "reservedStock": 0,
+      "availableStock": 12,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-11",
+      "variantId": "var-prod-11-std",
+      "warehouseId": "WH-001",
+      "currentStock": 20,
+      "reservedStock": 1,
+      "availableStock": 19,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-11",
+      "variantId": "var-prod-11-std",
+      "warehouseId": "WH-002",
+      "currentStock": 15,
+      "reservedStock": 0,
+      "availableStock": 15,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-MDC-prod-12",
+      "variantId": "var-prod-12-std",
+      "warehouseId": "WH-001",
+      "currentStock": 27,
+      "reservedStock": 1,
+      "availableStock": 26,
+      "minimumStock": 5,
+      "maximumStock": 50,
+      "reorderLevel": 8,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "INV-NRH-prod-12",
+      "variantId": "var-prod-12-std",
+      "warehouseId": "WH-002",
+      "currentStock": 18,
+      "reservedStock": 0,
+      "availableStock": 18,
+      "minimumStock": 3,
+      "maximumStock": 30,
+      "reorderLevel": 5,
+      "status": "In_Stock",
+      "lastCountAt": "2026-09-23T00:00:00.000Z"
+    }
+  ]
+}
