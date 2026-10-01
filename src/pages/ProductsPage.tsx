@@ -106,7 +106,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Unified Header & Catalog Controls (Seamless, no gap below navbar) */}
-      <section className="border-b border-[#E2E8F0] bg-white pb-8 pt-24 sm:pt-28">
+      <section className="border-b border-[#E2E8F0] bg-white pb-8 pt-20 sm:pt-24">
         <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
           <nav className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#94A3B8]" aria-label="Breadcrumb">
             <button className="hover:text-[#111827]" onClick={() => onNavigate?.('home')}>Home</button>

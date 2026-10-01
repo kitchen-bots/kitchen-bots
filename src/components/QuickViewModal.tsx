@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, ShoppingCart, Minus, Plus, ArrowRight, Camera, RotateCw, Film, Shield, Truck } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, ShoppingCart, Minus, Plus, ArrowRight, Camera, RotateCw, Film, Shield, Truck, ZoomIn } from 'lucide-react';
 import type { Product } from '../types/product';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
@@ -37,10 +37,55 @@ export default function QuickViewModal({
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [prevProductId, setPrevProductId] = useState(product?.id);
 
+  // Smooth hover zoom state and refs for Quick View photo viewer
+  const [isZoomed, setIsZoomed] = useState(false);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  const updateZoomPosition = useCallback((clientX: number, clientY: number) => {
+    if (!zoomContainerRef.current || !zoomImageRef.current) return;
+    const rect = zoomContainerRef.current.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+
+    zoomImageRef.current.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const { clientX, clientY } = e;
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    rafIdRef.current = requestAnimationFrame(() => {
+      updateZoomPosition(clientX, clientY);
+    });
+  }, [updateZoomPosition]);
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    updateZoomPosition(e.clientX, e.clientY);
+    setIsZoomed(true);
+  }, [updateZoomPosition]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    setIsZoomed(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, []);
+
   if (product && product.id !== prevProductId) {
     setPrevProductId(product.id);
     setActiveMediaTab('photos');
     setActiveImageIdx(0);
+    setIsZoomed(false);
   }
 
   const { addToCart, items, updateQuantity } = useCart();
@@ -116,7 +161,10 @@ export default function QuickViewModal({
                 id="quick-tab-photos"
                 aria-selected={activeMediaTab === 'photos'}
                 aria-controls="quick-panel-photos"
-                onClick={() => setActiveMediaTab('photos')}
+                onClick={() => {
+                  setActiveMediaTab('photos');
+                  setIsZoomed(false);
+                }}
                 className={cn(
                   'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                   activeMediaTab === 'photos'
@@ -134,7 +182,10 @@ export default function QuickViewModal({
                   id="quick-tab-360"
                   aria-selected={activeMediaTab === '360'}
                   aria-controls="quick-panel-360"
-                  onClick={() => setActiveMediaTab('360')}
+                  onClick={() => {
+                    setActiveMediaTab('360');
+                    setIsZoomed(false);
+                  }}
                   className={cn(
                     'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                     activeMediaTab === '360'
@@ -153,7 +204,10 @@ export default function QuickViewModal({
                   id="quick-tab-video"
                   aria-selected={activeMediaTab === 'video'}
                   aria-controls="quick-panel-video"
-                  onClick={() => setActiveMediaTab('video')}
+                  onClick={() => {
+                    setActiveMediaTab('video');
+                    setIsZoomed(false);
+                  }}
                   className={cn(
                     'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all select-none',
                     activeMediaTab === 'video'
@@ -172,15 +226,40 @@ export default function QuickViewModal({
                 id="quick-panel-photos"
                 role="tabpanel"
                 aria-labelledby="quick-tab-photos"
-                className={cn('h-full w-full flex items-center justify-center', activeMediaTab === 'photos' ? 'block' : 'hidden')}
+                ref={zoomContainerRef}
+                onMouseEnter={handleMouseEnter}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                className={cn(
+                  'relative h-full w-full flex items-center justify-center overflow-hidden cursor-zoom-in select-none',
+                  activeMediaTab === 'photos' ? 'block' : 'hidden'
+                )}
               >
-                <ProductImage
-                  src={images[activeImageIdx]}
-                  alt={product.name}
-                  loading="eager"
-                  fetchPriority="high"
-                  className="h-full w-full object-contain"
-                />
+                <div
+                  ref={zoomImageRef}
+                  className="h-full w-full will-change-transform transition-transform duration-150 ease-out flex items-center justify-center"
+                  style={{
+                    transformOrigin: '50% 50%',
+                    transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
+                  }}
+                >
+                  <ProductImage
+                    src={images[activeImageIdx]}
+                    alt={product.name}
+                    loading="eager"
+                    fetchPriority="high"
+                    className="h-full w-full object-contain pointer-events-none"
+                  />
+                </div>
+
+                <div
+                  className={`pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/75 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-md shadow-sm transition-opacity duration-150 ${
+                    isZoomed ? 'opacity-0' : 'opacity-85'
+                  }`}
+                >
+                  <ZoomIn size={12} />
+                  <span>Hover to zoom</span>
+                </div>
               </div>
 
               {product.sequenceId && (
@@ -190,13 +269,15 @@ export default function QuickViewModal({
                   aria-labelledby="quick-tab-360"
                   className={cn('h-full w-full', activeMediaTab === '360' ? 'block' : 'hidden')}
                 >
-                  <Product360Viewer
-                    sequenceId={product.sequenceId}
-                    frameCount={product.sequenceFrameCount || 40}
-                    productName={product.name}
-                    posterImage={product.image}
-                    className="h-full w-full border-0"
-                  />
+                  {activeMediaTab === '360' && (
+                    <Product360Viewer
+                      sequenceId={product.sequenceId}
+                      frameCount={product.sequenceFrameCount || 40}
+                      productName={product.name}
+                      posterImage={product.image}
+                      className="h-full w-full border-0"
+                    />
+                  )}
                 </div>
               )}
 
@@ -227,6 +308,7 @@ export default function QuickViewModal({
                     onClick={() => {
                       setActiveImageIdx(i);
                       setActiveMediaTab('photos');
+                      setIsZoomed(false);
                     }}
                     title={`View photo ${i + 1}`}
                     className={cn(

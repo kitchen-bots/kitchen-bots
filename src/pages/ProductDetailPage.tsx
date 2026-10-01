@@ -294,7 +294,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const quantityInCart = cartItem?.quantity ?? 0;
 
   return (
-    <section className="min-h-screen overflow-x-hidden bg-[#FAFAFA] pb-24 pt-24 sm:pt-28">
+    <section className="min-h-screen overflow-x-hidden bg-[#FAFAFA] pb-24 pt-20 sm:pt-24">
       <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
         {error && (
           <div className="mb-6 flex items-center justify-between rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-[#991B1B]">
@@ -465,13 +465,15 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                   aria-labelledby="media-tab-360"
                   className={cn('h-full w-full', activeMediaMode === '360' ? 'block' : 'hidden')}
                 >
-                  <Product360Viewer
-                    sequenceId={product.sequenceId}
-                    frameCount={product.sequenceFrameCount || 40}
-                    productName={product.name}
-                    posterImage={product.image}
-                    className="h-full w-full border-0"
-                  />
+                  {activeMediaMode === '360' && (
+                    <Product360Viewer
+                      sequenceId={product.sequenceId}
+                      frameCount={product.sequenceFrameCount || 40}
+                      productName={product.name}
+                      posterImage={product.image}
+                      className="h-full w-full border-0"
+                    />
+                  )}
                 </div>
               )}
 

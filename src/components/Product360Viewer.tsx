@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { RotateCw, Loader2, Sparkles } from 'lucide-react';
+import { RotateCw, Loader2, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { preloadFrames } from '../modules/media-loader';
 import { renderFrame, wrapIndex, shortestFrameDistance, type DragState } from '../modules/sequence-viewer';
 import { cn } from '../lib/utils';
@@ -36,10 +36,18 @@ export default function Product360Viewer({
     frameRef.current = currentFrame;
   }, [currentFrame]);
 
-  // Draw current frame on canvas
+  // Draw current frame on canvas with automatic dimension fallback
   const draw = useCallback((index: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (canvas.width === 0 || canvas.height === 0) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (rect.width > 0 && rect.height > 0) {
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+      }
+    }
     renderFrame(canvas, imagesRef.current, index);
   }, []);
 
@@ -88,6 +96,7 @@ export default function Product360Viewer({
   // Adjust canvas size for crisp HiDPI rendering
   useEffect(() => {
     const canvas = canvasRef.current;
+    const container = containerRef.current;
     if (!canvas) return;
 
     const resizeObserver = new ResizeObserver(() => {
@@ -101,6 +110,7 @@ export default function Product360Viewer({
     });
 
     resizeObserver.observe(canvas);
+    if (container) resizeObserver.observe(container);
     return () => resizeObserver.disconnect();
   }, [draw]);
 
@@ -275,6 +285,39 @@ export default function Product360Viewer({
         )}
         <span className="text-[#94A3B8] font-medium">({currentFrame + 1}/{frameCount})</span>
       </button>
+
+      {/* Manual Step Controls (Bottom Right) */}
+      <div
+        className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-xl bg-white/95 p-1 shadow-sm backdrop-blur-md border border-[#E2E8F0]/80"
+        data-no-drag="true"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setHasInteracted(true);
+            setCurrentFrame((prev) => wrapIndex(prev - 2, frameCount));
+          }}
+          title="Rotate left"
+          aria-label="Rotate left"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#64748B] hover:text-[#C2410C] hover:bg-[#FFF7ED] transition-colors cursor-pointer active:scale-90"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <div className="h-3.5 w-px bg-[#E2E8F0]" />
+        <button
+          type="button"
+          onClick={() => {
+            setHasInteracted(true);
+            setCurrentFrame((prev) => wrapIndex(prev + 2, frameCount));
+          }}
+          title="Rotate right"
+          aria-label="Rotate right"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#64748B] hover:text-[#C2410C] hover:bg-[#FFF7ED] transition-colors cursor-pointer active:scale-90"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
     </div>
   );
 }

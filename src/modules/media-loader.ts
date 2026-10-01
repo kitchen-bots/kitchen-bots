@@ -33,8 +33,9 @@ export async function preloadFrames(
     const loadPromise = (async () => {
         const images: HTMLImageElement[] = new Array(frameCount);
 
+        const encodedId = encodeURIComponent(productId);
         const makeUrl = (i: number) =>
-            getMediaUrl(`/3d-assets/sequences/${productId}/${String(i).padStart(3, '0')}.webp`);
+            getMediaUrl(`/3d-assets/sequences/${encodedId}/${String(i).padStart(3, '0')}.webp`);
 
         // Load first `priorityCount` frames synchronously (await all at once)
         const priorityPromises = Array.from({ length: Math.min(priorityCount, frameCount) }, (_, i) =>
