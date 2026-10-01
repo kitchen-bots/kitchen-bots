@@ -41,3 +41,7 @@ public/images/redesign
 public/images/redesign/
 public/videos
 public/videos/
+
+# Build caches & Agent configs
+*.tsbuildinfo
+.agents/

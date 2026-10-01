@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { getPayload } from 'payload';
 import config from '../payload.config';
 import fs from 'fs';
@@ -15,7 +16,7 @@ async function seed() {
   console.log('🌱 Starting Kitchen Bots catalog seed...');
 
   // 1. Seed Categories
-  const categoryMap = new Map<string, string>(); // slug -> id
+  const categoryMap = new Map<string, number>(); // slug -> id
   for (const cat of catalog.categories) {
     const slug = cat.id;
     const existing = await payload.find({
@@ -24,9 +25,9 @@ async function seed() {
       limit: 1,
     });
 
-    let catId: string;
+    let catId: number;
     if (existing.docs.length > 0) {
-      catId = existing.docs[0].id as string;
+      catId = Number(existing.docs[0].id);
       console.log(`✓ Category "${cat.name}" already exists (${catId})`);
     } else {
       const created = await payload.create({
@@ -37,7 +38,7 @@ async function seed() {
           description: cat.intro || cat.headline,
         },
       });
-      catId = created.id as string;
+      catId = Number(created.id);
       console.log(`+ Created Category "${cat.name}" (${catId})`);
     }
     categoryMap.set(slug, catId);

@@ -18,6 +18,11 @@ import { Media } from './collections/Media';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+const rawDbUri = process.env.DATABASE_URI || 'postgresql://postgres:postgres@127.0.0.1:5432/kitchen_bots';
+const isRemoteDb = rawDbUri.includes('supabase.com') || rawDbUri.includes('pooler') || rawDbUri.includes('sslmode=');
+// Strip sslmode from URI string so pg doesn't conflict with our ssl config object
+const connectionString = isRemoteDb ? rawDbUri.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/\?$/, '') : rawDbUri;
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -43,8 +48,10 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URI || 'postgresql://postgres:postgres@127.0.0.1:5432/kitchen_bots',
+      connectionString,
+      ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
     },
+    disableCreateDatabase: true,
   }),
   plugins: [
     s3Storage({
