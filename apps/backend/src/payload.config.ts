@@ -1,0 +1,65 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { buildConfig } from 'payload';
+import { postgresAdapter } from '@payloadcms/db-postgres';
+import { lexicalEditor } from '@payloadcms/richtext-lexical';
+import { s3Storage } from '@payloadcms/storage-s3';
+
+import { Users } from './collections/Users';
+import { Categories } from './collections/Categories';
+import { Products } from './collections/Products';
+import { Orders } from './collections/Orders';
+import { Quotes } from './collections/Quotes';
+import { Enquiries } from './collections/Enquiries';
+import { Services } from './collections/Services';
+import { Documents } from './collections/Documents';
+import { Media } from './collections/Media';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+
+export default buildConfig({
+  admin: {
+    user: Users.slug,
+    meta: {
+      titleSuffix: '- Kitchen Bots Admin',
+    },
+  },
+  collections: [
+    Users,
+    Categories,
+    Products,
+    Orders,
+    Quotes,
+    Enquiries,
+    Services,
+    Documents,
+    Media,
+  ],
+  editor: lexicalEditor(),
+  secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
+  typescript: {
+    outputFile: path.resolve(dirname, 'payload-types.ts'),
+  },
+  db: postgresAdapter({
+    pool: {
+      connectionString: process.env.DATABASE_URI || 'postgresql://postgres:postgres@127.0.0.1:5432/kitchen_bots',
+    },
+  }),
+  plugins: [
+    s3Storage({
+      collections: {
+        media: true,
+      },
+      bucket: process.env.R2_BUCKET_NAME || 'kitchen-bots-media',
+      config: {
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+        },
+        region: 'auto',
+        endpoint: process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
+      },
+    }),
+  ],
+});
