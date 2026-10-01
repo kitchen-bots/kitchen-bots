@@ -245,7 +245,7 @@ export default function QuickViewModal({
             </div>
 
             {/* Media Stage */}
-            <div className="relative aspect-square max-h-[380px] sm:max-h-[420px] w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-xs mx-auto flex items-center justify-center">
+            <div className="relative aspect-[4/3] max-h-[340px] sm:max-h-[380px] w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-xs mx-auto flex items-center justify-center">
               <div
                 id="quick-panel-photos"
                 role="tabpanel"

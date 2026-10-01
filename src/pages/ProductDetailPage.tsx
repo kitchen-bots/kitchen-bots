@@ -357,9 +357,9 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
         </div>
 
         {/* Main Grid: Left Stage (Media), Right Stage (Product Info) */}
-        <div className="grid gap-10 lg:grid-cols-12 xl:gap-16">
-          {/* Left Column: Media Stage (7 cols) */}
-          <div className="flex flex-col lg:col-span-7">
+        <div className="grid gap-10 lg:grid-cols-12 xl:gap-14 items-start">
+          {/* Left Column: Media Stage (6 cols) */}
+          <div className="flex flex-col lg:col-span-6">
             {/* Media Mode Switcher Tabs */}
             <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Product Media Options">
               <button
@@ -391,7 +391,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     'flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all select-none',
                     activeMediaMode === '360'
                       ? 'bg-[#C2410C] text-white shadow-md shadow-[#C2410C]/20 border border-[#C2410C]'
-                      : 'bg-white text-[#475569] border border-[#CBD5E1] hover:bg-[#FFF7ED]/50 hover:text-[#C2410C] hover:border-[#FDBA74]'
+                    : 'bg-white text-[#475569] border border-[#CBD5E1] hover:bg-[#FFF7ED]/50 hover:text-[#C2410C] hover:border-[#FDBA74]'
                   )}
                 >
                   <RotateCw size={16} /> Interactive 360° 3D
@@ -418,8 +418,8 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
               )}
             </div>
 
-            {/* Media Display Container */}
-            <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm">
+            {/* Media Display Container (Reduced Frame Size) */}
+            <div className="relative aspect-[4/3] max-h-[440px] sm:max-h-[480px] w-full max-w-[560px] overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 sm:p-6 shadow-sm mx-auto lg:mx-0 flex items-center justify-center">
               <div
                 id="media-panel-photos"
                 role="tabpanel"
@@ -502,7 +502,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
 
             {/* Gallery Thumbnails (active under photos mode, or click to switch to photos) */}
             {images.length > 1 && (
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              <div className="mt-3.5 flex gap-2.5 overflow-x-auto pb-2 max-w-[560px] mx-auto lg:mx-0">
                 {images.map((image, index) => (
                   <button
                     key={image}
@@ -513,7 +513,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
                     aria-pressed={activeMediaMode === 'photos' && activeImage === index}
                     title={`View photo ${index + 1}`}
                     className={cn(
-                      'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 bg-white p-1.5 transition-all cursor-pointer',
+                      'h-16 w-16 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 transition-all cursor-pointer',
                       activeMediaMode === 'photos' && activeImage === index
                         ? 'border-[#C2410C] shadow-sm scale-105'
                         : 'border-[#E2E8F0] hover:border-[#CBD5E1]',
@@ -526,8 +526,8 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
             )}
           </div>
 
-          {/* Right Column: Commercial Specifications & Actions (5 cols) */}
-          <div className="flex flex-col lg:col-span-5">
+          {/* Right Column: Commercial Specifications & Actions (6 cols) */}
+          <div className="flex flex-col lg:col-span-6">
             <div className="flex items-center gap-2">
               <span className="rounded-md bg-[#FFF7ED] px-2.5 py-1 text-xs font-bold text-[#C2410C] border border-[#FFEDD5]">
                 {product.category}
