@@ -6,6 +6,7 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phon
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
+import { submitOrder } from '../lib/api';
 
 interface CartPageProps {
   onNavigate: (page: Page) => void;
@@ -30,7 +31,7 @@ interface PlacedOrder {
   city: string;
   state: string;
   pincode: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  items: Array<{ productId?: string; name: string; quantity: number; price: number }>;
   total: number;
   status: string;
 }
@@ -156,8 +157,16 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     e.preventDefault();
     if (!validateForm()) return;
 
+    const orderRef = generateOrderRef();
+    const orderItems = items.map((i) => ({
+      productId: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      price: i.price,
+    }));
+
     const order: PlacedOrder = {
-      reference: generateOrderRef(),
+      reference: orderRef,
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       name: form.name.trim(),
       phone: form.phone.trim(),
@@ -165,20 +174,51 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       city: form.city.trim(),
       state: form.state.trim(),
       pincode: form.pincode.trim(),
-      items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+      items: orderItems,
       total: totalPrice,
       status: 'Order Confirmed',
     };
 
-    // Persist to localStorage so Customer Portal can show it
+    // 1. Persist to localStorage so Customer Portal and Admin can immediately access it
     try {
       const existing = localStorage.getItem('kb_orders');
       const orders: PlacedOrder[] = existing ? JSON.parse(existing) : [];
       orders.unshift(order);
       localStorage.setItem('kb_orders', JSON.stringify(orders));
+      localStorage.setItem('kb_recent_order', JSON.stringify(order));
     } catch {
       // Ignore storage errors
     }
+
+    // 2. Broadcast to cross-tab / Admin Dashboard in real-time
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('kitchen-bots-orders');
+        bc.postMessage({ type: 'NEW_ORDER', order });
+        bc.close();
+      }
+    } catch {
+      // Ignore BroadcastChannel errors
+    }
+
+    // 3. Asynchronously sync order to Cloudflare Worker backend and Firestore
+    submitOrder({
+      reference: order.reference,
+      customerName: order.name,
+      phone: order.phone,
+      shippingAddress: {
+        addressLine1: order.address,
+        city: order.city,
+        state: order.state,
+        postalCode: order.pincode,
+        country: 'India',
+      },
+      items: orderItems,
+      totalPrice: order.total,
+      paymentMethod: 'Online Direct',
+    }).catch((err) => {
+      console.warn('Backend order synchronization deferred/failed:', err);
+    });
 
     clearCart();
     setConfirmedOrder(order);

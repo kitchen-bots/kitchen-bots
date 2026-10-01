@@ -237,3 +237,80 @@ export async function submitEnquiry(
 
   return json.data;
 }
+
+export interface OrderItemPayload {
+  productId?: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface OrderPayload {
+  reference: string;
+  customerName: string;
+  phone: string;
+  email?: string;
+  shippingAddress: {
+    addressLine1: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country?: string;
+  };
+  items: OrderItemPayload[];
+  totalPrice: number;
+  paymentMethod?: string;
+}
+
+export interface OrderResponseData {
+  id: string;
+  orderNumber?: string;
+  status: string;
+  createdAt: string;
+}
+
+export async function submitOrder(
+  payload: OrderPayload,
+  baseUrl = API_BASE_URL || DEFAULT_ENQUIRY_API_URL
+): Promise<OrderResponseData | null> {
+  const targetUrl = baseUrl ? `${baseUrl}/v1/orders` : '/v1/orders';
+  const body = {
+    orderNumber: payload.reference,
+    contactPerson: payload.customerName.trim(),
+    companyName: payload.customerName.trim(),
+    phone: payload.phone.trim(),
+    email: payload.email?.trim() || `${payload.phone.replace(/\D/g, '')}@customer.kitchenbots.in`,
+    items: payload.items.map((it) => ({
+      productId: it.productId || 'prod-1',
+      name: it.name,
+      quantity: it.quantity,
+      price: it.price,
+    })),
+    shippingAddress: payload.shippingAddress,
+    billingAddress: payload.shippingAddress,
+    totalPrice: payload.totalPrice,
+    paymentMethod: payload.paymentMethod || 'Online Direct',
+  };
+
+  const res = await fetch(targetUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: OrderResponseData;
+    error?: { message?: string };
+    message?: string;
+  };
+
+  if (!res.ok || json.success === false) {
+    const errorMsg = json.error?.message || json.message || `Order submission failed (${res.status})`;
+    throw new Error(errorMsg);
+  }
+
+  return json.data || null;
+}

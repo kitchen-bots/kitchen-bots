@@ -3,6 +3,7 @@ import {
   fetchCatalogProduct,
   fetchCatalogProducts,
   submitEnquiry,
+  submitOrder,
   toStorefrontProduct,
   type ApiProduct,
 } from './api';
@@ -128,5 +129,70 @@ describe('Storefront API Client', () => {
         'https://api.kitchenbots.in'
       )
     ).rejects.toThrow('Invalid email address provided.');
+  });
+
+  it('submitOrder sends post request to /v1/orders and returns order data', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          id: 'ord-999',
+          orderNumber: 'ORD-2026-TEST',
+          status: 'Pending',
+          createdAt: '2026-09-26T12:00:00Z',
+        },
+      }),
+    });
+
+    const result = await submitOrder(
+      {
+        reference: 'ORD-2026-TEST',
+        customerName: 'Charan',
+        phone: '9490701421',
+        shippingAddress: {
+          addressLine1: 'Road 10',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          postalCode: '500034',
+        },
+        items: [{ productId: 'prod-1', name: 'Commercial BBQ Grill', quantity: 1, price: 1399 }],
+        totalPrice: 1399,
+      },
+      'https://api.kitchenbots.in'
+    );
+
+    expect(result?.id).toBe('ord-999');
+    expect(result?.orderNumber).toBe('ORD-2026-TEST');
+  });
+
+  it('submitOrder throws descriptive error on API failure', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        success: false,
+        message: 'At least one line item is required',
+      }),
+    });
+
+    await expect(
+      submitOrder(
+        {
+          reference: 'ORD-ERR',
+          customerName: 'Charan',
+          phone: '9490701421',
+          shippingAddress: {
+            addressLine1: 'Road 10',
+            city: 'Hyderabad',
+            state: 'Telangana',
+            postalCode: '500034',
+          },
+          items: [],
+          totalPrice: 0,
+        },
+        'https://api.kitchenbots.in'
+      )
+    ).rejects.toThrow('At least one line item is required');
   });
 });
