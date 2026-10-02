@@ -14,7 +14,6 @@ import {
 import type { Page } from '../App';
 import type { Product, ProductCategory } from '../types/product';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -321,10 +320,8 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                                 e.stopPropagation();
                                 updateQuantity(product.id, quantityInCart + 1);
                               }}
-                              disabled={quantityInCart >= MAX_ITEM_QUANTITY}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:bg-[#C2410C]"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all"
                               aria-label={`Increase quantity of ${product.name}`}
-                              title={quantityInCart >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
                             >
                               <Plus size={14} className="stroke-[2.5]" />
                             </button>

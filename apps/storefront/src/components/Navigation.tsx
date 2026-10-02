@@ -282,15 +282,6 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                       <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => navigate('login')}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#FFF7ED] hover:text-[#C2410C] transition-colors"
-                    >
-                      <User size={15} className="text-[#C2410C]" />
-                      Customer Portal
-                    </button>
-
                     {(user.role === 'admin' || user.role === 'operations') && (
                       <a
                         href="/admin"
@@ -461,13 +452,6 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
             <div className="mt-4 border-t border-[#F1F5F9] pt-4 flex flex-col gap-2">
               {user ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => navigate('login')}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-[#334155] bg-[#F8FAFC] hover:bg-[#FFF7ED] hover:text-[#C2410C] transition-colors"
-                  >
-                    <User size={18} className="text-[#C2410C]" /> Customer Portal
-                  </button>
                   {(user.role === 'admin' || user.role === 'operations') && (
                     <a
                       href="/admin"

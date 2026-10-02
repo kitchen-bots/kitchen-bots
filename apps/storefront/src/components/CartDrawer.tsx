@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import type { Page } from '../App';
 import { Button } from './ui/button';
 import ProductImage from './ProductImage';
@@ -147,19 +146,12 @@ export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerPr
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={item.quantity >= MAX_ITEM_QUANTITY}
-                          className="w-8 hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          className="w-8 hover:bg-[#E2E8F0]"
                           aria-label={`Increase quantity of ${item.name}`}
-                          title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
                         >
                           <Plus size={12} />
                         </Button>
                       </div>
-                      {item.quantity >= MAX_ITEM_QUANTITY && (
-                        <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded font-['DM_Sans']">
-                          Max limit ({MAX_ITEM_QUANTITY})
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
