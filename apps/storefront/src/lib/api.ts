@@ -548,8 +548,6 @@ export async function submitOrder(
     customerName: string;
     customerEmail?: string;
     customerPhone?: string;
-    customerId?: string | number;
-    notes?: string;
     items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
     totalPaise: number;
     shippingAddress: {
@@ -563,21 +561,14 @@ export async function submitOrder(
       country?: string;
     };
   },
-  baseUrl = API_BASE_URL,
-  token?: string
+  baseUrl = API_BASE_URL
 ): Promise<{ orderNumber: string; id: string }> {
   const orderNumber = `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
-  const customerEmail =
-    orderData.customerEmail?.trim() ||
-    `${orderData.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`;
-
   const payloadBody = {
     orderNumber,
     customerName: orderData.customerName,
-    customerEmail,
+    customerEmail: orderData.customerEmail || `${orderData.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`,
     customerPhone: orderData.customerPhone || orderData.shippingAddress.phone,
-    customer: orderData.customerId ? (typeof orderData.customerId === 'number' || !isNaN(Number(orderData.customerId)) ? Number(orderData.customerId) : orderData.customerId) : undefined,
-    notes: orderData.notes || undefined,
     totalPaise: orderData.totalPaise,
     status: 'pending',
     paymentStatus: 'pending',
@@ -600,18 +591,13 @@ export async function submitOrder(
   };
 
   const primaryUrl = baseUrl ? `${baseUrl}/api/orders` : '/api/orders';
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `JWT ${token}`;
-  }
-
   try {
     const res = await fetch(primaryUrl, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify(payloadBody),
     });
 
@@ -627,7 +613,6 @@ export async function submitOrder(
           reference: ref,
           date: new Date().toISOString(),
           name: orderData.customerName,
-          email: customerEmail,
           phone: orderData.customerPhone || orderData.shippingAddress.phone,
           address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
           city: orderData.shippingAddress.city,
@@ -654,7 +639,6 @@ export async function submitOrder(
     reference: orderNumber,
     date: new Date().toISOString(),
     name: orderData.customerName,
-    email: customerEmail,
     phone: orderData.customerPhone || orderData.shippingAddress.phone,
     address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
     city: orderData.shippingAddress.city,

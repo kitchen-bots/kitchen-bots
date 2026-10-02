@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { buildConfig } from 'payload';
@@ -77,11 +76,7 @@ export default buildConfig({
     pool: {
       connectionString,
       ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
-      max: 5,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 10000,
     },
-    push: false,
     disableCreateDatabase: true,
   }),
   plugins: [

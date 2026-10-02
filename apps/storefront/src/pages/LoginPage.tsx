@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Eye,
   EyeOff,
@@ -53,33 +53,9 @@ interface StoredOrder {
   status: string;
 }
 
-interface BackendOrderItem {
-  name: string;
-  quantity: number;
-  pricePaise?: number;
-}
-
-interface BackendOrderDoc {
-  id: string | number;
-  orderNumber?: string;
-  createdAt?: string;
-  customerName?: string;
-  customerPhone?: string;
-  totalPaise?: number;
-  status?: string;
-  shippingAddress?: {
-    phone?: string;
-    addressLine1?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  };
-  items?: BackendOrderItem[];
-}
-
 export default function LoginPage({ onNavigate }: LoginPageProps) {
   const { showToast } = useToast();
-  const { user: authUser, token, login, logout } = useAuth();
+  const { user: authUser, login, logout } = useAuth();
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [localUser, setLocalUser] = useState<UserAccount | null>(null);
@@ -119,7 +95,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
   });
 
   // Load placed direct orders
-  const [orders, setOrders] = useState<StoredOrder[]>(() => {
+  const [orders] = useState<StoredOrder[]>(() => {
     try {
       const stored = localStorage.getItem('kb_orders');
       return stored ? JSON.parse(stored) : [];
@@ -127,46 +103,6 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
       return [];
     }
   });
-
-  // Synchronize orders placed on the backend when user is logged in
-  useEffect(() => {
-    async function syncBackendOrders() {
-      if (!token && !authUser?.email) return;
-      try {
-        const headers: Record<string, string> = { Accept: 'application/json' };
-        if (token) headers['Authorization'] = `JWT ${token}`;
-        const res = await fetch('/api/orders', { headers });
-        if (res.ok) {
-          const data = await res.json();
-          const docs = (data.docs || []) as BackendOrderDoc[];
-          if (Array.isArray(docs) && docs.length > 0) {
-            const mappedOrders: StoredOrder[] = docs.map((doc) => ({
-              reference: doc.orderNumber || `KB-ORD-${doc.id}`,
-              date: doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
-              name: doc.customerName || authUser?.name || 'Customer',
-              phone: doc.customerPhone || doc.shippingAddress?.phone || '',
-              address: doc.shippingAddress?.addressLine1 || '',
-              city: doc.shippingAddress?.city || '',
-              state: doc.shippingAddress?.state || '',
-              pincode: doc.shippingAddress?.postalCode || '',
-              items: Array.isArray(doc.items) ? doc.items.map((i) => ({ name: i.name, quantity: i.quantity, price: (i.pricePaise || 0) / 100 })) : [],
-              total: (doc.totalPaise || 0) / 100,
-              status: doc.status ? doc.status.charAt(0).toUpperCase() + doc.status.slice(1) : 'Confirmed',
-            }));
-
-            setOrders((prev) => {
-              const refs = new Set(mappedOrders.map((m) => m.reference));
-              const remainingLocal = prev.filter((p) => !refs.has(p.reference));
-              return [...mappedOrders, ...remainingLocal];
-            });
-          }
-        }
-      } catch {
-        // Fall back quietly to local storage orders
-      }
-    }
-    syncBackendOrders();
-  }, [token, authUser]);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
