@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
+import { MIN_ITEM_QUANTITY } from '../context/CartContextData';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
@@ -133,7 +133,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (!Number.isFinite(newQuantity)) return;
     const sanitized = Math.floor(newQuantity);
-    if (sanitized >= 1 && sanitized <= MAX_ITEM_QUANTITY) {
+    if (sanitized < MIN_ITEM_QUANTITY) {
+      removeFromCart(id);
+    } else {
       updateQuantity(id, sanitized);
     }
   };
@@ -427,8 +429,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
+                              disabled={item.quantity <= MIN_ITEM_QUANTITY}
                               aria-label={`Decrease quantity of ${item.name}`}
+                              title={item.quantity <= MIN_ITEM_QUANTITY ? `Minimum order is ${MIN_ITEM_QUANTITY} units` : undefined}
                               className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
                               <Minus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -442,20 +445,13 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= MAX_ITEM_QUANTITY}
                               aria-label={`Increase quantity of ${item.name}`}
-                              title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
-                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary"
                             >
                               <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
-                        {item.quantity >= MAX_ITEM_QUANTITY && (
-                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                            Max limit ({MAX_ITEM_QUANTITY})
-                          </span>
-                        )}
                       </div>
 
                       <Button

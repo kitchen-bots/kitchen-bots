@@ -15,7 +15,6 @@ import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import { submitEnquiry } from '../lib/api';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import ProductImage from '../components/ProductImage';
 import { getProductById } from '../data/products';
 
@@ -201,10 +200,8 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            disabled={item.quantity >= MAX_ITEM_QUANTITY}
                             aria-label="Increase quantity"
-                            title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items` : undefined}
-                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] transition-colors"
                           >
                             <Plus size={12} />
                           </button>
