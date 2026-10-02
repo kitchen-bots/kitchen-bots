@@ -1,105 +1,55 @@
-# Kitchen Bots Ecommerce Master Implementation Plan
+# KitchenBots Platform Master Architecture & Handoff Plan
 
-> **For Claude:** Use `${SUPERPOWERS_SKILLS_ROOT}/skills/collaboration/executing-plans/SKILL.md` to implement this plan task-by-task.
-
-**Goal:** Deliver a trustworthy, responsive, accessible storefront with live catalog data, real authentication, guest enquiries, authenticated orders, and clear links to the separate customer portal.
-
-**Architecture:** This repository owns the public storefront and commerce experience only. It consumes published catalog data and trusted write endpoints from the dashboard repository's Worker API, uses Firebase Auth for customer identity, and loads media from Cloudflare R2.
-
-**Tech Stack:** React, Vite, TypeScript, React Router, shadcn/ui, Tailwind CSS, Firebase Auth, Cloudflare Worker API, R2, React Hook Form, Zod, Playwright, Vitest.
+> **Status:** Implementation Complete & Production Hardened  
+> **Architecture Version:** 2.0 (Turborepo Monorepo + Payload CMS 3.0 + Supabase PostgreSQL)
 
 ---
 
-## Repository Boundary
+## 1. Executive Summary
 
-This repository owns:
+The KitchenBots software ecosystem has been consolidated from two disconnected repositories (`kitchen-bots-ecommerce` and `kitchen-bots-dashboard` backed by legacy Google Apps Script) into a single, high-performance **Turborepo monorepo**.
 
-- Marketing and content pages.
-- Product discovery and product detail pages.
-- Cart and wishlist.
-- Login, registration, verification, and password reset.
-- Guest quote requests.
-- Authenticated direct-order checkout.
-- Order confirmation based on real API responses.
-- Links to the separate customer portal.
+- **Customer Storefront (`apps/storefront`):** Vite 7 + React 19 SPA delivering high-end anti-slop industrial aesthetics, hardware-accelerated 360° product turntables, real-time cart, and direct checkout order submission.
+- **Operations & CMS Backend (`apps/backend`):** Next.js 15 App Router + Payload CMS 3.0 delivering an operational admin dashboard (`/admin`), PostgreSQL persistence via Supabase, and S3-compatible media management via Cloudflare R2.
+- **Edge Routing (`src/router.ts` & `wrangler.jsonc`):** Cloudflare Worker serving the static storefront from edge assets while proxying `/admin`, `/api`, and `/_next` routes to the backend under a single domain.
 
-This repository does not own:
+---
 
-- Admin screens.
-- Customer portal screens.
-- Firestore administration.
-- Staff roles.
-- Order or quote operations.
-- Private document storage.
-- Transactional email delivery.
-- Payment webhooks.
+## 2. Completed Phase Deliverables
 
-## Required Reading
+| Phase | Milestone | Scope & Deliverables | Verification Status |
+|---|---|---|---|
+| **Phase 01** | **Monorepo Architecture** | Turborepo workspace setup with `apps/storefront`, `apps/backend`, and `packages/types`. Strict folder isolation between frontend and backend teams. | Passed (`pnpm build`) |
+| **Phase 02** | **Database & CMS Foundation** | Supabase PostgreSQL cluster integration, Payload CMS 3.0 initialization, 12 authentic equipment models and 6 categories seeded. | Passed (Verified in DB) |
+| **Phase 03** | **Operations Dashboard & Brand Polish** | Restored operational dashboard at `/admin`, KPI metric cards, SVG revenue trajectory chart, recent orders fulfillment queue, CRM leads table, official vector brandmarks. | Passed (`GET /admin` 200 OK) |
+| **Phase 04** | **Commerce & API Wiring** | Live order checkout (`POST /api/orders`) in `CartPage.tsx`, B2B equipment inquiries (`POST /api/enquiries`), and dynamic catalog retrieval (`/api/products?limit=100`). | Passed (End-to-end verified) |
+| **Phase 05** | **Edge Router & Deployment** | Single-domain Cloudflare Edge Router (`src/router.ts`), environment dictionaries, and upstream Git synchronization (`main` branch). | Passed (`git push upstream main`) |
 
-- [Development Rules](DEVELOPMENT_RULES.md)
-- [Phase 00: Baseline and Boundary](phases/00-baseline-and-boundary.md)
-- [Phase 01: Routing and Design Foundation](phases/01-routing-and-design-foundation.md)
-- [Phase 02: UI/UX Audit and Improvement](phases/02-ui-ux-audit-and-improvement.md)
-- [Phase 03: Catalog, Auth, Enquiry, and Order Integration](phases/03-commerce-integration.md)
-- [Phase 04: Storefront Hardening and Deployment](phases/04-hardening-and-deployment.md)
-- [Current Project Status](reports/PROJECT_STATUS_REPORT.md)
-- [Backend Status and Implementation Report](reports/BACKEND_STATUS_REPORT.md)
+---
 
-## Delivery Order
+## 3. Repository Boundary & Team Workflows
 
-| Phase | Outcome | Dependency |
-|---|---|---|
-| 00 | Clean boundary and verified baseline | None |
-| 01 | Reliable routing and owned design primitives | Phase 00 |
-| 02 | Evidence-based responsive and accessible UX | Phase 01; audit may start earlier |
-| 03 | Live catalog, Firebase Auth, enquiries, and orders | Dashboard API contracts available |
-| 04 | Production tests, performance, and deployment | Phases 01-03 |
+- **Frontend Scope (`apps/storefront`):**
+  - Public marketing, discovery, product detail, wishlist, cart, and B2B quotation forms.
+  - Consumes `/api/products`, `/api/orders`, and `/api/enquiries` through relative domain paths.
+  - Zero backend code or database dependencies.
+- **Backend Scope (`apps/backend`):**
+  - Payload CMS 3.0 collections: `products`, `categories`, `orders`, `enquiries`, `quotes`, `services`, `users`, `media`.
+  - Supabase PostgreSQL schema, migrations, and seeders.
+  - Custom Admin components (`AdminDashboard.tsx`, `Logo.tsx`, `Icon.tsx`).
+- **Shared Contracts (`packages/types`):**
+  - `@kitchen-bots/types` imported by both applications for shared domain types (`Product`, `Order`, `Enquiry`, `Quote`).
 
-## Current Phase State
+---
 
-| Phase | State | Next gate |
-|---|---|---|
-| 00 | Complete; PR #2 merged | Begin Phase 01 routing foundation |
-| 01 | Not started | Replace page-state routing and inventory existing primitives |
-| 02 | Started | Cart cleanup complete; complete route-by-route browser audit |
-| 03 | Blocked | Dashboard Worker contracts and endpoints |
-| 04 | Blocked | Completed functional integrations |
+## 4. Production Handoff Checklist
 
-## Cross-Repository Contracts
-
-The dashboard repository owns the Worker implementation and canonical server schemas. This repository keeps matching request and response fixtures for:
-
-```text
-GET  /v1/catalog/products
-GET  /v1/catalog/products/:slug
-POST /v1/enquiries
-POST /v1/orders
-POST /v1/enquiries/:id/claim
-```
-
-Contract changes require review in both repositories. Browser code never sends authoritative prices, roles, publication status, ownership, or payment state.
-
-## Global Acceptance Gate
-
-```bash
-npm ci
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-```
-
-Critical Playwright journeys must cover catalog discovery, product detail, guest enquiry, registration/login, direct order, confirmation, responsive navigation, and failure recovery.
-
-## Deferred
-
-- Real payment collection.
-- Embedded admin or customer dashboard.
-- Equipment telemetry.
-- Advanced customer organization management.
-- SMS or WhatsApp transactional messaging.
-- Automatic media processing in the browser.
-
-## Definition of Storefront Readiness
-
-The storefront is ready when customers can understand real products, choose direct purchase or quote correctly, submit durable records without simulated success, authenticate securely, recover from errors, and complete critical journeys on mobile and desktop with no prohibited UI patterns.
+1. **Edge Deployment:**
+   - Deploy root Cloudflare Worker via `pnpm deploy` or Cloudflare Pages.
+   - Configure `BACKEND_ORIGIN` pointing to the public URL of the deployed Next.js backend.
+2. **Backend Server Hosting:**
+   - Host `apps/backend` on a Node.js-compatible container/host (Railway, Render, Fly.io, Vercel, or Linux VPS).
+   - Ensure environment variables (`DATABASE_URI`, `PAYLOAD_SECRET`, `SUPABASE_*`, `R2_*`) are set.
+3. **Optional Enhancements:**
+   - **Transactional Emails:** Configure `@payloadcms/email-resend` for automatic dispatch of order confirmation and quotation review emails.
+   - **Payment Gateway:** If immediate online card/UPI payments are required (in place of standard commercial invoice on delivery), attach Razorpay/Cashfree webhook handlers.

@@ -7,26 +7,34 @@ export const DEFAULT_API_BASE_URL = '';
 export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 export const DEFAULT_ENQUIRY_API_URL = 'https://kitchen-bots-api.workofcharan.workers.dev';
 
-export interface ApiProduct {
-  id: string;
-  slug: string;
-  name: string;
+export interface RawProductInput {
+  id?: string | number;
+  slug?: string;
+  name?: string;
   categoryId?: string;
-  category?: any;
-  description: string;
+  category?: string | { title?: string; [key: string]: unknown };
+  description?: string;
   salesMode?: 'direct' | 'quote' | 'both';
-  pricePaise: number | null;
+  pricePaise?: number | null;
   currency?: 'INR';
   primaryImage?: string;
-  imageUrls?: Array<string | { url: string }>;
-  specifications?: Record<string, string>;
-  features?: Array<string | { feature: string }>;
+  imageUrls?: Array<string | { url?: string; src?: string } | unknown>;
+  specifications?: Array<{ name?: string; value?: string }> | Record<string, string>;
+  features?: Array<string | { feature?: string; title?: string } | unknown>;
   sequenceId?: string;
   sequenceFrameCount?: number;
   has3D?: boolean;
   hasVideo?: boolean;
   videoPath?: string;
   featured?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ApiProduct extends RawProductInput {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
 }
 
 export interface EnquiryItem {
@@ -88,13 +96,13 @@ export function categoryIdToName(categoryId: string | undefined): ProductCategor
   return 'Accessories';
 }
 
-function extractImageUrl(val: any): string {
+function extractImageUrl(val: unknown): string {
   if (!val) return '';
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
-        const parsed = JSON.parse(trimmed);
+        const parsed = JSON.parse(trimmed) as { url?: string; src?: string };
         return parsed.url || parsed.src || '';
       } catch {
         return trimmed;
@@ -102,22 +110,25 @@ function extractImageUrl(val: any): string {
     }
     return trimmed;
   }
-  if (typeof val === 'object') {
-    return val.url || val.src || '';
+  if (typeof val === 'object' && val !== null) {
+    const obj = val as { url?: string; src?: string };
+    return obj.url || obj.src || '';
   }
   return '';
 }
 
-export function toStorefrontProduct(raw: any): Product {
-  const slug = raw.slug || raw.id;
-  const local = getProductById(raw.id) || PRODUCTS.find((p) => p.slug === slug || String(p.id) === String(raw.id));
+export function toStorefrontProduct(raw: RawProductInput): Product {
+  const rawId = String(raw.id || '');
+  const rawSlug = typeof raw.slug === 'string' && raw.slug ? raw.slug : rawId;
+  const local = getProductById(rawId) || PRODUCTS.find((p) => p.slug === rawSlug || String(p.id) === rawId);
 
   let categoryName: ProductCategory = 'Collapsible BBQ';
-  if (raw.category && typeof raw.category === 'object' && raw.category.title) {
-    categoryName = categoryIdToName(raw.category.title);
-  } else if (typeof raw.category === 'string') {
-    categoryName = categoryIdToName(raw.category);
-  } else if (raw.categoryId) {
+  const rawCategory = raw.category;
+  if (rawCategory && typeof rawCategory === 'object' && 'title' in rawCategory && typeof rawCategory.title === 'string') {
+    categoryName = categoryIdToName(rawCategory.title);
+  } else if (typeof rawCategory === 'string') {
+    categoryName = categoryIdToName(rawCategory);
+  } else if (typeof raw.categoryId === 'string') {
     categoryName = categoryIdToName(raw.categoryId);
   } else if (local?.category) {
     categoryName = local.category;
@@ -126,7 +137,13 @@ export function toStorefrontProduct(raw: any): Product {
   let rawImages: string[] = [];
   if (Array.isArray(raw.imageUrls)) {
     rawImages = raw.imageUrls
-      .map((item: any) => extractImageUrl(typeof item === 'string' ? item : item?.url || item))
+      .map((item: unknown) => {
+        if (typeof item === 'string') return extractImageUrl(item);
+        if (typeof item === 'object' && item !== null && 'url' in item) {
+          return extractImageUrl((item as { url?: unknown }).url);
+        }
+        return extractImageUrl(item);
+      })
       .filter(Boolean);
   }
   if (rawImages.length === 0 && raw.primaryImage) {
@@ -141,15 +158,23 @@ export function toStorefrontProduct(raw: any): Product {
 
   const images = rawImages.map((img) => getMediaUrl(img));
   const primaryImage = images[0] || (local?.image ? getMediaUrl(local.image) : '');
+  const rawPrice = typeof raw.pricePaise === 'number' ? raw.pricePaise : null;
   const priceRupees =
-    raw.pricePaise && raw.pricePaise > 0
-      ? Math.round(raw.pricePaise / 100)
+    rawPrice && rawPrice > 0
+      ? Math.round(rawPrice / 100)
       : (local?.price ?? 0);
 
   let features: string[] = [];
   if (Array.isArray(raw.features) && raw.features.length > 0) {
     features = raw.features
-      .map((f: any) => (typeof f === 'string' ? f : f?.feature || f?.title))
+      .map((f: unknown) => {
+        if (typeof f === 'string') return f;
+        if (typeof f === 'object' && f !== null) {
+          const obj = f as { feature?: string; title?: string };
+          return obj.feature || obj.title || '';
+        }
+        return '';
+      })
       .filter(Boolean);
   }
   if (features.length === 0 && local?.features) {
@@ -159,8 +184,11 @@ export function toStorefrontProduct(raw: any): Product {
   const specifications: Record<string, string> = { ...(local?.specifications || {}) };
   if (Array.isArray(raw.specifications)) {
     for (const spec of raw.specifications) {
-      if (spec && typeof spec === 'object' && spec.name && spec.value) {
-        specifications[spec.name] = spec.value;
+      if (spec && typeof spec === 'object' && 'name' in spec && 'value' in spec) {
+        const item = spec as { name: string; value: string };
+        if (item.name && item.value) {
+          specifications[item.name] = String(item.value);
+        }
       }
     }
   } else if (raw.specifications && typeof raw.specifications === 'object') {
@@ -169,10 +197,10 @@ export function toStorefrontProduct(raw: any): Product {
 
   return {
     ...(local || {}),
-    id: String(raw.id || local?.id || slug),
-    slug: raw.slug || local?.slug,
-    name: raw.name || local?.name || '',
-    description: raw.description || local?.description || '',
+    id: rawId || local?.id || rawSlug,
+    slug: (typeof raw.slug === 'string' && raw.slug) || local?.slug || rawSlug,
+    name: (typeof raw.name === 'string' && raw.name) || local?.name || '',
+    description: (typeof raw.description === 'string' && raw.description) || local?.description || '',
     price: priceRupees,
     image: primaryImage,
     images,
@@ -180,12 +208,12 @@ export function toStorefrontProduct(raw: any): Product {
     features,
     specifications,
     video: local?.video,
-    videoPath: raw.videoPath || local?.videoPath,
-    sequenceId: raw.sequenceId || local?.sequenceId,
-    sequenceFrameCount: raw.sequenceFrameCount || local?.sequenceFrameCount,
-    has3D: raw.has3D ?? local?.has3D,
-    hasVideo: raw.hasVideo ?? local?.hasVideo,
-    featured: raw.featured ?? local?.featured ?? false,
+    videoPath: (typeof raw.videoPath === 'string' ? raw.videoPath : undefined) || local?.videoPath,
+    sequenceId: (typeof raw.sequenceId === 'string' ? raw.sequenceId : undefined) || local?.sequenceId,
+    sequenceFrameCount: (typeof raw.sequenceFrameCount === 'number' ? raw.sequenceFrameCount : undefined) || local?.sequenceFrameCount,
+    has3D: typeof raw.has3D === 'boolean' ? raw.has3D : local?.has3D,
+    hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : local?.hasVideo,
+    featured: typeof raw.featured === 'boolean' ? raw.featured : (local?.featured ?? false),
   };
 }
 
@@ -257,6 +285,12 @@ export async function fetchCatalogProduct(
       if (json.docs && json.docs.length > 0) {
         return toStorefrontProduct(json.docs[0]);
       }
+      if (json.data) {
+        return toStorefrontProduct(json.data);
+      }
+      if (json.doc) {
+        return toStorefrontProduct(json.doc);
+      }
     }
 
     if (!isNaN(Number(slugOrId))) {
@@ -264,7 +298,8 @@ export async function fetchCatalogProduct(
       const resDirect = await fetch(directUrl, { headers: { Accept: 'application/json' } });
       if (resDirect.ok) {
         const item = await resDirect.json();
-        return toStorefrontProduct(item);
+        const doc = item.data || item.doc || item;
+        return toStorefrontProduct(doc);
       }
     }
   } catch {
@@ -314,7 +349,19 @@ export async function submitEnquiry(
         createdAt: doc.createdAt || new Date().toISOString(),
       };
     }
-  } catch {
+    if (res.status >= 400 && res.status < 500) {
+      const errJson = await res.json().catch(() => ({}));
+      const message =
+        errJson?.error?.message ||
+        (Array.isArray(errJson?.errors) && errJson.errors[0]?.message) ||
+        errJson?.message ||
+        `Enquiry failed with status ${res.status}`;
+      throw new Error(message);
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('network') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
     // Try fallback endpoint
   }
 

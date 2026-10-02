@@ -16,7 +16,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "seed": "pnpm --filter @kitchen-bots/backend seed",
-    "create-admin": "pnpm --filter @kitchen-bots/backend create-admin",
+    "check": "turbo run typecheck lint",
     "deploy": "pnpm build && wrangler deploy",
     "deploy:dry-run": "pnpm build && wrangler deploy --dry-run"
   },

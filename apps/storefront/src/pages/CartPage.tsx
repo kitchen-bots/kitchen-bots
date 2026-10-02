@@ -61,11 +61,6 @@ function renderConfigValue(value: unknown): React.ReactNode {
   return String(value);
 }
 
-function generateOrderRef(): string {
-  const year = new Date().getFullYear();
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `ORD-${year}-${num}`;
-}
 
 export default function CartPage({ onNavigate }: CartPageProps) {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
@@ -202,8 +197,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       clearCart();
       setConfirmedOrder(order);
       setShowCheckout(false);
-    } catch (err: any) {
-      setSubmitError(err?.message || 'Unable to place order right now. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to place order right now. Please try again.';
+      setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }
