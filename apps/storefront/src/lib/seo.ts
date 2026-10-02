@@ -81,6 +81,12 @@ export const PAGE_SEO: Record<string, SEOMeta> = {
         ogImage: DEFAULT_OG_IMAGE,
         ogType: 'website',
     },
+    profile: {
+        title: 'My Profile | KitchenBots India',
+        description: 'View and manage your account details, equipment enquiries, and orders.',
+        ogImage: DEFAULT_OG_IMAGE,
+        ogType: 'website',
+    },
 };
 
 /** Returns SEO metadata for a product detail page */

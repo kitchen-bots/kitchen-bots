@@ -32,10 +32,11 @@ import './App.css';
 
 import BlogPage from './pages/BlogPage';
 import CartPage from './pages/CartPage';
+import ProfilePage from './pages/ProfilePage';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry';
+export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry' | 'profile' | 'orders';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -51,7 +52,7 @@ function App() {
       setCatalogKey(key => key + 1);
       const rawPath = window.location.pathname.replace('/', '');
       const path = rawPath as Page;
-      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry'];
+      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry', 'profile', 'orders'];
       
       if (rawPath === 'admin' || rawPath.startsWith('admin/')) {
         window.location.reload();
@@ -162,6 +163,10 @@ function App() {
         return <WishlistPage onProductClick={(id) => navigateTo('product-detail', id)} onNavigate={navigateTo} />;
       case 'bulk-enquiry':
         return <BulkEnquiryPage onNavigate={navigateTo} selectedProductId={selectedProductId} />;
+      case 'profile':
+        return <ProfilePage onNavigate={navigateTo} />;
+      case 'orders':
+        return <ProfilePage onNavigate={navigateTo} scrollToOrders />;
       case 'home':
       default:
         return (
