@@ -173,11 +173,8 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                 <User size={26} className="text-[#C2410C]" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div>
                   <h1 className="font-['Outfit'] text-2xl font-bold text-[#0F172A]">{currentUser.name}</h1>
-                  <span className="rounded-md bg-[#F0FDF4] px-2 py-0.5 text-xs font-bold text-[#16A34A] border border-[#DCFCE7]">
-                    Verified Customer
-                  </span>
                 </div>
                 <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
                   {currentUser.email} • {currentUser.company}
@@ -260,21 +257,11 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
           {/* Machinery Enquiries & Tracking Section */}
           <div className="mt-8 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 border-b border-[#F1F5F9] pb-6 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-['Outfit'] text-xl font-bold text-[#0F172A]">Equipment Enquiries & Quotations</h2>
-                <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
-                  Track production status, engineering reviews, and quotations submitted under this account.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="self-start rounded-xl font-semibold sm:self-auto border-[#CBD5E1] hover:bg-[#F8FAFC]"
-                onClick={() => onNavigate('bulk-enquiry')}
-              >
-                Submit New Request
-              </Button>
+            <div className="border-b border-[#F1F5F9] pb-6">
+              <h2 className="font-['Outfit'] text-xl font-bold text-[#0F172A]">Equipment Enquiries & Quotations</h2>
+              <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
+                Track production status, engineering reviews, and quotations submitted under this account.
+              </p>
             </div>
 
             {enquiries.length > 0 ? (

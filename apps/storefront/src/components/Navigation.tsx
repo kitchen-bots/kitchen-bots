@@ -280,11 +280,6 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                     >
                       <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">{user.name}</p>
                       <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
-                      {user.role && (
-                        <span className="inline-block mt-1 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">
-                          {user.role}
-                        </span>
-                      )}
                     </button>
 
                     <button
