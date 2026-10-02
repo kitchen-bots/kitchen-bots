@@ -217,10 +217,91 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
   };
 }
 
+export const CATALOG_CACHE_KEY = 'kb_catalog_cache';
+export const CATALOG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes TTL
+export const DEFAULT_API_TIMEOUT_MS = 2000; // 2 seconds timeout
+
+interface CatalogCacheEnvelope {
+  timestamp: number;
+  products: Product[];
+}
+
+let memoryCatalogCache: CatalogCacheEnvelope | null = null;
+
+export function clearCatalogCache(): void {
+  memoryCatalogCache = null;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.removeItem(CATALOG_CACHE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+  }
+}
+
+export function setCatalogCache(products: Product[]): void {
+  if (!Array.isArray(products) || products.length === 0) return;
+  const envelope: CatalogCacheEnvelope = {
+    timestamp: Date.now(),
+    products,
+  };
+  memoryCatalogCache = envelope;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(envelope));
+    } catch {
+      // Ignore storage errors (e.g. quota or incognito)
+    }
+  }
+}
+
+export function getCachedCatalog(): { products: Product[]; isStale: boolean } | null {
+  if (memoryCatalogCache && Array.isArray(memoryCatalogCache.products) && memoryCatalogCache.products.length > 0) {
+    const isStale = Date.now() - memoryCatalogCache.timestamp > CATALOG_CACHE_TTL;
+    return { products: memoryCatalogCache.products, isStale };
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CatalogCacheEnvelope;
+        if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
+          memoryCatalogCache = parsed;
+          const isStale = Date.now() - parsed.timestamp > CATALOG_CACHE_TTL;
+          return { products: parsed.products, isStale };
+        }
+      }
+    } catch {
+      // Ignore JSON parse or storage errors
+    }
+  }
+
+  return null;
+}
+
+export function getCatalogSync(): Product[] {
+  const cached = getCachedCatalog();
+  if (cached && cached.products.length > 0) {
+    return cached.products;
+  }
+  return PRODUCTS;
+}
+
+export function getCatalogProductSync(slugOrId: string): Product | null {
+  const catalog = getCatalogSync();
+  const found = catalog.find(
+    (p) => String(p.id) === String(slugOrId) || p.slug === slugOrId
+  );
+  if (found) return found;
+  return getProductById(slugOrId) || null;
+}
+
 export async function fetchCatalogProducts(
   baseUrl = API_BASE_URL,
-  params?: { category?: string; q?: string; page?: number; limit?: number }
+  params?: { category?: string; q?: string; page?: number; limit?: number; timeoutMs?: number }
 ): Promise<Product[]> {
+  const timeoutMs = params?.timeoutMs ?? DEFAULT_API_TIMEOUT_MS;
   const searchParams = new URLSearchParams();
   searchParams.set('limit', String(params?.limit || 100));
   if (params?.page) {
@@ -228,34 +309,61 @@ export async function fetchCatalogProducts(
   }
 
   const primaryUrl = `${baseUrl}/api/products?${searchParams.toString()}`;
+
+  let controller: AbortController | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   try {
-    const res = await fetch(primaryUrl, { headers: { Accept: 'application/json' } });
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        controller?.abort();
+      }, timeoutMs);
+    }
+
+    const res = await fetch(primaryUrl, {
+      headers: { Accept: 'application/json' },
+      signal: controller?.signal,
+    });
+
+    if (timeoutId) clearTimeout(timeoutId);
+
     if (res.ok) {
-      const json = await res.json();
-      const items = json.docs || json.data || [];
-      if (items.length > 0) {
-        let mapped: Product[] = items.map(toStorefrontProduct);
-        if (params?.category && params.category !== 'All') {
-          mapped = mapped.filter((p) => p.category === params.category);
+      const contentType = res.headers && typeof res.headers.get === 'function' ? res.headers.get('content-type') || '' : '';
+      if (!contentType || contentType.includes('application/json')) {
+        const json = await res.json();
+        const items = json.docs || json.data || [];
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: Product[] = items.map(toStorefrontProduct);
+          if (!params?.category || params.category === 'All') {
+            setCatalogCache(mapped);
+          }
+
+          let result = mapped;
+          if (params?.category && params.category !== 'All') {
+            result = result.filter((p) => p.category === params.category);
+          }
+          if (params?.q) {
+            const q = params.q.toLowerCase();
+            result = result.filter(
+              (p) =>
+                p.name.toLowerCase().includes(q) ||
+                p.description.toLowerCase().includes(q) ||
+                p.features?.some((f) => f.toLowerCase().includes(q))
+            );
+          }
+          return result;
         }
-        if (params?.q) {
-          const q = params.q.toLowerCase();
-          mapped = mapped.filter(
-            (p) =>
-              p.name.toLowerCase().includes(q) ||
-              p.description.toLowerCase().includes(q) ||
-              p.features?.some((f) => f.toLowerCase().includes(q))
-          );
-        }
-        return mapped;
       }
     }
   } catch {
-    // Continue to fallback
+    // Continue to fallback on abort, proxy timeout, or network issue
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 
-  // Local fallback when API is unreachable or empty
-  let filtered = PRODUCTS;
+  // Local fallback (cached or bundled)
+  let filtered = getCatalogSync();
   if (params?.category && params.category !== 'All') {
     filtered = filtered.filter((p) => p.category === params.category);
   }
@@ -273,37 +381,75 @@ export async function fetchCatalogProducts(
 
 export async function fetchCatalogProduct(
   slugOrId: string,
-  baseUrl = API_BASE_URL
+  baseUrl = API_BASE_URL,
+  timeoutMs = DEFAULT_API_TIMEOUT_MS
 ): Promise<Product | null> {
-  const local = getProductById(slugOrId) || PRODUCTS.find((p) => p.slug === slugOrId || String(p.id) === String(slugOrId)) || null;
+  const local = getCatalogProductSync(slugOrId);
+
+  let controller: AbortController | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   try {
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        controller?.abort();
+      }, timeoutMs);
+    }
+
     const searchUrl = `${baseUrl}/api/products?where[slug][equals]=${encodeURIComponent(slugOrId)}`;
-    const res = await fetch(searchUrl, { headers: { Accept: 'application/json' } });
+    const res = await fetch(searchUrl, {
+      headers: { Accept: 'application/json' },
+      signal: controller?.signal,
+    });
+
+    if (timeoutId) clearTimeout(timeoutId);
+
     if (res.ok) {
-      const json = await res.json();
-      if (json.docs && json.docs.length > 0) {
-        return toStorefrontProduct(json.docs[0]);
-      }
-      if (json.data) {
-        return toStorefrontProduct(json.data);
-      }
-      if (json.doc) {
-        return toStorefrontProduct(json.doc);
+      const contentType = res.headers && typeof res.headers.get === 'function' ? res.headers.get('content-type') || '' : '';
+      if (!contentType || contentType.includes('application/json')) {
+        const json = await res.json();
+        const doc = (json.docs && json.docs[0]) || json.data || json.doc;
+        if (doc) {
+          const product = toStorefrontProduct(doc);
+          const cached = getCachedCatalog();
+          if (cached) {
+            const updated = cached.products.map((p) =>
+              p.id === product.id || p.slug === product.slug ? product : p
+            );
+            setCatalogCache(updated);
+          }
+          return product;
+        }
       }
     }
 
     if (!isNaN(Number(slugOrId))) {
       const directUrl = `${baseUrl}/api/products/${encodeURIComponent(slugOrId)}`;
-      const resDirect = await fetch(directUrl, { headers: { Accept: 'application/json' } });
+      const resDirect = await fetch(directUrl, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      });
       if (resDirect.ok) {
         const item = await resDirect.json();
         const doc = item.data || item.doc || item;
-        return toStorefrontProduct(doc);
+        if (doc) {
+          const product = toStorefrontProduct(doc);
+          const cached = getCachedCatalog();
+          if (cached) {
+            const updated = cached.products.map((p) =>
+              p.id === product.id || p.slug === product.slug ? product : p
+            );
+            setCatalogCache(updated);
+          }
+          return product;
+        }
       }
     }
   } catch {
     // Continue to fallback
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 
   return local;

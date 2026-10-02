@@ -3,7 +3,7 @@ import { ArrowRight, Minus, Plus, ShoppingCart, Eye, RotateCw, Film } from 'luci
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
-import { PRODUCTS } from '../data/products';
+import { getCatalogSync } from '../lib/api';
 import type { Product } from '../types/product';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -15,7 +15,7 @@ interface ProductFleetSectionProps {
   onProductClick?: (id: string) => void;
 }
 
-const FEATURED_PRODUCTS = PRODUCTS.filter(product => product.featured).slice(0, 4);
+const FEATURED_PRODUCTS = getCatalogSync().filter(product => product.featured).slice(0, 4);
 
 const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',

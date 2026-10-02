@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useWishlist } from '../hooks/use-wishlist';
-import { PRODUCTS } from '../data/products';
+import { getCatalogSync } from '../lib/api';
 import type { Product } from '../types/product';
 import { Heart, ArrowRight, Trash2, ShoppingBag, Package, Eye } from 'lucide-react';
 import type { Page } from '../App';
@@ -21,7 +21,7 @@ export default function WishlistPage({ onProductClick, onNavigate }: WishlistPag
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
-  const savedProducts = PRODUCTS.filter(p => wishlist.includes(p.id));
+  const savedProducts = getCatalogSync().filter(p => wishlist.includes(p.id));
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('en-IN', { 

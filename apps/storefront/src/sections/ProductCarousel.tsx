@@ -5,11 +5,11 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import { useCart } from '../modules/cart-system';
-import { PRODUCTS } from '../data/products';
+import { getCatalogSync } from '../lib/api';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const featuredProducts = PRODUCTS.filter(p => p.featured).slice(0, 6);
+const featuredProducts = getCatalogSync().filter(p => p.featured).slice(0, 6);
 
 interface ProductCarouselProps {
   onProductClick: (id: string) => void;
