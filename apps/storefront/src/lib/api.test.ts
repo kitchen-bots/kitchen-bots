@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearCatalogCache,
   fetchCatalogProduct,
   fetchCatalogProducts,
+  getCachedCatalog,
+  getCatalogProductSync,
+  getCatalogSync,
+  setCatalogCache,
   submitEnquiry,
   toStorefrontProduct,
   type ApiProduct,
@@ -27,6 +32,7 @@ describe('Storefront API Client', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.stubGlobal('fetch', mockFetch);
+    clearCatalogCache();
   });
 
   afterEach(() => {
@@ -128,5 +134,35 @@ describe('Storefront API Client', () => {
         'https://api.kitchenbots.in'
       )
     ).rejects.toThrow('Invalid email address provided.');
+  });
+
+  it('getCatalogSync returns bundled products when cache is empty', () => {
+    const products = getCatalogSync();
+    expect(products.length).toBeGreaterThan(0);
+    expect(products[0].price).toBeGreaterThan(0);
+  });
+
+  it('setCatalogCache stores products and getCatalogSync immediately reflects updated prices', () => {
+    const testProducts = [
+      toStorefrontProduct({
+        id: 'prod-test-99',
+        slug: 'test-grill',
+        name: 'Test Fast Grill',
+        pricePaise: 999900,
+      }),
+    ];
+
+    setCatalogCache(testProducts);
+    const syncProducts = getCatalogSync();
+    expect(syncProducts).toHaveLength(1);
+    expect(syncProducts[0].price).toBe(9999);
+    expect(syncProducts[0].name).toBe('Test Fast Grill');
+
+    const single = getCatalogProductSync('test-grill');
+    expect(single?.price).toBe(9999);
+
+    const cacheData = getCachedCatalog();
+    expect(cacheData?.isStale).toBe(false);
+    expect(cacheData?.products).toHaveLength(1);
   });
 });

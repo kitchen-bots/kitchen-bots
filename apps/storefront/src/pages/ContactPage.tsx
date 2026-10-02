@@ -78,9 +78,9 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] pt-24 sm:pt-28">
+    <div className="min-h-screen bg-[#FAFAFA]">
       {/* Header */}
-      <section className="border-b border-[#F1F5F9] bg-white pb-12 pt-8 lg:pb-16">
+      <section className="border-b border-[#F1F5F9] bg-white pb-12 pt-20 sm:pt-24 lg:pb-16">
         <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
           <h1 className="font-['Outfit'] text-[34px] font-bold leading-tight text-[#111827] sm:text-[44px] md:text-[52px]">
             Contact our engineering & support team

@@ -36,7 +36,7 @@ import Product360Viewer from '../components/Product360Viewer';
 import ProductVideoPlayer from '../components/ProductVideoPlayer';
 import QuickViewModal from '../components/QuickViewModal';
 import { cn } from '../lib/utils';
-import { fetchCatalogProduct } from '../lib/api';
+import { fetchCatalogProduct, getCatalogProductSync } from '../lib/api';
 import { getMediaUrl } from '../lib/cdn';
 
 interface ProductDetailPageProps {
@@ -55,8 +55,7 @@ const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
 }).format(price);
 
 export default function ProductDetailPage({ productId, onBack, onNavigate }: ProductDetailPageProps) {
-  const [product, setProduct] = useState<Product | null>(() => getProductById(productId) || null);
-  const [isLoading, setIsLoading] = useState(!product);
+  const [product, setProduct] = useState<Product | null>(() => getCatalogProductSync(productId) || getProductById(productId) || null);
   const [error, setError] = useState<string | null>(null);
 
   const [activeMediaMode, setActiveMediaMode] = useState<MediaMode>('photos');
@@ -67,6 +66,17 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxScale, setLightboxScale] = useState(1);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
+  const [prevProductId, setPrevProductId] = useState(productId);
+  if (prevProductId !== productId) {
+    setPrevProductId(productId);
+    setActiveMediaMode('photos');
+    setActiveImage(0);
+    setIsLightboxOpen(false);
+    setLightboxScale(1);
+    const syncProduct = getCatalogProductSync(productId) || getProductById(productId) || null;
+    setProduct(syncProduct);
+  }
 
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const zoomImageRef = useRef<HTMLDivElement>(null);
@@ -118,38 +128,37 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     }
   };
 
-  const loadProduct = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const local = getProductById(productId);
-      if (local) {
-        setProduct(local);
-        setIsLoading(false);
-      }
-      const item = await fetchCatalogProduct(productId);
-      if (item) {
-        setProduct(item);
-      }
-    } catch {
-      const local = getProductById(productId);
-      if (local) {
-        setProduct(local);
-      } else {
-        setError('Failed to load product details.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  useEffect(() => {
+    let ignore = false;
+    fetchCatalogProduct(productId)
+      .then((item) => {
+        if (!ignore && item) {
+          setProduct(item);
+        }
+      })
+      .catch(() => {
+        const local = getCatalogProductSync(productId) || getProductById(productId);
+        if (!ignore && !local) {
+          setError('Failed to load product details.');
+        }
+      });
+    return () => {
+      ignore = true;
+    };
   }, [productId]);
 
-  useEffect(() => {
-    loadProduct();
-    setActiveMediaMode('photos');
-    setActiveImage(0);
-    setIsLightboxOpen(false);
-    setLightboxScale(1);
-  }, [loadProduct]);
+  const reloadProduct = useCallback(() => {
+    fetchCatalogProduct(productId)
+      .then((item) => {
+        if (item) {
+          setProduct(item);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        setError('Failed to reload product details.');
+      });
+  }, [productId]);
 
   const images = useMemo(
     () => (product ? (product.images?.length ? product.images : [product.image]) : []),
@@ -208,7 +217,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     };
   }, [isLightboxOpen, images.length]);
 
-  if (isLoading && !product) {
+  if (!product && !error) {
     return (
       <section className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
         <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
@@ -314,7 +323,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
               <AlertCircle size={20} className="shrink-0" />
               <p className="text-sm font-['DM_Sans']">{error}</p>
             </div>
-            <Button size="sm" variant="outline" className="gap-2 shrink-0 rounded-xl font-bold" onClick={loadProduct}>
+            <Button size="sm" variant="outline" className="gap-2 shrink-0 rounded-xl font-bold" onClick={reloadProduct}>
               <RefreshCw size={14} /> Retry
             </Button>
           </div>

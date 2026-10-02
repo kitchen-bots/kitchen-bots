@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   ChevronRight,
@@ -8,12 +8,9 @@ import {
   Plus,
   Search,
   ShoppingCart,
-  AlertCircle,
-  RefreshCw,
   RotateCw,
   Film,
 } from 'lucide-react';
-import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
 import type { Product, ProductCategory } from '../types/product';
 import { useCart } from '../hooks/use-cart';
@@ -21,7 +18,7 @@ import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
-import { fetchCatalogProducts } from '../lib/api';
+import { fetchCatalogProducts, getCatalogSync } from '../lib/api';
 import { getMediaUrl } from '../lib/cdn';
 
 interface ProductsPageProps {
@@ -56,31 +53,25 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
   );
   const [searchQuery, setSearchQuery] = useState(params.get('q') ?? '');
   const [view, setView] = useState<ViewMode>('grid');
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>(() => getCatalogSync());
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
 
   const { addToCart, items, updateQuantity } = useCart();
   const { showToast } = useToast();
 
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const items = await fetchCatalogProducts();
-      setProducts(items.length ? items : PRODUCTS);
-    } catch {
-      // Fallback to local CMS data
-      setProducts(PRODUCTS);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    let ignore = false;
+    fetchCatalogProducts()
+      .then((items) => {
+        if (!ignore && items.length > 0) {
+          setProducts(items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // Preload and decode secondary card images during idle so card hover preview is instantaneous
   useEffect(() => {
@@ -198,21 +189,9 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
       {/* Product List Content */}
       <section className="section-padding">
         <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1480px] px-6 lg:px-12 2xl:px-16">
-          {error && (
-            <div className="mb-8 flex items-center justify-between rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-[#991B1B]">
-              <div className="flex items-center gap-3">
-                <AlertCircle size={20} className="shrink-0" />
-                <p className="text-sm font-['DM_Sans']">{error}</p>
-              </div>
-              <Button size="sm" variant="outline" className="gap-2 shrink-0 rounded-xl font-bold" onClick={loadProducts}>
-                <RefreshCw size={14} /> Retry
-              </Button>
-            </div>
-          )}
-
           <div className="mb-6 flex items-center justify-between font-['DM_Sans'] text-sm text-[#64748B]">
             <p aria-live="polite">
-              {isLoading ? 'Loading products...' : `Showing ${filteredProducts.length} of ${products.length} products`}
+              Showing {filteredProducts.length} of {products.length} products
             </p>
             {activeCategory !== 'All' && (
               <button
@@ -224,21 +203,8 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
             )}
           </div>
 
-          {isLoading ? (
-            <div className={view === 'grid' ? 'grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'grid gap-5'}>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-xs">
-                  <div className="aspect-square w-full rounded-2xl bg-[#F1F5F9] mb-6" />
-                  <div className="h-6 w-3/4 rounded bg-[#F1F5F9] mb-3" />
-                  <div className="h-4 w-full rounded bg-[#F1F5F9] mb-2" />
-                  <div className="h-4 w-2/3 rounded bg-[#F1F5F9] mb-6" />
-                  <div className="h-8 w-1/3 rounded bg-[#F1F5F9]" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={view === 'grid' ? 'grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'grid gap-5'}>
-              {filteredProducts.map(product => {
+          <div className={view === 'grid' ? 'grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'grid gap-5'}>
+            {filteredProducts.map(product => {
                 const cartItem = items.find(item => item.id === product.id);
                 const quantityInCart = cartItem?.quantity ?? 0;
                 const images = product.images?.length ? product.images : [product.image];
@@ -388,9 +354,8 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                 );
               })}
             </div>
-          )}
 
-          {!isLoading && filteredProducts.length === 0 && (
+          {filteredProducts.length === 0 && (
             <div className="py-24 text-center">
               <Search size={40} className="mx-auto mb-4 text-[#CBD5E1]" />
               <h2 className="font-['Outfit'] text-[24px] font-bold text-[#0F172A]">No matching products</h2>
