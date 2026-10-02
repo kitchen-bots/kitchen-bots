@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ChevronDown, LogOut, Menu, Search, ShoppingBag, User, X, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
 import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
@@ -259,6 +259,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
               <div ref={userMenu} className="relative hidden sm:block">
                 <Button
                   variant="ghost"
+                  aria-label="User account menu"
                   className="rounded-xl flex items-center gap-2 text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]"
                   onClick={() => setUserMenuOpen(o => !o)}
                   aria-expanded={userMenuOpen}
@@ -270,16 +271,31 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                   <ChevronDown size={14} className="text-[#94A3B8]" />
                 </Button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1 z-50">
-                    <div className="px-3 py-2 border-b border-[#F1F5F9] mb-1">
-                      <p className="text-xs font-bold text-[#111827] truncate">{user.name}</p>
+                  <div className="absolute right-0 top-full mt-2 w-56 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1.5 z-50">
+                    <button
+                      type="button"
+                      onClick={() => navigate('login')}
+                      className="w-full text-left px-3 py-2 border-b border-[#F1F5F9] mb-1 rounded-lg hover:bg-[#FFF7ED] transition-colors group cursor-pointer block"
+                      title="View Customer Portal"
+                    >
+                      <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">{user.name}</p>
                       <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
                       {user.role && (
                         <span className="inline-block mt-1 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">
                           {user.role}
                         </span>
                       )}
-                    </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('login')}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#FFF7ED] hover:text-[#C2410C] transition-colors"
+                    >
+                      <User size={15} className="text-[#C2410C]" />
+                      Customer Portal
+                    </button>
+
                     {(user.role === 'admin' || user.role === 'operations') && (
                       <a
                         href="/admin"
@@ -290,6 +306,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                       </a>
                     )}
                     <button
+                      type="button"
                       onClick={handleLogout}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
                     >
@@ -375,15 +392,20 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
 
           {/* Mobile user badge */}
           {user && (
-            <div className="mx-4 mt-4 mb-1 flex items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA]">
+            <button
+              type="button"
+              onClick={() => navigate('login')}
+              className="mx-4 mt-4 mb-1 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left hover:bg-[#FFEDD5] transition-colors cursor-pointer"
+            >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">
                 {user.name.charAt(0)}
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-[#111827] truncate">{user.name}</p>
                 <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
               </div>
-            </div>
+              <ChevronRight size={16} className="text-[#C2410C] shrink-0" />
+            </button>
           )}
 
           <nav className="flex flex-col gap-1 p-4 font-['DM_Sans']" aria-label="Mobile navigation">
@@ -444,6 +466,13 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
             <div className="mt-4 border-t border-[#F1F5F9] pt-4 flex flex-col gap-2">
               {user ? (
                 <>
+                  <button
+                    type="button"
+                    onClick={() => navigate('login')}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-[#334155] bg-[#F8FAFC] hover:bg-[#FFF7ED] hover:text-[#C2410C] transition-colors"
+                  >
+                    <User size={18} className="text-[#C2410C]" /> Customer Portal
+                  </button>
                   {(user.role === 'admin' || user.role === 'operations') && (
                     <a
                       href="/admin"

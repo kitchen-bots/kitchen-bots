@@ -61,6 +61,8 @@ function App() {
 
       if (rawPath === '' || rawPath === 'home') {
         setCurrentPage('home');
+      } else if (rawPath === 'account' || rawPath === 'portal') {
+        setCurrentPage('login');
       } else if (validPages.includes(path)) {
         setCurrentPage(path);
       } else {

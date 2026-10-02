@@ -55,27 +55,34 @@ interface StoredOrder {
 
 export default function LoginPage({ onNavigate }: LoginPageProps) {
   const { showToast } = useToast();
-  const { login, logout } = useAuth();
+  const { user: authUser, login, logout } = useAuth();
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [localUser, setLocalUser] = useState<UserAccount | null>(null);
 
-  // Load existing session if any
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    try {
-      const stored = localStorage.getItem('kb_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          name: parsed.name || 'Customer',
-          email: parsed.email || '',
-          company: parsed.company || 'Direct Customer',
-        };
+  // Derived user: prioritize live authUser from AuthContext, fallback to localUser or localStorage
+  const currentUser: UserAccount | null = authUser
+    ? {
+        name: authUser.name || 'Customer',
+        email: authUser.email || '',
+        company: authUser.company || 'Direct Customer',
       }
-      return null;
-    } catch {
-      return null;
-    }
-  });
+    : localUser ?? (() => {
+        try {
+          const stored = localStorage.getItem('kb_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return {
+              name: parsed.name || 'Customer',
+              email: parsed.email || '',
+              company: parsed.company || 'Direct Customer',
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })();
 
   // Load stored customer enquiries
   const [enquiries] = useState<StoredEnquiry[]>(() => {
@@ -120,7 +127,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
     };
 
     login(account.email, account.name);
-    setCurrentUser(account);
+    setLocalUser(account);
     showToast(`Welcome back, ${account.name}!`);
   };
 
@@ -133,13 +140,13 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
     };
 
     login(account.email, account.name);
-    setCurrentUser(account);
+    setLocalUser(account);
     showToast(`Account created for ${account.name}!`);
   };
 
   const handleSignOut = () => {
     logout();
-    setCurrentUser(null);
+    setLocalUser(null);
     showToast('Signed out successfully');
   };
 
@@ -150,14 +157,14 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
       company: 'AeroBake Commercial Facilities',
     };
     login(demoAccount.email, demoAccount.name);
-    setCurrentUser(demoAccount);
+    setLocalUser(demoAccount);
     showToast('Signed in with Demo Engineering Account');
   };
 
   // If user is logged in, show the Customer Portal
   if (currentUser) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-20 sm:pt-24">
         <div className="mx-auto w-full max-w-[1200px] px-6 lg:px-12">
           {/* Header Profile Bar */}
           <div className="flex flex-col justify-between gap-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm md:flex-row md:items-center">
@@ -424,7 +431,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
   // If not logged in, render minimal, premium Sign In / Create Account container
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-20 sm:pt-24">
       <div className="mx-auto w-full max-w-[960px] px-6">
         <div className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] md:grid md:grid-cols-[380px_1fr]">
 
