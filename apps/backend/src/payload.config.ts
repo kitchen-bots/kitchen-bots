@@ -57,6 +57,18 @@ export default buildConfig({
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
+  cors: [
+    'https://kitchenbots.in',
+    'https://kitchen-bots.vercel.app',
+    process.env.NEXT_PUBLIC_SERVER_URL || '',
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ].filter(Boolean),
+  csrf: [
+    'https://kitchenbots.in',
+    'https://kitchen-bots.vercel.app',
+    process.env.NEXT_PUBLIC_SERVER_URL || '',
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ].filter(Boolean),
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
