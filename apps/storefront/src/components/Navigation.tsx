@@ -271,15 +271,39 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                   <ChevronDown size={14} className="text-[#94A3B8]" />
                 </Button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1.5 z-50">
+                  <div
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="absolute right-0 top-full mt-2 w-60 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1.5 z-50 pointer-events-auto"
+                  >
                     <button
                       type="button"
-                      onClick={() => navigate('login')}
-                      className="w-full text-left px-3 py-2 border-b border-[#F1F5F9] mb-1 rounded-lg hover:bg-[#FFF7ED] transition-colors group cursor-pointer block"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('login');
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          navigate('login');
+                        }
+                      }}
+                      className="flex w-full items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[#F1F5F9] mb-1 rounded-lg hover:bg-[#FFF7ED] transition-colors group cursor-pointer text-left"
                       title="View Customer Portal"
+                      aria-label="View Customer Portal"
                     >
-                      <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">{user.name}</p>
-                      <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-[11px] text-[#64748B] truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-[#94A3B8] group-hover:text-[#C2410C] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </button>
 
                     {(user.role === 'admin' || user.role === 'operations') && (
@@ -381,6 +405,8 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
             <button
               type="button"
               onClick={() => navigate('login')}
+              title="View Customer Portal"
+              aria-label="View Customer Portal"
               className="mx-4 mt-4 mb-1 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left hover:bg-[#FFEDD5] transition-colors cursor-pointer"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">
