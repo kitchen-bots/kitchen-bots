@@ -120,7 +120,13 @@ function extractImageUrl(val: unknown): string {
 export function toStorefrontProduct(raw: RawProductInput): Product {
   const rawId = String(raw.id || '');
   const rawSlug = typeof raw.slug === 'string' && raw.slug ? raw.slug : rawId;
-  const local = getProductById(rawId) || PRODUCTS.find((p) => p.slug === rawSlug || String(p.id) === rawId);
+  const local =
+    getProductById(rawId) ||
+    getProductById(rawSlug) ||
+    PRODUCTS.find((p) => p.slug === rawSlug || String(p.id) === rawId || p.id === `prod-${rawId}` || p.id === rawSlug);
+
+  const canonicalId = local?.id || (rawId.startsWith('prod-') ? rawId : `prod-${rawId}`) || rawSlug;
+  const canonicalSlug = (typeof raw.slug === 'string' && raw.slug ? raw.slug : local?.slug) || rawSlug;
 
   let categoryName: ProductCategory = 'Collapsible BBQ';
   const rawCategory = raw.category;
@@ -158,11 +164,11 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
 
   const images = rawImages.map((img) => getMediaUrl(img));
   const primaryImage = images[0] || (local?.image ? getMediaUrl(local.image) : '');
-  const rawPrice = typeof raw.pricePaise === 'number' ? raw.pricePaise : null;
+  const rawPrice = typeof raw.pricePaise === 'number' && raw.pricePaise > 0 ? raw.pricePaise : null;
   const priceRupees =
     rawPrice && rawPrice > 0
       ? Math.round(rawPrice / 100)
-      : (local?.price ?? 0);
+      : (local?.price || 0);
 
   let features: string[] = [];
   if (Array.isArray(raw.features) && raw.features.length > 0) {
@@ -197,11 +203,12 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
 
   return {
     ...(local || {}),
-    id: rawId || local?.id || rawSlug,
-    slug: (typeof raw.slug === 'string' && raw.slug) || local?.slug || rawSlug,
+    id: canonicalId,
+    slug: canonicalSlug,
     name: (typeof raw.name === 'string' && raw.name) || local?.name || '',
     description: (typeof raw.description === 'string' && raw.description) || local?.description || '',
-    price: priceRupees,
+    price: priceRupees || local?.price || 0,
+    mrp: local?.mrp || (priceRupees ? Math.round(priceRupees * 1.22) : undefined),
     image: primaryImage,
     images,
     category: categoryName,
@@ -211,13 +218,13 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
     videoPath: (typeof raw.videoPath === 'string' ? raw.videoPath : undefined) || local?.videoPath,
     sequenceId: (typeof raw.sequenceId === 'string' ? raw.sequenceId : undefined) || local?.sequenceId,
     sequenceFrameCount: (typeof raw.sequenceFrameCount === 'number' ? raw.sequenceFrameCount : undefined) || local?.sequenceFrameCount,
-    has3D: typeof raw.has3D === 'boolean' ? raw.has3D : local?.has3D,
-    hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : local?.hasVideo,
+    has3D: typeof raw.has3D === 'boolean' ? raw.has3D : (local?.has3D ?? false),
+    hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : (local?.hasVideo ?? false),
     featured: typeof raw.featured === 'boolean' ? raw.featured : (local?.featured ?? false),
   };
 }
 
-export const CATALOG_CACHE_KEY = 'kb_catalog_cache';
+export const CATALOG_CACHE_KEY = 'kb_catalog_cache_v3';
 export const CATALOG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes TTL
 export const DEFAULT_API_TIMEOUT_MS = 2000; // 2 seconds timeout
 
@@ -233,6 +240,8 @@ export function clearCatalogCache(): void {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       localStorage.removeItem(CATALOG_CACHE_KEY);
+      localStorage.removeItem('kb_catalog_cache');
+      localStorage.removeItem('kb_catalog_cache_v2');
     } catch {
       // Ignore storage errors
     }
@@ -241,6 +250,9 @@ export function clearCatalogCache(): void {
 
 export function setCatalogCache(products: Product[]): void {
   if (!Array.isArray(products) || products.length === 0) return;
+  // Ensure we never cache products with 0 price
+  if (products.some((p) => !p.price || p.price <= 0)) return;
+
   const envelope: CatalogCacheEnvelope = {
     timestamp: Date.now(),
     products,
@@ -257,19 +269,31 @@ export function setCatalogCache(products: Product[]): void {
 
 export function getCachedCatalog(): { products: Product[]; isStale: boolean } | null {
   if (memoryCatalogCache && Array.isArray(memoryCatalogCache.products) && memoryCatalogCache.products.length > 0) {
-    const isStale = Date.now() - memoryCatalogCache.timestamp > CATALOG_CACHE_TTL;
-    return { products: memoryCatalogCache.products, isStale };
+    const hasInvalid = memoryCatalogCache.products.some((p) => !p.price || p.price <= 0);
+    if (!hasInvalid) {
+      const isStale = Date.now() - memoryCatalogCache.timestamp > CATALOG_CACHE_TTL;
+      return { products: memoryCatalogCache.products, isStale };
+    }
+    memoryCatalogCache = null;
   }
 
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
+      // Clean up corrupted legacy cache keys
+      localStorage.removeItem('kb_catalog_cache');
+      localStorage.removeItem('kb_catalog_cache_v2');
+
       const raw = localStorage.getItem(CATALOG_CACHE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as CatalogCacheEnvelope;
         if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          memoryCatalogCache = parsed;
-          const isStale = Date.now() - parsed.timestamp > CATALOG_CACHE_TTL;
-          return { products: parsed.products, isStale };
+          const hasInvalid = parsed.products.some((p) => !p.price || p.price <= 0);
+          if (!hasInvalid) {
+            memoryCatalogCache = parsed;
+            const isStale = Date.now() - parsed.timestamp > CATALOG_CACHE_TTL;
+            return { products: parsed.products, isStale };
+          }
+          localStorage.removeItem(CATALOG_CACHE_KEY);
         }
       }
     } catch {
@@ -288,13 +312,23 @@ export function getCatalogSync(): Product[] {
   return PRODUCTS;
 }
 
-export function getCatalogProductSync(slugOrId: string): Product | null {
+export function getCatalogProductSync(slugOrId: string | number | undefined | null): Product | null {
+  if (!slugOrId) return null;
+  const directLocal = getProductById(slugOrId);
+  if (directLocal && directLocal.price > 0) {
+    return directLocal;
+  }
   const catalog = getCatalogSync();
+  const raw = String(slugOrId).trim();
+  const numOnly = raw.replace(/\D/g, '');
   const found = catalog.find(
-    (p) => String(p.id) === String(slugOrId) || p.slug === slugOrId
+    (p) =>
+      String(p.id) === raw ||
+      p.slug === raw ||
+      (numOnly && p.id.replace(/\D/g, '') === numOnly)
   );
-  if (found) return found;
-  return getProductById(slugOrId) || null;
+  if (found && found.price > 0) return found;
+  return directLocal || null;
 }
 
 export async function fetchCatalogProducts(

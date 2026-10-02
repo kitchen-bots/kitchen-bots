@@ -62,7 +62,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
     let ignore = false;
     fetchCatalogProducts()
       .then((items) => {
-        if (!ignore && items.length > 0) {
+        if (!ignore && Array.isArray(items) && items.length > 0 && items.every((p) => p.price > 0)) {
           setProducts(items);
         }
       })
