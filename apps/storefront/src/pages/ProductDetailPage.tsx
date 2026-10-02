@@ -131,7 +131,7 @@ export default function ProductDetailPage({ productId, onBack, onNavigate }: Pro
     let ignore = false;
     fetchCatalogProduct(productId)
       .then((item) => {
-        if (!ignore && item) {
+        if (!ignore && item && item.price && item.price > 0) {
           setProduct(item);
         }
       })

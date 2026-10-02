@@ -57,7 +57,10 @@ async function seed() {
     const catSlug = prod.categoryId || prod.category?.toLowerCase()?.replace(/\s+/g, '-');
     const categoryId = categoryMap.get(catSlug) || Array.from(categoryMap.values())[0];
 
-    const pricePaise = prod.pricePaise || (prod.price ? prod.price * 100 : 0);
+    const rawPrice = typeof prod.pricePaise === 'number' && prod.pricePaise > 0
+      ? prod.pricePaise / 100
+      : (prod.price || (Array.isArray(prod.variants) && prod.variants[0]?.price) || 0);
+    const pricePaise = Math.round(rawPrice * 100);
 
     const productData = {
       name: prod.name,
