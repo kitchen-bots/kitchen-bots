@@ -67,3 +67,59 @@ input:focus, textarea:focus, select:focus {
   border-color: #3f3f46 !important;
   color: #fafafa !important;
 }
+
+/* Polished Table Styling */
+.table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid #27272a !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.table th {
+  background-color: #121215 !important;
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #a1a1aa !important;
+  border-bottom: 1px solid #27272a !important;
+  padding: 10px 14px !important;
+}
+
+.table td {
+  border-bottom: 1px solid #1c1917 !important;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+}
+
+.table tr:hover td {
+  background-color: #18181b !important;
+}
+
+/* Card & Container Polish */
+.card {
+  border: 1px solid #27272a !important;
+  background-color: #121215 !important;
+  border-radius: 10px !important;
+}
+
+/* Custom Industrial Dark Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}

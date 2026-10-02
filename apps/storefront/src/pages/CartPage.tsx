@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
 import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
+import { submitOrder } from '../lib/api';
 
 interface CartPageProps {
   onNavigate: (page: Page) => void;
@@ -70,6 +71,8 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<CheckoutForm>>({});
   const [form, setForm] = useState<CheckoutForm>({
     name: '',
@@ -152,37 +155,58 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     return Object.keys(errors).length === 0;
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm() || isSubmitting) return;
 
-    const order: PlacedOrder = {
-      reference: generateOrderRef(),
-      date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      address: form.address.trim(),
-      city: form.city.trim(),
-      state: form.state.trim(),
-      pincode: form.pincode.trim(),
-      items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-      total: totalPrice,
-      status: 'Order Confirmed',
-    };
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Persist to localStorage so Customer Portal can show it
     try {
-      const existing = localStorage.getItem('kb_orders');
-      const orders: PlacedOrder[] = existing ? JSON.parse(existing) : [];
-      orders.unshift(order);
-      localStorage.setItem('kb_orders', JSON.stringify(orders));
-    } catch {
-      // Ignore storage errors
-    }
+      const res = await submitOrder({
+        customerName: form.name.trim(),
+        customerPhone: form.phone.trim(),
+        totalPaise: Math.round(totalPrice * 100),
+        items: items.map((i) => ({
+          productId: i.id,
+          name: i.name,
+          pricePaise: Math.round(i.price * 100),
+          quantity: i.quantity,
+        })),
+        shippingAddress: {
+          fullName: form.name.trim(),
+          phone: form.phone.trim(),
+          addressLine1: form.address.trim(),
+          addressLine2: form.notes.trim() || undefined,
+          city: form.city.trim(),
+          state: form.state.trim(),
+          postalCode: form.pincode.trim(),
+          country: 'India',
+        },
+      });
 
-    clearCart();
-    setConfirmedOrder(order);
-    setShowCheckout(false);
+      const order: PlacedOrder = {
+        reference: res.orderNumber,
+        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        total: totalPrice,
+        status: 'Order Confirmed',
+      };
+
+      clearCart();
+      setConfirmedOrder(order);
+      setShowCheckout(false);
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Unable to place order right now. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ─── Order Confirmed Screen ───────────────────────────────────────────────
@@ -707,6 +731,13 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   />
                 </div>
 
+                {submitError && (
+                  <div className="flex items-start gap-2.5 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2] p-3 text-[#991B1B] text-xs font-['DM_Sans']">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <p>{submitError}</p>
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-[#F1F5F9]">
                   <p className="text-xs text-[#64748B] font-['DM_Sans'] mb-4 leading-relaxed">
                     By placing this order, you agree to our{' '}
@@ -718,10 +749,20 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full font-bold rounded-xl bg-kb-primary hover:bg-[#145e2e] text-white"
+                    disabled={isSubmitting}
+                    className="w-full font-bold rounded-xl bg-kb-primary hover:bg-[#145e2e] text-white disabled:opacity-60"
                   >
-                    Confirm Order
-                    <ChevronUp className="w-4 h-4 ml-1" />
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Confirming Order...
+                      </>
+                    ) : (
+                      <>
+                        Confirm Order
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
