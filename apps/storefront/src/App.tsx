@@ -32,10 +32,11 @@ import './App.css';
 
 import BlogPage from './pages/BlogPage';
 import CartPage from './pages/CartPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry';
+export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry' | '404';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -49,9 +50,9 @@ function App() {
     const handleLocationChange = () => {
       setSelectedProductId(new URLSearchParams(window.location.search).get('id'));
       setCatalogKey(key => key + 1);
-      const rawPath = window.location.pathname.replace('/', '');
+      const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
       const path = rawPath as Page;
-      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry'];
+      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry', '404'];
       
       if (rawPath === 'admin' || rawPath.startsWith('admin/')) {
         window.location.reload();
@@ -62,6 +63,8 @@ function App() {
         setCurrentPage('home');
       } else if (validPages.includes(path)) {
         setCurrentPage(path);
+      } else {
+        setCurrentPage('404');
       }
     };
 
@@ -162,6 +165,8 @@ function App() {
         return <WishlistPage onProductClick={(id) => navigateTo('product-detail', id)} onNavigate={navigateTo} />;
       case 'bulk-enquiry':
         return <BulkEnquiryPage onNavigate={navigateTo} selectedProductId={selectedProductId} />;
+      case '404':
+        return <NotFoundPage onNavigate={navigateTo} />;
       case 'home':
       default:
         return (
