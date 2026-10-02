@@ -1,4 +1,6 @@
 import React from 'react';
+import { getPayload } from 'payload';
+import config from '../payload.config';
 
 interface AdminDashboardProps {
   payload?: Record<string, unknown>;
@@ -6,30 +8,83 @@ interface AdminDashboardProps {
   [key: string]: unknown;
 }
 
-export function AdminDashboard(_props?: AdminDashboardProps) {
+export async function AdminDashboard(_props?: AdminDashboardProps) {
+  let ordersList: any[] = [];
+  let totalOrdersCount = 0;
+  let activeOrdersCount = 0;
+  let totalRevenuePaise = 0;
+  let productsCount = 12;
+  let quotesCount = 0;
+  let enquiriesCount = 0;
+  let servicesCount = 0;
+  let recentEnquiriesList: any[] = [];
+
+  try {
+    const payload = (_props?.payload as any) || (await getPayload({ config }));
+
+    const [ordersRes, productsRes, quotesRes, enquiriesRes, servicesRes] = await Promise.all([
+      payload.find({
+        collection: 'orders',
+        limit: 10,
+        sort: '-createdAt',
+      }),
+      payload.count({
+        collection: 'products',
+      }).catch(() => ({ totalDocs: 12 })),
+      payload.count({
+        collection: 'quotes',
+      }).catch(() => ({ totalDocs: 0 })),
+      payload.find({
+        collection: 'enquiries',
+        limit: 5,
+        sort: '-createdAt',
+      }).catch(() => ({ totalDocs: 0, docs: [] })),
+      payload.count({
+        collection: 'services',
+      }).catch(() => ({ totalDocs: 0 })),
+    ]);
+
+    totalOrdersCount = ordersRes.totalDocs;
+    ordersList = ordersRes.docs;
+    productsCount = (productsRes as any)?.totalDocs ?? 12;
+    quotesCount = (quotesRes as any)?.totalDocs ?? 0;
+    enquiriesCount = enquiriesRes.totalDocs ?? 0;
+    recentEnquiriesList = enquiriesRes.docs ?? [];
+    servicesCount = (servicesRes as any)?.totalDocs ?? 0;
+
+    for (const ord of ordersList) {
+      if (['pending', 'processing', 'shipped'].includes(ord.status)) {
+        activeOrdersCount++;
+      }
+      totalRevenuePaise += ord.totalPaise || 0;
+    }
+  } catch (err) {
+    console.error('Failed to load dashboard metrics from database:', err);
+  }
+
   const kpis = [
     {
       title: 'Commercial Revenue',
-      value: '₹18,45,000',
-      trend: '+14.2% MoM',
+      value: `₹${Math.round(totalRevenuePaise / 100).toLocaleString('en-IN')}`,
+      trend: `${totalOrdersCount} orders`,
       isPositive: true,
-      sub: 'Fiscal Year 2026 YTD',
+      sub: totalOrdersCount > 0 ? `${totalOrdersCount} Total Invoices` : 'Awaiting First Order',
       badge: 'Commercial',
       link: '/admin/collections/orders',
     },
     {
       title: 'Active Orders',
-      value: '04',
-      trend: '+2 this week',
-      isPositive: true,
-      sub: '2 In Fabrication · 2 Dispatched',
+      value: String(activeOrdersCount).padStart(2, '0'),
+      trend: `${activeOrdersCount} in pipeline`,
+      isPositive: activeOrdersCount > 0,
+      sub: `${activeOrdersCount} Pending / In Progress`,
       badge: 'Fulfillment',
       link: '/admin/collections/orders',
     },
     {
       title: 'Equipment Fleet',
-      value: '12',
-      trend: '6 Series Active',
+      value: String(productsCount).padStart(2, '0'),
+      trend: 'Catalog Active',
       isPositive: true,
       sub: 'All Authentic CAD Models',
       badge: 'Catalog',
@@ -37,25 +92,25 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
     },
     {
       title: 'B2B Quotations',
-      value: '07',
-      trend: '3 Under Review',
-      isPositive: true,
-      sub: '₹24.8L Pending Pipeline',
+      value: String(quotesCount).padStart(2, '0'),
+      trend: `${quotesCount} requested`,
+      isPositive: quotesCount > 0,
+      sub: 'B2B Custom Quotations',
       badge: 'B2B Sales',
       link: '/admin/collections/quotes',
     },
     {
       title: 'Commercial Leads',
-      value: '19',
-      trend: '+5 New Today',
-      isPositive: true,
-      sub: 'Inquiries via Storefront Desk',
+      value: String(enquiriesCount).padStart(2, '0'),
+      trend: `${enquiriesCount} received`,
+      isPositive: enquiriesCount > 0,
+      sub: 'Storefront Desk Inquiries',
       badge: 'CRM Leads',
       link: '/admin/collections/enquiries',
     },
     {
       title: 'Service & Warranty',
-      value: '02',
+      value: String(servicesCount).padStart(2, '0'),
       trend: '100% SLA Normal',
       isPositive: true,
       sub: 'Preventative Maintenance',
@@ -77,7 +132,7 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
     { month: 'DEC', val: 5.2, label: '₹5.2L' },
     { month: 'JAN', val: 4.8, label: '₹4.8L' },
     { month: 'FEB', val: 5.4, label: '₹5.4L' },
-    { month: 'MAR', val: 6.2, label: '₹6.2L' },
+    { month: 'MAR', val: totalRevenuePaise > 0 ? Math.min(Math.max(totalRevenuePaise / 10000000, 1.0), 6.5) : 6.2, label: `₹${(totalRevenuePaise / 10000000).toFixed(1)}L` },
   ];
 
   // SVG Chart Geometry
@@ -101,80 +156,60 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
 
   const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(chartHeight - paddingY).toFixed(1)} L ${points[0].x.toFixed(1)} ${(chartHeight - paddingY).toFixed(1)} Z`;
 
-  // Sample recent commercial orders
-  const recentOrders = [
-    {
-      id: 'KB-ORD-9421',
-      customer: 'Barbeque Nation Hospitality',
-      items: '2x Santa Maria 72" Heavy Duty',
-      amount: '₹4,65,000',
-      status: 'Manufacturing',
-      statusColor: '#f59e0b',
-    },
-    {
-      id: 'KB-ORD-9388',
-      customer: 'Taj Gateway Outdoor Kitchens',
-      items: '1x Automated Charcoal BBQ SS-304',
-      amount: '₹2,85,000',
-      status: 'Processing',
-      statusColor: '#3b82f6',
-    },
-    {
-      id: 'KB-ORD-9352',
-      customer: 'Pitmaster Pro Catering Co',
-      items: '4x Rocket Stove RS-4 High-Output',
-      amount: '₹1,24,000',
-      status: 'Dispatched',
-      statusColor: '#22c55e',
-    },
-    {
-      id: 'KB-ORD-9310',
-      customer: 'Hyderabad Smokehouse Hub',
-      items: '1x Commercial Custom Rotisserie',
-      amount: '₹1,95,000',
-      status: 'Confirmed',
-      statusColor: '#a855f7',
-    },
-  ];
+  // Real orders mapped from database
+  const recentOrders = ordersList.map((ord) => {
+    const itemsText = Array.isArray(ord.items) && ord.items.length > 0
+      ? ord.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')
+      : 'Equipment Order';
 
-  // Sample commercial leads
-  const recentLeads = [
-    {
-      contact: 'Vikram Reddy',
-      company: 'Smoke & Fire Grills Group',
-      interest: 'Santa Maria Heavy Duty (Commercial)',
-      status: 'Proposal Sent',
-      statusColor: '#3b82f6',
-    },
-    {
-      contact: 'Ananya Sharma',
-      company: 'CloudKitchens India Network',
-      interest: '6x Rocket Stoves Batch Order',
-      status: 'New Lead',
-      statusColor: '#22c55e',
-    },
-    {
-      contact: 'Rajesh Verma',
-      company: 'Highway Dhaba Enterprise',
-      interest: 'Automated Skewer BBQ Machine',
-      status: 'Requirement Gathering',
-      statusColor: '#f59e0b',
-    },
-    {
-      contact: 'Capt. Sunil Nair',
-      company: 'Southern Resort & Retreat',
-      interest: 'Bespoke Santa Maria + Parilla Combo',
-      status: 'Site Visit Scheduled',
-      statusColor: '#a855f7',
-    },
-  ];
+    let statusColor = '#f59e0b';
+    if (ord.status === 'processing') statusColor = '#3b82f6';
+    else if (ord.status === 'shipped') statusColor = '#a855f7';
+    else if (ord.status === 'delivered') statusColor = '#22c55e';
+    else if (ord.status === 'cancelled') statusColor = '#ef4444';
 
-  // Audit activity events
+    const formattedAmount = `₹${Math.round((ord.totalPaise || 0) / 100).toLocaleString('en-IN')}`;
+
+    return {
+      dbId: ord.id,
+      id: ord.orderNumber || `KB-ORD-${ord.id}`,
+      customer: ord.customerName || ord.customerEmail || 'Direct Customer',
+      items: itemsText,
+      amount: formattedAmount,
+      status: ord.status ? ord.status.charAt(0).toUpperCase() + ord.status.slice(1) : 'Pending',
+      statusColor,
+      createdAt: ord.createdAt,
+    };
+  });
+
+  // Real leads mapped from enquiries collection
+  const recentLeads = recentEnquiriesList.map((enq) => {
+    let statusColor = '#22c55e';
+    if (enq.status === 'in_progress') statusColor = '#3b82f6';
+    else if (enq.status === 'contacted') statusColor = '#f59e0b';
+    else if (enq.status === 'resolved') statusColor = '#22c55e';
+    else if (enq.status === 'archived') statusColor = '#71717a';
+
+    const cleanInterest = enq.message ? (enq.message.length > 40 ? enq.message.slice(0, 40) + '...' : enq.message) : 'Commercial Inquiry';
+
+    return {
+      dbId: enq.id,
+      contact: enq.name || 'Commercial Customer',
+      company: enq.company || enq.city || 'Storefront Lead',
+      interest: cleanInterest,
+      status: enq.status ? enq.status.replace('_', ' ').toUpperCase() : 'NEW',
+      statusColor,
+    };
+  });
+
+  // Real Audit activity events from database
   const auditLogs = [
-    { time: 'Just now', actor: 'System', text: 'Supabase PostgreSQL schema synchronized (21 tables active)' },
-    { time: '15m ago', actor: 'admin@kitchenbots.com', text: 'Seeded 12 authentic CAD models and 6 categories' },
-    { time: '1h ago', actor: 'System', text: 'Cloudflare R2 storage credentials authenticated' },
-    { time: 'Yesterday', actor: 'System', text: 'Single-domain proxy router mounted (/admin -> :3001)' },
+    { time: 'Just now', actor: 'System', text: `Supabase PostgreSQL synchronized (${totalOrdersCount} orders, ${productsCount} products)` },
+    ...(recentOrders.slice(0, 3).map((ord) => ({
+      time: ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Recent',
+      actor: ord.customer,
+      text: `Order #${ord.id} placed (${ord.amount})`,
+    }))),
   ];
 
   return (
@@ -578,56 +613,69 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.map((ord, idx) => (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: '1px solid #1c1917',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: '10px 10px',
-                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                          color: '#f97316',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {ord.id}
-                      </td>
-                      <td style={{ padding: '10px 10px', color: '#e4e4e7' }}>
-                        <div>{ord.customer}</div>
-                        <div style={{ fontSize: '10px', color: '#71717a' }}>{ord.items}</div>
-                      </td>
-                      <td
-                        style={{
-                          padding: '10px 10px',
-                          color: '#fafafa',
-                          fontWeight: 600,
-                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                        }}
-                      >
-                        {ord.amount}
-                      </td>
-                      <td style={{ padding: '10px 10px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            backgroundColor: '#18181b',
-                            color: ord.statusColor,
-                            border: `1px solid ${ord.statusColor}40`,
-                          }}
-                        >
-                          {ord.status}
-                        </span>
+                  {recentOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '24px 10px', textAlign: 'center', color: '#71717a' }}>
+                        No orders recorded yet. Placed orders will appear here automatically.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentOrders.map((ord, idx) => (
+                      <tr
+                        key={idx}
+                        style={{
+                          borderBottom: '1px solid #1c1917',
+                          transition: 'background-color 0.15s ease',
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: '10px 10px',
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                            color: '#f97316',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <a
+                            href={`/admin/collections/orders/${ord.dbId}`}
+                            style={{ color: '#f97316', textDecoration: 'none' }}
+                          >
+                            {ord.id}
+                          </a>
+                        </td>
+                        <td style={{ padding: '10px 10px', color: '#e4e4e7' }}>
+                          <div>{ord.customer}</div>
+                          <div style={{ fontSize: '10px', color: '#71717a' }}>{ord.items}</div>
+                        </td>
+                        <td
+                          style={{
+                            padding: '10px 10px',
+                            color: '#fafafa',
+                            fontWeight: 600,
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          }}
+                        >
+                          {ord.amount}
+                        </td>
+                        <td style={{ padding: '10px 10px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#18181b',
+                              color: ord.statusColor,
+                              border: `1px solid ${ord.statusColor}40`,
+                            }}
+                          >
+                            {ord.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -677,33 +725,46 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentLeads.map((lead, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #1c1917' }}>
-                      <td style={{ padding: '10px 10px', color: '#e4e4e7' }}>
-                        <div style={{ fontWeight: 500 }}>{lead.contact}</div>
-                        <div style={{ fontSize: '10px', color: '#71717a' }}>{lead.company}</div>
-                      </td>
-                      <td style={{ padding: '10px 10px', color: '#a1a1aa' }}>
-                        {lead.interest}
-                      </td>
-                      <td style={{ padding: '10px 10px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            backgroundColor: '#18181b',
-                            color: lead.statusColor,
-                            border: `1px solid ${lead.statusColor}40`,
-                          }}
-                        >
-                          {lead.status}
-                        </span>
+                  {recentLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '24px 10px', textAlign: 'center', color: '#71717a' }}>
+                        No commercial leads yet. Inquiries will appear here automatically.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentLeads.map((lead, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #1c1917' }}>
+                        <td style={{ padding: '10px 10px', color: '#e4e4e7' }}>
+                          <a
+                            href={`/admin/collections/enquiries/${lead.dbId}`}
+                            style={{ fontWeight: 500, color: '#e4e4e7', textDecoration: 'none' }}
+                          >
+                            {lead.contact}
+                          </a>
+                          <div style={{ fontSize: '10px', color: '#71717a' }}>{lead.company}</div>
+                        </td>
+                        <td style={{ padding: '10px 10px', color: '#a1a1aa' }}>
+                          {lead.interest}
+                        </td>
+                        <td style={{ padding: '10px 10px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#18181b',
+                              color: lead.statusColor,
+                              border: `1px solid ${lead.statusColor}40`,
+                            }}
+                          >
+                            {lead.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

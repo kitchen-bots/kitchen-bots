@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
+import { useAuth } from '../context/AuthContext';
 import { MIN_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, Mail, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
-import { submitOrder } from '../lib/api';
+import { submitOrder, API_BASE_URL } from '../lib/api';
 
 interface CartPageProps {
   onNavigate: (page: Page) => void;
@@ -14,6 +15,7 @@ interface CartPageProps {
 
 interface CheckoutForm {
   name: string;
+  email: string;
   phone: string;
   address: string;
   city: string;
@@ -26,6 +28,7 @@ interface PlacedOrder {
   reference: string;
   date: string;
   name: string;
+  email?: string;
   phone: string;
   address: string;
   city: string;
@@ -64,13 +67,15 @@ function renderConfigValue(value: unknown): React.ReactNode {
 
 export default function CartPage({ onNavigate }: CartPageProps) {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
+  const { user, token } = useAuth();
   const [showCheckout, setShowCheckout] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<CheckoutForm>>({});
   const [form, setForm] = useState<CheckoutForm>({
-    name: '',
+    name: user?.name || '',
+    email: user?.email || '',
     phone: '',
     address: '',
     city: '',
@@ -78,6 +83,17 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     pincode: '',
     notes: '',
   });
+
+  const handleOpenCheckout = () => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+      }));
+    }
+    setShowCheckout(true);
+  };
 
   // Freeze background scroll and handle Escape key when checkout modal is active
   useEffect(() => {
@@ -143,6 +159,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutForm> = {};
     if (!form.name.trim()) errors.name = 'Name is required';
+    if (!form.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = 'Enter a valid email address';
+    }
     if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ''))) errors.phone = 'Enter a valid 10-digit Indian mobile number';
     if (!form.address.trim()) errors.address = 'Address is required';
     if (!form.city.trim()) errors.city = 'City is required';
@@ -160,32 +181,40 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     setSubmitError(null);
 
     try {
-      const res = await submitOrder({
-        customerName: form.name.trim(),
-        customerPhone: form.phone.trim(),
-        totalPaise: Math.round(totalPrice * 100),
-        items: items.map((i) => ({
-          productId: i.id,
-          name: i.name,
-          pricePaise: Math.round(i.price * 100),
-          quantity: i.quantity,
-        })),
-        shippingAddress: {
-          fullName: form.name.trim(),
-          phone: form.phone.trim(),
-          addressLine1: form.address.trim(),
-          addressLine2: form.notes.trim() || undefined,
-          city: form.city.trim(),
-          state: form.state.trim(),
-          postalCode: form.pincode.trim(),
-          country: 'India',
+      const res = await submitOrder(
+        {
+          customerName: form.name.trim(),
+          customerEmail: form.email.trim() || user?.email,
+          customerPhone: form.phone.trim(),
+          customerId: user?.id,
+          notes: form.notes.trim() || undefined,
+          totalPaise: Math.round(totalPrice * 100),
+          items: items.map((i) => ({
+            productId: i.id,
+            name: i.name,
+            pricePaise: Math.round(i.price * 100),
+            quantity: i.quantity,
+          })),
+          shippingAddress: {
+            fullName: form.name.trim(),
+            phone: form.phone.trim(),
+            addressLine1: form.address.trim(),
+            addressLine2: form.notes.trim() || undefined,
+            city: form.city.trim(),
+            state: form.state.trim(),
+            postalCode: form.pincode.trim(),
+            country: 'India',
+          },
         },
-      });
+        API_BASE_URL,
+        token || undefined
+      );
 
       const order: PlacedOrder = {
         reference: res.orderNumber,
         date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         name: form.name.trim(),
+        email: form.email.trim() || user?.email,
         phone: form.phone.trim(),
         address: form.address.trim(),
         city: form.city.trim(),
@@ -241,6 +270,12 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   <span className="text-[#64748B]">Contact</span>
                   <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
                 </div>
+                {confirmedOrder.email && (
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Email</span>
+                    <span className="text-[#0F172A]">{confirmedOrder.email}</span>
+                  </div>
+                )}
                 <div className="flex justify-between gap-4">
                   <span className="text-[#64748B] shrink-0">Delivery to</span>
                   <span className="text-[#0F172A] text-right">{confirmedOrder.address}, {confirmedOrder.city}, {confirmedOrder.state} - {confirmedOrder.pincode}</span>
@@ -514,7 +549,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
               {/* Actions */}
               <div className="mt-6 space-y-3">
                 <Button
-                  onClick={() => setShowCheckout(true)}
+                  onClick={handleOpenCheckout}
                   size="lg"
                   className="w-full text-base font-bold flex items-center justify-center gap-2 bg-kb-primary hover:bg-[#145e2e] text-white focus-visible:ring-2 focus-visible:ring-kb-primary focus-visible:ring-offset-2"
                 >
@@ -608,6 +643,27 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                     />
                   </div>
                   {formErrors.name && <p className="text-xs text-[#DC2626]">{formErrors.name}</p>}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-1">
+                  <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-email">
+                    Email Address <span className="text-[#C2410C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+                    <input
+                      id="co-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      placeholder="your.email@example.com"
+                      className={`h-11 w-full rounded-xl border pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:ring-1 ${formErrors.email ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]' : 'border-[#CBD5E1] focus:border-[#C2410C] focus:ring-[#C2410C]'}`}
+                    />
+                  </div>
+                  {formErrors.email && <p className="text-xs text-[#DC2626]">{formErrors.email}</p>}
                 </div>
 
                 {/* Phone */}
