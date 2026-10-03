@@ -7,6 +7,7 @@ import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import { submitOrder } from '../lib/api';
+import OrderCompletionModal from '../components/OrderCompletionModal';
 
 interface CartPageProps {
   onNavigate: (page: Page) => void;
@@ -31,6 +32,7 @@ interface PlacedOrder {
   city: string;
   state: string;
   pincode: string;
+  notes?: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   total: number;
   status: string;
@@ -66,6 +68,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<CheckoutForm>>({});
@@ -191,6 +194,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
         city: form.city.trim(),
         state: form.state.trim(),
         pincode: form.pincode.trim(),
+        notes: form.notes.trim() || undefined,
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
         total: totalPrice,
         status: 'Order Confirmed',
@@ -199,6 +203,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       clearCart();
       setConfirmedOrder(order);
       setShowCheckout(false);
+      setShowSuccessPopup(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unable to place order right now. Please try again.';
       setSubmitError(message);
@@ -210,70 +215,93 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   // ─── Order Confirmed Screen ───────────────────────────────────────────────
   if (confirmedOrder) {
     return (
-      <main className="min-h-screen bg-[#FAFAFA] pt-20 sm:pt-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-12 md:pb-16">
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 sm:p-10 shadow-sm text-center">
-              <div className="w-16 h-16 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <CheckCircle className="w-8 h-8 text-[#16A34A]" />
-              </div>
-              <h1 className="font-['Outfit'] text-2xl sm:text-3xl font-bold text-[#111827] mb-1">
-                Order Placed
-              </h1>
-              <p className="text-[#64748B] font-['DM_Sans'] text-sm mb-6">
-                We will contact you within 24 hours to confirm delivery details.
-              </p>
+      <>
+        <OrderCompletionModal
+          isOpen={showSuccessPopup}
+          order={confirmedOrder}
+          onClose={() => setShowSuccessPopup(false)}
+          onNavigate={onNavigate}
+        />
 
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-5 text-left mb-6 space-y-3 text-sm font-['DM_Sans']">
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Order reference</span>
-                  <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.reference}</span>
+        <main className="min-h-screen bg-[#FAFAFA] pt-20 sm:pt-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-12 md:pb-16">
+            <div className="max-w-xl mx-auto">
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 sm:p-10 shadow-sm text-center">
+                <div className="w-16 h-16 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle className="w-8 h-8 text-[#16A34A]" />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Date</span>
-                  <span className="text-[#0F172A]">{confirmedOrder.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Name</span>
-                  <span className="text-[#0F172A] font-medium">{confirmedOrder.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Contact</span>
-                  <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-[#64748B] shrink-0">Delivery to</span>
-                  <span className="text-[#0F172A] text-right">{confirmedOrder.address}, {confirmedOrder.city}, {confirmedOrder.state} - {confirmedOrder.pincode}</span>
-                </div>
-                <div className="pt-2 border-t border-[#E2E8F0]">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-[#475569]">Estimated total</span>
-                    <span className="text-[#111827] font-['Outfit'] text-base">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+                <h1 className="font-['Outfit'] text-2xl sm:text-3xl font-bold text-[#111827] mb-1">
+                  Order Placed Successfully
+                </h1>
+                <p className="text-[#64748B] font-['DM_Sans'] text-sm mb-6">
+                  We will contact you within 24 hours to confirm delivery and logistics details.
+                </p>
+
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-5 text-left mb-6 space-y-3 text-sm font-['DM_Sans']">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B]">Order reference</span>
+                    <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.reference}</span>
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-1">Final amount confirmed on invoice. GST &amp; delivery calculated separately.</p>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Date</span>
+                    <span className="text-[#0F172A]">{confirmedOrder.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Name</span>
+                    <span className="text-[#0F172A] font-medium">{confirmedOrder.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Contact</span>
+                    <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-[#64748B] shrink-0">Delivery to</span>
+                    <span className="text-[#0F172A] text-right">{confirmedOrder.address}, {confirmedOrder.city}, {confirmedOrder.state} - {confirmedOrder.pincode}</span>
+                  </div>
+                  {confirmedOrder.notes && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[#64748B] shrink-0">Order notes</span>
+                      <span className="text-[#475569] text-right italic">{confirmedOrder.notes}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-[#E2E8F0]">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-[#475569]">Estimated total</span>
+                      <span className="text-[#111827] font-['Outfit'] text-base">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8] mt-1">Final amount confirmed on invoice. GST &amp; delivery calculated separately.</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Button
-                  onClick={() => onNavigate('login')}
-                  className="w-full rounded-xl font-bold bg-kb-primary hover:bg-[#145e2e] text-white"
-                  size="lg"
-                >
-                  Track Order in My Account
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onNavigate('products')}
-                  className="w-full rounded-xl font-medium border-[#CBD5E1]"
-                >
-                  Continue Shopping
-                </Button>
+                <div className="space-y-2.5">
+                  <Button
+                    onClick={() => setShowSuccessPopup(true)}
+                    variant="outline"
+                    className="w-full rounded-xl font-bold border-[#CBD5E1] text-[#0F172A] hover:bg-[#F8FAFC]"
+                    size="lg"
+                  >
+                    View Order Confirmation Popup
+                  </Button>
+                  <Button
+                    onClick={() => onNavigate('login')}
+                    className="w-full rounded-xl font-bold bg-kb-primary hover:bg-[#145e2e] text-white"
+                    size="lg"
+                  >
+                    Track Order in My Account
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => onNavigate('products')}
+                    className="w-full rounded-xl font-medium text-[#64748B] hover:text-[#0F172A]"
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 

@@ -334,3 +334,27 @@ h6 {
 .change-view-button:focus-visible svg {
   color: #e45400;
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  footer,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  #order-completion-printable {
+    max-height: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+}
