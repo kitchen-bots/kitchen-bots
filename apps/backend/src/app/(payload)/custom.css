@@ -51,32 +51,33 @@
   padding-block-end: 20px !important;
 }
 
-/* Sidebar Toggle Button (< button) */
+/* Sidebar Toggle / Collapse Button (< button on top right of open sidebar) */
 .template-default__nav-toggler-wrapper {
   position: fixed !important;
   top: 14px !important;
   left: calc(var(--nav-width, 275px) - 38px) !important;
   height: 28px !important;
   width: 28px !important;
-  z-index: 100 !important;
-  pointer-events: none !important;
+  z-index: 70 !important;
+  pointer-events: auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* When sidebar is collapsed: position toggle button at top-left to expand */
+/* When sidebar is collapsed: hide floating toggler; use header toggler button */
 body:has(.template-default:not(.template-default--nav-open)) .template-default__nav-toggler-wrapper,
 div:has(> .template-default:not(.template-default--nav-open)) > .template-default__nav-toggler-wrapper,
 .template-default__nav-toggler-wrapper:has(~ .template-default:not(.template-default--nav-open)) {
-  left: 14px !important;
+  display: none !important;
 }
 
 /* When sidebar is open: tuck collapse button neatly on top-right of sidebar */
 body:has(.template-default--nav-open) .template-default__nav-toggler-wrapper,
 div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
 .template-default__nav-toggler-wrapper:has(~ .template-default--nav-open) {
+  display: flex !important;
   left: calc(var(--nav-width, 275px) - 38px) !important;
 }
 
@@ -87,18 +88,10 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  pointer-events: auto !important;
 }
 
-.template-default__nav-toggler {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 28px !important;
-  height: 28px !important;
-}
-
-.template-default__nav-toggler button {
+.template-default__nav-toggler,
+button.template-default__nav-toggler {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -111,24 +104,63 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   cursor: pointer !important;
   transition: all 0.15s ease !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  padding: 0 !important;
 }
 
-.template-default__nav-toggler button:hover {
+.template-default__nav-toggler:hover,
+button.template-default__nav-toggler:hover {
   background-color: #1e1e24 !important;
   border-color: #3f3f46 !important;
   color: #fafafa !important;
 }
 
-/* Ensure mobile header hamburger only shows on small screens, never desktop */
-@media (min-width: 1025px) {
-  .app-header__mobile-nav-toggler {
-    display: none !important;
-  }
+.template-default__nav-toggler-wrapper .hamburger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Header Nav Toggler Button: visible on desktop when sidebar is closed so user can open it */
+.app-header:not(.app-header--nav-open) .app-header__mobile-nav-toggler {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  background-color: #141418 !important;
+  border: 1px solid #27272a !important;
+  border-radius: 6px !important;
+  color: #a1a1aa !important;
+  cursor: pointer !important;
+  margin-right: 12px !important;
+  padding: 0 !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.app-header:not(.app-header--nav-open) .app-header__mobile-nav-toggler:hover {
+  background-color: #1e1e24 !important;
+  border-color: #3f3f46 !important;
+  color: #fafafa !important;
+}
+
+.app-header:not(.app-header--nav-open) .app-header__mobile-nav-toggler .hamburger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Hide header toggler when sidebar is already open */
+.app-header--nav-open .app-header__mobile-nav-toggler {
+  display: none !important;
 }
 
 @media (max-width: 1024px) {
   .template-default__nav-toggler-wrapper {
     display: none !important;
+  }
+  .app-header .app-header__mobile-nav-toggler {
+    display: inline-flex !important;
   }
 }
 
@@ -142,6 +174,7 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
+  height: 56px !important;
   z-index: 50 !important;
   background-color: #09090b !important;
   border-bottom: 1px solid #1f1f23 !important;
@@ -154,19 +187,32 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
 }
 
 .app-header__content {
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
   background-color: #09090b !important;
+  padding: 0 var(--gutter-h) !important;
 }
 
-.template-default--nav-open .app-header__controls-wrapper {
-  padding-left: 10px !important;
+.app-header__wrapper {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  justify-content: space-between !important;
+  width: 100% !important;
 }
 
-.template-default:not(.template-default--nav-open) .app-header__controls-wrapper {
-  padding-left: 48px !important;
+.app-header__controls-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  padding-left: 0 !important;
+  min-width: 0 !important;
 }
 
 .app-header__step-nav-wrapper {
-  margin-left: 6px !important;
+  margin-left: 0 !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* Freeze Document Controls Bar (e.g. Creating new Order + Save button) */
@@ -187,7 +233,13 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   display: none !important;
 }
 
-/* StepNav & Header Brand Logo (This side of the logo - green mascot emblem) */
+/* StepNav & Header Brand Logo (Green mascot emblem) */
+.step-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
 .step-nav__home {
   width: 28px !important;
   height: 28px !important;
@@ -198,7 +250,8 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   border-radius: 6px !important;
   transition: all 0.15s ease !important;
   text-decoration: none !important;
-  margin-right: 8px !important;
+  margin-right: 6px !important;
+  flex-shrink: 0 !important;
 }
 
 .step-nav__home:hover {
