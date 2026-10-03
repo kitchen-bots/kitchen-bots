@@ -220,7 +220,7 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
     sequenceFrameCount: (typeof raw.sequenceFrameCount === 'number' ? raw.sequenceFrameCount : undefined) || local?.sequenceFrameCount,
     has3D: typeof raw.has3D === 'boolean' ? raw.has3D : (local?.has3D ?? false),
     hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : (local?.hasVideo ?? false),
-    featured: typeof raw.featured === 'boolean' ? raw.featured : (local?.featured ?? false),
+    featured: typeof raw.featured === 'boolean' ? (raw.featured || Boolean(local?.featured)) : Boolean(local?.featured),
   };
 }
 
