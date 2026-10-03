@@ -3,14 +3,14 @@ import React from 'react';
 export function Icon() {
   return (
     <img
-      src="/images/kitchenbots-logo-white.svg"
+      src="/images/kitchenbots-icon.svg"
       alt="Kitchen Bots"
       style={{
-        height: '22px',
-        width: 'auto',
-        maxWidth: '150px',
+        width: '24px',
+        height: '24px',
         objectFit: 'contain',
         display: 'block',
+        borderRadius: '5px',
       }}
     />
   );

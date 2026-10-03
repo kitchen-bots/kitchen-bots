@@ -14,11 +14,16 @@ export function NavHeader() {
       <div className="kb-nav-brand">
         <Link href="/admin" className="kb-nav-brand-link">
           <img
-            src="/images/kitchenbots-logo-white.svg"
+            src="/images/kitchenbots-icon.svg"
             alt="Kitchen Bots"
-            className="kb-nav-brand-logo-img"
+            className="kb-nav-brand-icon-img"
           />
-          <span className="kb-nav-brand-badge">ADMIN</span>
+          <div className="kb-nav-brand-info">
+            <div className="kb-nav-brand-title">
+              <span className="kb-nav-brand-name">Kitchen Bots</span>
+              <span className="kb-nav-brand-badge">ADMIN</span>
+            </div>
+          </div>
         </Link>
         <div className="kb-nav-brand-status">
           <span className="kb-nav-status-dot" />
