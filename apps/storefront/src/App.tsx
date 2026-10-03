@@ -48,8 +48,7 @@ function App() {
   // Sync state with URL on initial load and back/forward
   useEffect(() => {
     const handleLocationChange = () => {
-      setSelectedProductId(new URLSearchParams(window.location.search).get('id'));
-      setCatalogKey(key => key + 1);
+      const queryId = new URLSearchParams(window.location.search).get('id');
       const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
       const path = rawPath as Page;
       const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry', '404'];
@@ -59,10 +58,26 @@ function App() {
         return;
       }
 
+      // Check product detail deep link: /products/:id or /product/:id
+      const productMatch = rawPath.match(/^(?:products|product)\/(.+)$/);
+      if (productMatch) {
+        setSelectedProductId(decodeURIComponent(productMatch[1]));
+        setCurrentPage('product-detail');
+        setCatalogKey(key => key + 1);
+        return;
+      }
+
+      if (queryId) {
+        setSelectedProductId(queryId);
+      }
+      setCatalogKey(key => key + 1);
+
       if (rawPath === '' || rawPath === 'home') {
         setCurrentPage('home');
-      } else if (rawPath === 'account' || rawPath === 'portal') {
+      } else if (rawPath === 'account' || rawPath === 'portal' || rawPath === 'orders' || rawPath === 'my-orders') {
         setCurrentPage('login');
+      } else if (rawPath === 'checkout') {
+        setCurrentPage('cart');
       } else if (validPages.includes(path)) {
         setCurrentPage(path);
       } else {
@@ -113,7 +128,7 @@ function App() {
     const path = page === 'home'
       ? '/'
       : page === 'product-detail' && productId
-        ? `/product-detail?${new URLSearchParams({ id: productId })}`
+        ? `/products/${encodeURIComponent(productId)}`
         : `/${page}`;
     window.history.pushState({}, '', path);
     window.scrollTo(0, 0);
@@ -220,7 +235,7 @@ function App() {
                 </AnimatePresence>
               </main>
 
-              {currentPage !== 'contact' && <Footer onNavigate={navigateTo} />}
+              {currentPage !== 'contact' && <Footer onNavigate={navigateTo} onCatalog={browseCatalog} />}
               
               <CartDrawer 
                 isOpen={isCartOpen} 

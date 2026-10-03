@@ -98,21 +98,34 @@ export function categoryIdToName(categoryId: string | undefined): ProductCategor
 
 function extractImageUrl(val: unknown): string {
   if (!val) return '';
+  let candidate = '';
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         const parsed = JSON.parse(trimmed) as { url?: string; src?: string };
-        return parsed.url || parsed.src || '';
+        candidate = parsed.url || parsed.src || '';
       } catch {
-        return trimmed;
+        candidate = trimmed;
       }
+    } else {
+      candidate = trimmed;
     }
-    return trimmed;
-  }
-  if (typeof val === 'object' && val !== null) {
+  } else if (typeof val === 'object' && val !== null) {
     const obj = val as { url?: string; src?: string };
-    return obj.url || obj.src || '';
+    candidate = obj.url || obj.src || '';
+  }
+
+  if (!candidate) return '';
+  candidate = candidate.trim();
+  if (candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('data:') || candidate.startsWith('blob:')) {
+    return candidate;
+  }
+  const clean = candidate.replace(/[?#].*$/, '');
+  const hasExt = /\.(jpe?g|png|webp|svg|gif|mp4|webm|avif)($|\?)/i.test(candidate);
+  const isKnownDir = /^\/?(images|videos|3d-assets|assets)\//i.test(clean);
+  if (hasExt || isKnownDir) {
+    return candidate;
   }
   return '';
 }
@@ -162,7 +175,7 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
     rawImages = local.images;
   }
 
-  const images = rawImages.map((img) => getMediaUrl(img));
+  const images = rawImages.map((img) => getMediaUrl(img)).filter(Boolean);
   const primaryImage = images[0] || (local?.image ? getMediaUrl(local.image) : '');
   const rawPrice = typeof raw.pricePaise === 'number' && raw.pricePaise > 0 ? raw.pricePaise : null;
   const priceRupees =
@@ -226,7 +239,7 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
 
 export const CATALOG_CACHE_KEY = 'kb_catalog_cache_v3';
 export const CATALOG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes TTL
-export const DEFAULT_API_TIMEOUT_MS = 2000; // 2 seconds timeout
+export const DEFAULT_API_TIMEOUT_MS = 8000; // 8 seconds timeout for serverless cold-starts
 
 interface CatalogCacheEnvelope {
   timestamp: number;
@@ -476,6 +489,41 @@ export async function fetchCatalogProduct(
             );
             setCatalogCache(updated);
           }
+          return product;
+        }
+      }
+    }
+
+    // If local product has an ID or slug different from slugOrId, try querying with that
+    if (local?.id && local.id !== slugOrId) {
+      const localIdUrl = `${baseUrl}/api/products?where[slug][equals]=${encodeURIComponent(local.id)}`;
+      const resLocal = await fetch(localIdUrl, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      });
+      if (resLocal.ok) {
+        const json = await resLocal.json();
+        const doc = (json.docs && json.docs[0]) || json.data || json.doc;
+        if (doc) {
+          const product = toStorefrontProduct(doc);
+          return product;
+        }
+      }
+    }
+
+    // Try numeric ID extracted from prod-X
+    const numOnly = slugOrId.replace(/\D/g, '');
+    if (numOnly && numOnly !== slugOrId) {
+      const directUrl = `${baseUrl}/api/products/${encodeURIComponent(numOnly)}`;
+      const resDirect = await fetch(directUrl, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      });
+      if (resDirect.ok) {
+        const item = await resDirect.json();
+        const doc = item.data || item.doc || item;
+        if (doc && (doc.id || doc.name)) {
+          const product = toStorefrontProduct(doc);
           return product;
         }
       }

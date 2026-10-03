@@ -26,8 +26,14 @@ export const Quotes: CollectionConfig = {
       ({ data }) => {
         if (!data) return data;
         const record = data as Record<string, unknown>;
-        if (!record.quoteNumber && (record.Quotation || record.quotation || record.orderNumber)) {
-          record.quoteNumber = record.Quotation || record.quotation || record.orderNumber;
+        if (!record.quoteNumber) {
+          record.quoteNumber = record.Quotation || record.quotation || record.orderNumber || record['Order Number'] || `KB-QT-${Date.now().toString(36).toUpperCase()}`;
+        }
+        if (!record.contactName) {
+          record.contactName = record.customerName || record['Customer Name'] || record.contactName || record.name || record.fullName || 'Commercial Customer';
+        }
+        if (!record.companyName) {
+          record.companyName = record.company || record.companyName || record.businessName || record.customerName || record.contactName || 'Commercial Customer';
         }
         if (!record.contactEmail && (record.Email || record.email || record['Customer Email'] || record.customerEmail)) {
           record.contactEmail = record.Email || record.email || record['Customer Email'] || record.customerEmail;
@@ -36,7 +42,7 @@ export const Quotes: CollectionConfig = {
           record.contactPhone = record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo || record.customerPhone;
         }
         if (record.estimatedPaise === undefined || record.estimatedPaise === null) {
-          const tp = record['Total Price'] ?? record.totalPrice ?? record.totalPaise;
+          const tp = record['Total Price'] ?? record.totalPrice ?? record.totalPaise ?? record['Total Paise'];
           if (tp !== undefined && tp !== null) {
             const num = Number(tp);
             if (!isNaN(num)) {
