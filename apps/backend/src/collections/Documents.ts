@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
+    group: 'Content & Media',
     useAsTitle: 'title',
     defaultColumns: ['title', 'documentType', 'product', 'isPublic', 'createdAt'],
   },
