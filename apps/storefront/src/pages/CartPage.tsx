@@ -69,7 +69,7 @@ function renderConfigValue(value: unknown): React.ReactNode {
 
 
 export default function CartPage({ onNavigate }: CartPageProps) {
-  const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, totalPaise, totalPrice, totalItems } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
@@ -172,14 +172,14 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const totalPaise = Math.round(totalPrice * 100);
+    const orderTotalPaise = totalPaise ?? Math.round(totalPrice * 100);
 
     try {
       const res = await submitOrder({
         customerName: form.name.trim(),
         customerEmail: form.email.trim(),
         customerPhone: form.phone.trim(),
-        totalPaise,
+        totalPaise: orderTotalPaise,
         items: items.map((i) => ({
           productId: i.id,
           name: i.name,
@@ -212,7 +212,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
         notes: form.notes.trim() || undefined,
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
         total: totalPrice,
-        totalPaise,
+        totalPaise: orderTotalPaise,
         status: 'Order Confirmed',
       };
 

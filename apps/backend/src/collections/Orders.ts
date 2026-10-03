@@ -26,21 +26,25 @@ export const Orders: CollectionConfig = {
       ({ data }) => {
         if (!data) return data;
         const record = data as Record<string, unknown>;
-        // Map Quotation -> orderNumber
-        if (!record.orderNumber && (record.Quotation || record.quotation || record.quoteNumber || record.reference)) {
-          record.orderNumber = record.Quotation || record.quotation || record.quoteNumber || record.reference;
+        // Standardize Order Number
+        if (!record.orderNumber && (record['Order Number'] || record.orderNumber || record.Quotation || record.quotation || record.quoteNumber || record.reference)) {
+          record.orderNumber = record['Order Number'] || record.orderNumber || record.Quotation || record.quotation || record.quoteNumber || record.reference;
         }
-        // Map Email -> customerEmail
-        if (!record.customerEmail && (record.Email || record.email || record['Customer Email'])) {
-          record.customerEmail = record.Email || record.email || record['Customer Email'];
+        // Standardize Customer Name
+        if (!record.customerName && (record['Customer Name'] || record.customerName || record.name || record.fullName)) {
+          record.customerName = record['Customer Name'] || record.customerName || record.name || record.fullName;
         }
-        // Map Phone no -> customerPhone
-        if (!record.customerPhone && (record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo)) {
-          record.customerPhone = record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo;
+        // Standardize Customer Email
+        if (!record.customerEmail && (record['Customer Email'] || record.customerEmail || record.Email || record.email)) {
+          record.customerEmail = record['Customer Email'] || record.customerEmail || record.Email || record.email;
         }
-        // Map Total Price -> totalPaise
+        // Standardize Customer Phone
+        if (!record.customerPhone && (record['Customer Phone'] || record.customerPhone || record['Phone no'] || record['Phone No'] || record.phone || record.Phone || record.phoneNo)) {
+          record.customerPhone = record['Customer Phone'] || record.customerPhone || record['Phone no'] || record['Phone No'] || record.phone || record.Phone || record.phoneNo;
+        }
+        // Standardize Total Paise
         if (record.totalPaise === undefined || record.totalPaise === null) {
-          const tp = record['Total Price'] ?? record.totalPrice ?? record['Total paise'] ?? record.total;
+          const tp = record['Total Paise'] ?? record.totalPaise ?? record['Total Price'] ?? record.totalPrice ?? record['Total paise'] ?? record.total;
           if (tp !== undefined && tp !== null) {
             const num = Number(tp);
             if (!isNaN(num)) {

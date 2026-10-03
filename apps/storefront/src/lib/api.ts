@@ -579,24 +579,10 @@ export async function submitEnquiry(
 
 export interface SubmitOrderPayload {
   orderNumber?: string;
-  Quotation?: string;
-  quotation?: string;
-  customerName?: string;
-  CustomerName?: string;
-  name?: string;
-  customerEmail?: string;
-  CustomerEmail?: string;
-  Email?: string;
-  email?: string;
-  customerPhone?: string;
-  CustomerPhone?: string;
-  'Phone no'?: string;
-  phoneNo?: string;
-  phone?: string;
-  totalPaise?: number;
-  TotalPaise?: number;
-  'Total Price'?: number;
-  totalPrice?: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  totalPaise: number;
   items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
   shippingAddress: {
     fullName: string;
@@ -608,6 +594,26 @@ export interface SubmitOrderPayload {
     postalCode: string;
     country?: string;
   };
+  // Backward compatibility aliases
+  'Order Number'?: string;
+  Quotation?: string;
+  quotation?: string;
+  'Customer Name'?: string;
+  CustomerName?: string;
+  name?: string;
+  'Customer Email'?: string;
+  CustomerEmail?: string;
+  Email?: string;
+  email?: string;
+  'Customer Phone'?: string;
+  CustomerPhone?: string;
+  'Phone no'?: string;
+  phoneNo?: string;
+  phone?: string;
+  'Total Paise'?: number;
+  TotalPaise?: number;
+  'Total Price'?: number;
+  totalPrice?: number;
 }
 
 export async function submitOrder(
@@ -616,12 +622,14 @@ export async function submitOrder(
 ): Promise<{ orderNumber: string; id: string }> {
   const orderNumber =
     orderData.orderNumber ||
+    orderData['Order Number'] ||
     orderData.Quotation ||
     orderData.quotation ||
     `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
 
   const customerName =
     orderData.customerName ||
+    orderData['Customer Name'] ||
     orderData.CustomerName ||
     orderData.name ||
     orderData.shippingAddress.fullName ||
@@ -629,6 +637,7 @@ export async function submitOrder(
 
   const customerEmail =
     orderData.customerEmail ||
+    orderData['Customer Email'] ||
     orderData.CustomerEmail ||
     orderData.Email ||
     orderData.email ||
@@ -636,13 +645,14 @@ export async function submitOrder(
 
   const customerPhone =
     orderData.customerPhone ||
+    orderData['Customer Phone'] ||
     orderData.CustomerPhone ||
     orderData['Phone no'] ||
     orderData.phoneNo ||
     orderData.phone ||
     orderData.shippingAddress.phone;
 
-  let totalPaise = orderData.totalPaise ?? orderData.TotalPaise;
+  let totalPaise = orderData.totalPaise ?? orderData['Total Paise'] ?? orderData.TotalPaise;
   if (totalPaise === undefined || totalPaise === null) {
     const rawPrice = orderData['Total Price'] ?? orderData.totalPrice;
     if (typeof rawPrice === 'number') {

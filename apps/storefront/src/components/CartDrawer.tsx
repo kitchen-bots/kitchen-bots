@@ -12,7 +12,7 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerProps) {
-  const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, totalItems, totalPaise, totalPrice } = useCart();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -165,10 +165,11 @@ export default function CartDrawer({ isOpen, onClose, onNavigate }: CartDrawerPr
           <div className="p-8 border-t border-[#F1F5F9]/80 bg-white/60 backdrop-blur-md">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <span className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-widest font-['Outfit']">Estimated Total</span>
-                <div className="text-[32px] font-bold text-[#111827] font-['Outfit'] leading-tight">
-                  ₹{totalPrice.toLocaleString('en-IN')}
+                <span className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-widest font-['Outfit']">Total Paise</span>
+                <div className="text-[26px] font-bold text-[#111827] font-['Outfit'] leading-tight">
+                  {(totalPaise ?? Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise
                 </div>
+                <span className="text-[12px] text-[#64748B] font-['DM_Sans']">₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
             </div>
             
