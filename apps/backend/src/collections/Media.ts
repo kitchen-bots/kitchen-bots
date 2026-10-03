@@ -14,7 +14,7 @@ export const Media: CollectionConfig = {
     read: () => true,
     create: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
-    delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
+    delete: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
   },
   fields: [
     {
