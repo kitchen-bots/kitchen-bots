@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Quotes: CollectionConfig = {
   slug: 'quotes',
   admin: {
+    group: 'Sales & Support',
     useAsTitle: 'quoteNumber',
     defaultColumns: ['quoteNumber', 'companyName', 'contactName', 'status', 'estimatedPaise', 'createdAt'],
   },
@@ -19,6 +20,33 @@ export const Quotes: CollectionConfig = {
     create: () => true, // Allows customer quote requests
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations'].includes(user.role as string)),
     delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
+  },
+  hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        if (!data) return data;
+        const record = data as Record<string, unknown>;
+        if (!record.quoteNumber && (record.Quotation || record.quotation || record.orderNumber)) {
+          record.quoteNumber = record.Quotation || record.quotation || record.orderNumber;
+        }
+        if (!record.contactEmail && (record.Email || record.email || record['Customer Email'] || record.customerEmail)) {
+          record.contactEmail = record.Email || record.email || record['Customer Email'] || record.customerEmail;
+        }
+        if (!record.contactPhone && (record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo || record.customerPhone)) {
+          record.contactPhone = record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo || record.customerPhone;
+        }
+        if (record.estimatedPaise === undefined || record.estimatedPaise === null) {
+          const tp = record['Total Price'] ?? record.totalPrice ?? record.totalPaise;
+          if (tp !== undefined && tp !== null) {
+            const num = Number(tp);
+            if (!isNaN(num)) {
+              record.estimatedPaise = num < 100000 ? Math.round(num * 100) : Math.round(num);
+            }
+          }
+        }
+        return record;
+      },
+    ],
   },
   fields: [
     {

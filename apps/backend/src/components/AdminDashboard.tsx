@@ -571,9 +571,9 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #27272a', color: '#71717a' }}>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Reference</th>
+                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Order Number</th>
                     <th style={{ padding: '8px 10px', fontWeight: 600 }}>Customer</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Amount</th>
+                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Total Paise</th>
                     <th style={{ padding: '8px 10px', fontWeight: 600 }}>Status</th>
                   </tr>
                 </thead>
