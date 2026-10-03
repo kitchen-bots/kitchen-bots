@@ -49,6 +49,17 @@ describe('Storefront API Client', () => {
     expect(product.category).toBe('Santa Maria Series');
   });
 
+  it('toStorefrontProduct discards invalid image garbage like "w" safely', () => {
+    const product = toStorefrontProduct({
+      id: 999,
+      name: 'Custom Product',
+      primaryImage: 'w',
+      imageUrls: ['w', '/w', '   '],
+    });
+    expect(product.image).toBe('');
+    expect(product.images).toEqual([]);
+  });
+
   it('fetchCatalogProducts fetches from API when API_BASE_URL is set', async () => {
     const mockResponse = {
       data: [mockApiProduct],

@@ -13,6 +13,18 @@ export const Enquiries: CollectionConfig = {
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations'].includes(user.role as string)),
     delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
   },
+  hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        if (!data) return data;
+        const record = data as Record<string, unknown>;
+        if (!record.reference) {
+          record.reference = `KB-ENQ-${Date.now().toString(36).toUpperCase()}`;
+        }
+        return record;
+      },
+    ],
+  },
   fields: [
     {
       name: 'reference',
