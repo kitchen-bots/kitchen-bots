@@ -225,66 +225,34 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
 .kb-nav-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 4px 40px 14px 2px;
+  gap: 8px;
+  padding: 4px 38px 12px 2px;
   position: relative;
 }
 
 .kb-nav-brand-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: block;
   text-decoration: none !important;
+  transition: opacity 0.15s ease;
 }
 
-.kb-nav-brand-icon-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+.kb-nav-brand-link:hover {
+  opacity: 0.9;
+}
+
+.kb-nav-brand-full-logo {
+  height: 42px;
+  width: auto;
+  max-width: 168px;
   object-fit: contain;
-  flex-shrink: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-.kb-nav-brand-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.kb-nav-brand-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.kb-nav-brand-name {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fafafa;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-.kb-nav-brand-badge {
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.12);
-  border: 1px solid rgba(249, 115, 22, 0.25);
-  border-radius: 3px;
-  padding: 1px 4px;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
+  display: block;
 }
 
 .kb-nav-brand-status {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding-left: 42px;
+  gap: 6px;
+  padding-left: 2px;
 }
 
 .kb-nav-status-dot {
@@ -300,6 +268,19 @@ div:has(> .template-default--nav-open) > .template-default__nav-toggler-wrapper,
   font-size: 11px;
   color: #71717a;
   white-space: nowrap;
+}
+
+.kb-nav-brand-badge {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
 }
 
 /* Quick Nav Section */

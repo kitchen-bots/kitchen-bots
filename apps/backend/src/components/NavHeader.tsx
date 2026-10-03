@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { KITCHENBOTS_ICON_DATA_URL } from './brandAssets';
+import { KITCHENBOTS_LOGO_WHITE_DATA_URL } from './brandAssets';
 
 export function NavHeader() {
   const pathname = usePathname();
@@ -11,24 +11,19 @@ export function NavHeader() {
 
   return (
     <div className="kb-nav-header">
-      {/* Brand Header */}
+      {/* Official Brand Logo */}
       <div className="kb-nav-brand">
-        <Link href="/admin" className="kb-nav-brand-link" title="Kitchen Bots Admin">
+        <Link href="/admin" className="kb-nav-brand-link" title="KitchenBots India Pvt. Ltd.">
           <img
-            src={KITCHENBOTS_ICON_DATA_URL}
-            alt="Kitchen Bots"
-            className="kb-nav-brand-icon-img"
+            src={KITCHENBOTS_LOGO_WHITE_DATA_URL}
+            alt="KitchenBots India Pvt. Ltd."
+            className="kb-nav-brand-full-logo"
           />
-          <div className="kb-nav-brand-info">
-            <div className="kb-nav-brand-title">
-              <span className="kb-nav-brand-name">Kitchen Bots</span>
-              <span className="kb-nav-brand-badge">ADMIN</span>
-            </div>
-          </div>
         </Link>
         <div className="kb-nav-brand-status">
           <span className="kb-nav-status-dot" />
           <span className="kb-nav-status-text">Fleet Operations</span>
+          <span className="kb-nav-brand-badge">ADMIN</span>
         </div>
       </div>
 
