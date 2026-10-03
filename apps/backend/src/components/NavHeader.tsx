@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { KITCHENBOTS_ICON_DATA_URL } from './brandAssets';
 
 export function NavHeader() {
   const pathname = usePathname();
@@ -12,9 +13,9 @@ export function NavHeader() {
     <div className="kb-nav-header">
       {/* Brand Header */}
       <div className="kb-nav-brand">
-        <Link href="/admin" className="kb-nav-brand-link">
+        <Link href="/admin" className="kb-nav-brand-link" title="Kitchen Bots Admin">
           <img
-            src="/images/kitchenbots-icon.svg"
+            src={KITCHENBOTS_ICON_DATA_URL}
             alt="Kitchen Bots"
             className="kb-nav-brand-icon-img"
           />

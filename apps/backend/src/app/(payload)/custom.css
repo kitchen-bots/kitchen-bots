@@ -48,23 +48,47 @@
 
 /* Sidebar Toggle Button (< button) */
 .template-default__nav-toggler-wrapper {
+  position: absolute !important;
+  top: 14px !important;
+  height: 28px !important;
+  width: 28px !important;
   z-index: 100 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* When sidebar is open: tuck collapse button neatly on top-right of sidebar */
+.template-default--nav-open .template-default__nav-toggler-wrapper {
+  left: calc(var(--nav-width, 275px) - 38px) !important;
+}
+
+/* When sidebar is collapsed: position toggle button at top-left to expand */
+.template-default:not(.template-default--nav-open) .template-default__nav-toggler-wrapper {
+  left: 14px !important;
 }
 
 .template-default__nav-toggler-container {
+  height: 28px !important;
+  width: 28px !important;
   padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
 }
 
-.app-header__controls-wrapper {
-  padding-left: 10px !important;
+.template-default__nav-toggler {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
 }
 
-.app-header__step-nav-wrapper {
-  margin-left: 6px !important;
-}
-
-.template-default__nav-toggler button,
-.nav-toggler {
+.template-default__nav-toggler button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -79,11 +103,31 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
-.template-default__nav-toggler button:hover,
-.nav-toggler:hover {
+.template-default__nav-toggler button:hover {
   background-color: #1e1e24 !important;
   border-color: #3f3f46 !important;
   color: #fafafa !important;
+}
+
+/* Ensure mobile header hamburger only shows on small screens, never desktop */
+@media (min-width: 1025px) {
+  .app-header__mobile-nav-toggler {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .template-default__nav-toggler-wrapper {
+    display: none !important;
+  }
+}
+
+.app-header__controls-wrapper {
+  padding-left: 10px !important;
+}
+
+.app-header__step-nav-wrapper {
+  margin-left: 6px !important;
 }
 
 /* StepNav & Header Brand Logo (This side of the logo - green mascot emblem) */
@@ -124,14 +168,15 @@
 .kb-nav-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 4px 14px 4px;
+  gap: 5px;
+  padding: 2px 34px 12px 2px;
+  position: relative;
 }
 
 .kb-nav-brand-link {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   text-decoration: none !important;
 }
 
@@ -141,7 +186,7 @@
   border-radius: 6px;
   object-fit: contain;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .kb-nav-brand-info {
@@ -158,7 +203,7 @@
 
 .kb-nav-brand-name {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #fafafa;
   letter-spacing: -0.01em;
@@ -182,7 +227,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding-left: 2px;
+  padding-left: 38px;
 }
 
 .kb-nav-status-dot {

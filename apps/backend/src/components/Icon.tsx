@@ -1,9 +1,10 @@
 import React from 'react';
+import { KITCHENBOTS_ICON_DATA_URL } from './brandAssets';
 
 export function Icon() {
   return (
     <img
-      src="/images/kitchenbots-icon.svg"
+      src={KITCHENBOTS_ICON_DATA_URL}
       alt="Kitchen Bots"
       style={{
         width: '24px',
