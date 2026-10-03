@@ -148,6 +148,20 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     }
   };
 
+  const isValidPhoneNumber = (phone: string): boolean => {
+    if (!phone || !phone.trim()) return false;
+    const clean = phone.trim().replace(/[\s\-.()]/g, '');
+    // 1. Direct 10-digit Indian mobile (starts with 6-9)
+    if (/^[6-9]\d{9}$/.test(clean)) return true;
+    // 2. Indian mobile with prefixes: +91, 91, 0091, 0
+    if (/^(?:\+91|91|0091|0)[6-9]\d{9}$/.test(clean)) return true;
+    // 3. International E.164 format with + prefix (7 to 15 digits)
+    if (/^\+[1-9]\d{6,14}$/.test(clean)) return true;
+    // 4. Any valid phone format between 7 and 15 digits
+    if (/^\d{7,15}$/.test(clean)) return true;
+    return false;
+  };
+
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutForm> = {};
     if (!form.name.trim()) errors.name = 'Customer Name is required';
@@ -156,7 +170,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       errors.email = 'Enter a valid email address';
     }
-    if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ''))) errors.phone = 'Enter a valid 10-digit Indian mobile number';
+    if (!form.phone.trim()) {
+      errors.phone = 'Customer Phone is required';
+    } else if (!isValidPhoneNumber(form.phone)) {
+      errors.phone = 'Enter a valid mobile or phone number with country code (e.g. +91 94907 01421)';
+    }
     if (!form.address.trim()) errors.address = 'Address is required';
     if (!form.city.trim()) errors.city = 'City is required';
     if (!form.state.trim()) errors.state = 'State is required';
@@ -706,7 +724,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                       autoComplete="tel"
                       value={form.phone}
                       onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                      placeholder="10-digit mobile number"
+                      placeholder="e.g. +91 94907 01421 or 9876543210"
                       className={`h-11 w-full rounded-xl border pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:ring-1 ${formErrors.phone ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]' : 'border-[#CBD5E1] focus:border-[#C2410C] focus:ring-[#C2410C]'}`}
                     />
                   </div>
