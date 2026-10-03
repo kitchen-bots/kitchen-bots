@@ -84,7 +84,6 @@ export default buildConfig({
       keepAliveInitialDelayMillis: 10000,
     },
     disableCreateDatabase: true,
-    push: process.env.PAYLOAD_MIGRATE === 'true',
   }),
   plugins: [
     s3Storage({
