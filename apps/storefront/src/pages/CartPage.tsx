@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
 import { MIN_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, Mail, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -15,6 +15,7 @@ interface CartPageProps {
 
 interface CheckoutForm {
   name: string;
+  email: string;
   phone: string;
   address: string;
   city: string;
@@ -24,9 +25,11 @@ interface CheckoutForm {
 }
 
 interface PlacedOrder {
+  orderNumber: string;
   reference: string;
   date: string;
   name: string;
+  email: string;
   phone: string;
   address: string;
   city: string;
@@ -35,6 +38,7 @@ interface PlacedOrder {
   notes?: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   total: number;
+  totalPaise: number;
   status: string;
 }
 
@@ -74,6 +78,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const [formErrors, setFormErrors] = useState<Partial<CheckoutForm>>({});
   const [form, setForm] = useState<CheckoutForm>({
     name: '',
+    email: '',
     phone: '',
     address: '',
     city: '',
@@ -145,7 +150,12 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutForm> = {};
-    if (!form.name.trim()) errors.name = 'Name is required';
+    if (!form.name.trim()) errors.name = 'Customer Name is required';
+    if (!form.email.trim()) {
+      errors.email = 'Customer Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = 'Enter a valid email address';
+    }
     if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ''))) errors.phone = 'Enter a valid 10-digit Indian mobile number';
     if (!form.address.trim()) errors.address = 'Address is required';
     if (!form.city.trim()) errors.city = 'City is required';
@@ -162,11 +172,14 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const totalPaise = Math.round(totalPrice * 100);
+
     try {
       const res = await submitOrder({
         customerName: form.name.trim(),
+        customerEmail: form.email.trim(),
         customerPhone: form.phone.trim(),
-        totalPaise: Math.round(totalPrice * 100),
+        totalPaise,
         items: items.map((i) => ({
           productId: i.id,
           name: i.name,
@@ -186,9 +199,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       });
 
       const order: PlacedOrder = {
+        orderNumber: res.orderNumber,
         reference: res.orderNumber,
         date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         name: form.name.trim(),
+        email: form.email.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
         city: form.city.trim(),
@@ -197,6 +212,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
         notes: form.notes.trim() || undefined,
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
         total: totalPrice,
+        totalPaise,
         status: 'Order Confirmed',
       };
 
@@ -239,19 +255,25 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
                 <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-5 text-left mb-6 space-y-3 text-sm font-['DM_Sans']">
                   <div className="flex justify-between items-center">
-                    <span className="text-[#64748B]">Order reference</span>
-                    <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.reference}</span>
+                    <span className="text-[#64748B]">Order Number</span>
+                    <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.orderNumber || confirmedOrder.reference}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#64748B]">Date</span>
                     <span className="text-[#0F172A]">{confirmedOrder.date}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#64748B]">Name</span>
+                    <span className="text-[#64748B]">Customer Name</span>
                     <span className="text-[#0F172A] font-medium">{confirmedOrder.name}</span>
                   </div>
+                  {confirmedOrder.email && (
+                    <div className="flex justify-between">
+                      <span className="text-[#64748B]">Customer Email</span>
+                      <span className="text-[#0F172A]">{confirmedOrder.email}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-[#64748B]">Contact</span>
+                    <span className="text-[#64748B]">Customer Phone</span>
                     <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
                   </div>
                   <div className="flex justify-between gap-4">
@@ -266,8 +288,8 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   )}
                   <div className="pt-2 border-t border-[#E2E8F0]">
                     <div className="flex justify-between font-semibold">
-                      <span className="text-[#475569]">Estimated total</span>
-                      <span className="text-[#111827] font-['Outfit'] text-base">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+                      <span className="text-[#475569]">Total Paise</span>
+                      <span className="text-[#111827] font-['Outfit'] text-base">{(confirmedOrder.totalPaise ?? Math.round(confirmedOrder.total * 100)).toLocaleString('en-IN')} paise (₹{confirmedOrder.total.toLocaleString('en-IN')})</span>
                     </div>
                     <p className="text-xs text-[#94A3B8] mt-1">Final amount confirmed on invoice. GST &amp; delivery calculated separately.</p>
                   </div>
@@ -526,9 +548,14 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                 <div className="h-px bg-[#E2E8F0] my-4" />
 
                 <div className="flex justify-between items-baseline pt-1">
-                  <span className="font-['Outfit'] text-base font-bold text-[#111827]">
-                    Estimated Total
-                  </span>
+                  <div>
+                    <span className="font-['Outfit'] text-base font-bold text-[#111827] block">
+                      Total Paise
+                    </span>
+                    <span className="text-[11px] text-[#64748B] font-['DM_Sans']">
+                      {(Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise
+                    </span>
+                  </div>
                   <span className="font-['Outfit'] text-2xl font-bold text-[#111827]">
                     ₹{totalPrice.toLocaleString('en-IN')}
                   </span>
@@ -602,9 +629,15 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
               {/* Order mini-summary */}
               <div className="px-6 py-4 bg-[#F8FAFC] border-b border-[#F1F5F9]">
-                <div className="flex justify-between text-sm font-['DM_Sans']">
-                  <span className="text-[#64748B]">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
-                  <span className="font-['Outfit'] font-bold text-[#111827]">₹{totalPrice.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between items-baseline text-sm font-['DM_Sans']">
+                  <div>
+                    <span className="font-['Outfit'] font-bold text-xs uppercase tracking-wider text-[#64748B] block">Total Paise</span>
+                    <span className="text-[#64748B] text-xs">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-['Outfit'] font-bold text-[#111827]">{(Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise</span>
+                    <span className="block text-[11px] text-[#64748B]">₹{totalPrice.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
                 <ul className="mt-2 space-y-1">
                   {items.map((i) => (
@@ -617,10 +650,10 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
               {/* Form */}
               <form onSubmit={handlePlaceOrder} className="px-6 py-5 space-y-4" noValidate>
-                {/* Name */}
+                {/* Customer Name */}
                 <div className="space-y-1">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-name">
-                    Full Name <span className="text-[#C2410C]">*</span>
+                    Customer Name <span className="text-[#C2410C]">*</span>
                   </label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
@@ -638,10 +671,31 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   {formErrors.name && <p className="text-xs text-[#DC2626]">{formErrors.name}</p>}
                 </div>
 
-                {/* Phone */}
+                {/* Customer Email */}
+                <div className="space-y-1">
+                  <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-email">
+                    Customer Email <span className="text-[#C2410C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+                    <input
+                      id="co-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      placeholder="e.g. procurement@restaurant.com"
+                      className={`h-11 w-full rounded-xl border pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:ring-1 ${formErrors.email ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]' : 'border-[#CBD5E1] focus:border-[#C2410C] focus:ring-[#C2410C]'}`}
+                    />
+                  </div>
+                  {formErrors.email && <p className="text-xs text-[#DC2626]">{formErrors.email}</p>}
+                </div>
+
+                {/* Customer Phone */}
                 <div className="space-y-1">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-phone">
-                    Mobile Number <span className="text-[#C2410C]">*</span>
+                    Customer Phone <span className="text-[#C2410C]">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />

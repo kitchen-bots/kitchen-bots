@@ -577,33 +577,87 @@ export async function submitEnquiry(
   };
 }
 
+export interface SubmitOrderPayload {
+  orderNumber?: string;
+  Quotation?: string;
+  quotation?: string;
+  customerName?: string;
+  CustomerName?: string;
+  name?: string;
+  customerEmail?: string;
+  CustomerEmail?: string;
+  Email?: string;
+  email?: string;
+  customerPhone?: string;
+  CustomerPhone?: string;
+  'Phone no'?: string;
+  phoneNo?: string;
+  phone?: string;
+  totalPaise?: number;
+  TotalPaise?: number;
+  'Total Price'?: number;
+  totalPrice?: number;
+  items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
+  shippingAddress: {
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country?: string;
+  };
+}
+
 export async function submitOrder(
-  orderData: {
-    customerName: string;
-    customerEmail?: string;
-    customerPhone?: string;
-    items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
-    totalPaise: number;
-    shippingAddress: {
-      fullName: string;
-      phone: string;
-      addressLine1: string;
-      addressLine2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country?: string;
-    };
-  },
+  orderData: SubmitOrderPayload,
   baseUrl = API_BASE_URL
 ): Promise<{ orderNumber: string; id: string }> {
-  const orderNumber = `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
+  const orderNumber =
+    orderData.orderNumber ||
+    orderData.Quotation ||
+    orderData.quotation ||
+    `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
+
+  const customerName =
+    orderData.customerName ||
+    orderData.CustomerName ||
+    orderData.name ||
+    orderData.shippingAddress.fullName ||
+    'Commercial Customer';
+
+  const customerEmail =
+    orderData.customerEmail ||
+    orderData.CustomerEmail ||
+    orderData.Email ||
+    orderData.email ||
+    `${customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`;
+
+  const customerPhone =
+    orderData.customerPhone ||
+    orderData.CustomerPhone ||
+    orderData['Phone no'] ||
+    orderData.phoneNo ||
+    orderData.phone ||
+    orderData.shippingAddress.phone;
+
+  let totalPaise = orderData.totalPaise ?? orderData.TotalPaise;
+  if (totalPaise === undefined || totalPaise === null) {
+    const rawPrice = orderData['Total Price'] ?? orderData.totalPrice;
+    if (typeof rawPrice === 'number') {
+      totalPaise = rawPrice < 100000 ? Math.round(rawPrice * 100) : Math.round(rawPrice);
+    } else {
+      totalPaise = orderData.items.reduce((acc, i) => acc + (i.pricePaise * i.quantity), 0);
+    }
+  }
+
   const payloadBody = {
     orderNumber,
-    customerName: orderData.customerName,
-    customerEmail: orderData.customerEmail || `${orderData.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`,
-    customerPhone: orderData.customerPhone || orderData.shippingAddress.phone,
-    totalPaise: orderData.totalPaise,
+    customerName,
+    customerEmail,
+    customerPhone,
+    totalPaise,
     status: 'pending',
     paymentStatus: 'pending',
     items: orderData.items.map((i) => ({
@@ -644,16 +698,22 @@ export async function submitOrder(
       try {
         const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
         stored.unshift({
+          orderNumber: ref,
           reference: ref,
           date: new Date().toISOString(),
-          name: orderData.customerName,
-          phone: orderData.customerPhone || orderData.shippingAddress.phone,
+          customerName,
+          customerEmail,
+          customerPhone,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
           address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
           city: orderData.shippingAddress.city,
           state: orderData.shippingAddress.state,
           pincode: orderData.shippingAddress.postalCode,
           items: orderData.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.pricePaise / 100 })),
-          total: orderData.totalPaise / 100,
+          totalPaise,
+          total: totalPaise / 100,
           status: 'Confirmed',
         });
         localStorage.setItem('kb_orders', JSON.stringify(stored));
@@ -670,16 +730,22 @@ export async function submitOrder(
   // Local persistence fallback
   const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
   stored.unshift({
+    orderNumber,
     reference: orderNumber,
     date: new Date().toISOString(),
-    name: orderData.customerName,
-    phone: orderData.customerPhone || orderData.shippingAddress.phone,
+    customerName,
+    customerEmail,
+    customerPhone,
+    name: customerName,
+    email: customerEmail,
+    phone: customerPhone,
     address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
     city: orderData.shippingAddress.city,
     state: orderData.shippingAddress.state,
     pincode: orderData.shippingAddress.postalCode,
     items: orderData.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.pricePaise / 100 })),
-    total: orderData.totalPaise / 100,
+    totalPaise,
+    total: totalPaise / 100,
     status: 'Confirmed',
   });
   localStorage.setItem('kb_orders', JSON.stringify(stored));

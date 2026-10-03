@@ -21,9 +21,41 @@ export const Orders: CollectionConfig = {
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations'].includes(user.role as string)),
     delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
   },
+  hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        if (!data) return data;
+        const record = data as Record<string, unknown>;
+        // Map Quotation -> orderNumber
+        if (!record.orderNumber && (record.Quotation || record.quotation || record.quoteNumber || record.reference)) {
+          record.orderNumber = record.Quotation || record.quotation || record.quoteNumber || record.reference;
+        }
+        // Map Email -> customerEmail
+        if (!record.customerEmail && (record.Email || record.email || record['Customer Email'])) {
+          record.customerEmail = record.Email || record.email || record['Customer Email'];
+        }
+        // Map Phone no -> customerPhone
+        if (!record.customerPhone && (record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo)) {
+          record.customerPhone = record['Phone no'] || record['Phone No'] || record['Customer Phone'] || record.phone || record.Phone || record.phoneNo;
+        }
+        // Map Total Price -> totalPaise
+        if (record.totalPaise === undefined || record.totalPaise === null) {
+          const tp = record['Total Price'] ?? record.totalPrice ?? record['Total paise'] ?? record.total;
+          if (tp !== undefined && tp !== null) {
+            const num = Number(tp);
+            if (!isNaN(num)) {
+              record.totalPaise = num < 100000 ? Math.round(num * 100) : Math.round(num);
+            }
+          }
+        }
+        return record;
+      },
+    ],
+  },
   fields: [
     {
       name: 'orderNumber',
+      label: 'Order Number',
       type: 'text',
       required: true,
       unique: true,
@@ -36,17 +68,20 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'customerName',
+      label: 'Customer Name',
       type: 'text',
       required: true,
     },
     {
       name: 'customerEmail',
+      label: 'Customer Email',
       type: 'email',
       required: true,
       index: true,
     },
     {
       name: 'customerPhone',
+      label: 'Customer Phone',
       type: 'text',
     },
     {
@@ -76,6 +111,7 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'totalPaise',
+      label: 'Total Paise',
       type: 'number',
       required: true,
       min: 0,
