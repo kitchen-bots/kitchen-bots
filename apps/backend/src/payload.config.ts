@@ -76,6 +76,12 @@ export default buildConfig({
     pool: {
       connectionString,
       ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
+      max: 10,
+      min: 2,
+      idleTimeoutMillis: 120000,
+      connectionTimeoutMillis: 5000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     },
     disableCreateDatabase: true,
   }),
