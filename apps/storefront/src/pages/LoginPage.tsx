@@ -55,7 +55,7 @@ interface StoredOrder {
 
 export default function LoginPage({ onNavigate }: LoginPageProps) {
   const { showToast } = useToast();
-  const { login, logout } = useAuth();
+  const { login, signup, logout } = useAuth();
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
@@ -124,17 +124,31 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
     showToast(`Welcome back, ${account.name}!`);
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const account: UserAccount = {
-      name: signupName.trim() || 'Kitchen Customer',
-      email: signupEmail.trim() || 'customer@kitchenbots.in',
-      company: signupCompany.trim() || 'Direct Customer',
-    };
+    const email = signupEmail.trim();
+    const password = signupPassword || 'customer123456';
+    const name = signupName.trim() || 'Kitchen Customer';
+    const company = signupCompany.trim() || 'Direct Customer';
 
-    login(account.email, account.name);
-    setCurrentUser(account);
-    showToast(`Account created for ${account.name}!`);
+    if (!email) {
+      showToast('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      if (signup) {
+        await signup(email, password, name, company);
+      } else {
+        await login(email, name);
+      }
+      const account: UserAccount = { name, email, company };
+      setCurrentUser(account);
+      showToast(`Account created for ${name}!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Signup failed';
+      showToast(msg);
+    }
   };
 
   const handleSignOut = () => {

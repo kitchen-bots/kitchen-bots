@@ -82,12 +82,13 @@ const CATEGORY_MAP: Record<string, ProductCategory> = {
   refrigeration: 'Accessories',
 };
 
-export function categoryIdToName(categoryId: string | undefined): ProductCategory {
-  if (!categoryId) return 'Accessories';
-  if (CATEGORY_MAP[categoryId]) {
-    return CATEGORY_MAP[categoryId];
+export function categoryIdToName(categoryId: string | number | undefined): ProductCategory {
+  if (!categoryId && categoryId !== 0) return 'Accessories';
+  const catStr = String(categoryId).trim();
+  if (CATEGORY_MAP[catStr]) {
+    return CATEGORY_MAP[catStr];
   }
-  const normalized = categoryId.toLowerCase();
+  const normalized = catStr.toLowerCase();
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return val;
@@ -126,9 +127,11 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
   const rawCategory = raw.category;
   if (rawCategory && typeof rawCategory === 'object' && 'title' in rawCategory && typeof rawCategory.title === 'string') {
     categoryName = categoryIdToName(rawCategory.title);
-  } else if (typeof rawCategory === 'string') {
+  } else if (rawCategory && typeof rawCategory === 'object' && 'slug' in rawCategory && typeof rawCategory.slug === 'string') {
+    categoryName = categoryIdToName(rawCategory.slug);
+  } else if (typeof rawCategory === 'string' || typeof rawCategory === 'number') {
     categoryName = categoryIdToName(rawCategory);
-  } else if (typeof raw.categoryId === 'string') {
+  } else if (typeof raw.categoryId === 'string' || typeof raw.categoryId === 'number') {
     categoryName = categoryIdToName(raw.categoryId);
   } else if (local?.category) {
     categoryName = local.category;
@@ -218,8 +221,8 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
 }
 
 export const CATALOG_CACHE_KEY = 'kb_catalog_cache';
-export const CATALOG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes TTL
-export const DEFAULT_API_TIMEOUT_MS = 2000; // 2 seconds timeout
+export const CATALOG_CACHE_TTL = 30 * 1000; // 30 seconds TTL for fast updates
+export const DEFAULT_API_TIMEOUT_MS = 3000; // 3 seconds timeout
 
 interface CatalogCacheEnvelope {
   timestamp: number;
@@ -299,7 +302,7 @@ export function getCatalogProductSync(slugOrId: string): Product | null {
 
 export async function fetchCatalogProducts(
   baseUrl = API_BASE_URL,
-  params?: { category?: string; q?: string; page?: number; limit?: number; timeoutMs?: number }
+  params?: { category?: string; q?: string; page?: number; limit?: number; timeoutMs?: number; includeNonActive?: boolean }
 ): Promise<Product[]> {
   const timeoutMs = params?.timeoutMs ?? DEFAULT_API_TIMEOUT_MS;
   const searchParams = new URLSearchParams();
@@ -333,8 +336,13 @@ export async function fetchCatalogProducts(
       if (!contentType || contentType.includes('application/json')) {
         const json = await res.json();
         const items = json.docs || json.data || [];
-        if (Array.isArray(items) && items.length > 0) {
-          const mapped: Product[] = items.map(toStorefrontProduct);
+        if (Array.isArray(items)) {
+          // Filter for Active products unless includeNonActive is true
+          const filteredDocs = params?.includeNonActive
+            ? items
+            : items.filter((doc: RawProductInput) => !doc.status || doc.status === 'Active');
+
+          const mapped: Product[] = filteredDocs.map(toStorefrontProduct);
           if (!params?.category || params.category === 'All') {
             setCatalogCache(mapped);
           }
@@ -355,14 +363,16 @@ export async function fetchCatalogProducts(
           return result;
         }
       }
+    } else {
+      console.error(`[Storefront API] Failed to fetch products: status ${res.status} ${res.statusText}`);
     }
-  } catch {
-    // Continue to fallback on abort, proxy timeout, or network issue
+  } catch (err: unknown) {
+    console.error('[Storefront API] Error fetching catalog products:', err);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
 
-  // Local fallback (cached or bundled)
+  // Fallback to cached catalog or bundled catalog
   let filtered = getCatalogSync();
   if (params?.category && params.category !== 'All') {
     filtered = filtered.filter((p) => p.category === params.category);
