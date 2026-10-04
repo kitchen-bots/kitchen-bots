@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
+    group: 'Content & Media',
     useAsTitle: 'title',
     defaultColumns: ['title', 'documentType', 'product', 'isPublic', 'createdAt'],
   },
@@ -13,7 +14,7 @@ export const Documents: CollectionConfig = {
     },
     create: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
-    delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
+    delete: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),
   },
   fields: [
     {

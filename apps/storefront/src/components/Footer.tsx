@@ -3,10 +3,19 @@ import type { Page } from '../App';
 
 interface FooterProps {
   onNavigate?: (page: Page) => void;
+  onCatalog?: (query?: string, category?: string) => void;
 }
 
-export default function Footer({ onNavigate }: FooterProps) {
+export default function Footer({ onNavigate, onCatalog }: FooterProps) {
   const currentYear = new Date().getFullYear();
+
+  const handleCategoryFilter = (category: string) => {
+    if (onCatalog) {
+      onCatalog('', category);
+    } else {
+      onNavigate?.('products');
+    }
+  };
 
   return (
     <footer className="border-t border-[#1E293B] bg-[#0F172A] text-white font-['DM_Sans']">
@@ -51,7 +60,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <ul className="mt-4 space-y-2.5 text-sm text-[#94A3B8]">
               <li>
                 <button
-                  onClick={() => onNavigate?.('products')}
+                  onClick={() => handleCategoryFilter('Santa Maria Series')}
                   className="hover:text-white transition-colors"
                 >
                   Santa Maria Grills
@@ -59,7 +68,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate?.('products')}
+                  onClick={() => handleCategoryFilter('Rocket Stoves')}
                   className="hover:text-white transition-colors"
                 >
                   Rocket Stoves
@@ -67,7 +76,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate?.('products')}
+                  onClick={() => handleCategoryFilter('Collapsible BBQ')}
                   className="hover:text-white transition-colors"
                 >
                   Collapsible BBQ Units
@@ -75,7 +84,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate?.('products')}
+                  onClick={() => handleCategoryFilter('Automatic BBQ')}
                   className="hover:text-white transition-colors"
                 >
                   Automatic BBQ Rotisseries
@@ -184,14 +193,6 @@ export default function Footer({ onNavigate }: FooterProps) {
             >
               Support
             </button>
-            <a
-              href="/admin"
-              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#64748B] hover:text-[#F97316] transition-colors"
-              title="Kitchen Bots Operations Hub"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/90 inline-block"></span>
-              Admin Portal
-            </a>
           </div>
         </div>
       </div>

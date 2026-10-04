@@ -18,9 +18,14 @@ describe('getMediaUrl', () => {
     expect(getMediaUrl(url)).toBe(url);
   });
 
-  it('returns an empty string for missing media', () => {
+  it('returns an empty string for missing or invalid media paths', () => {
     expect(getMediaUrl(undefined)).toBe('');
     expect(getMediaUrl(null)).toBe('');
+    expect(getMediaUrl('')).toBe('');
+    expect(getMediaUrl('   ')).toBe('');
+    expect(getMediaUrl('w')).toBe('');
+    expect(getMediaUrl('/w')).toBe('');
+    expect(getMediaUrl('invalid-path-without-extension')).toBe('');
   });
 
   it('serves relative redesign assets from the public CDN', () => {

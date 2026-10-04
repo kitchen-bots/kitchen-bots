@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ChevronDown, LogOut, Menu, Search, ShoppingBag, User, X, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, LogOut, Menu, Search, ShoppingBag, User, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
 import { PRODUCTS } from '../data/products';
 import type { Page } from '../App';
@@ -257,50 +257,57 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
             {/* Desktop: Account / User Menu */}
             {user ? (
               <div ref={userMenu} className="relative hidden sm:block">
-                <div className="flex items-center rounded-xl overflow-hidden hover:bg-[#F1F5F9] transition-colors border border-transparent hover:border-[#E2E8F0]">
-                  <button
-                    onClick={() => navigate('profile')}
-                    className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 text-[#334155] hover:text-[#111827] focus-visible:outline-none"
-                    aria-label="View profile"
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#C2410C] text-white text-xs font-bold uppercase shrink-0">
-                      {user.name.charAt(0)}
-                    </span>
-                    <span className="max-w-[100px] truncate text-sm font-semibold text-[#334155]">{user.name}</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUserMenuOpen(o => !o);
-                    }}
-                    className="pr-2.5 pl-1 py-2 text-[#94A3B8] hover:text-[#111827] focus-visible:outline-none"
-                    aria-label="Toggle user menu"
-                    aria-expanded={userMenuOpen}
-                  >
-                    <ChevronDown size={14} className={`transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
+                <Button
+                  variant="ghost"
+                  aria-label="User account menu"
+                  className="rounded-xl flex items-center gap-2 text-[#334155] hover:text-[#111827] hover:bg-[#F1F5F9]"
+                  onClick={() => setUserMenuOpen(o => !o)}
+                  aria-expanded={userMenuOpen}
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#C2410C] text-white text-xs font-bold uppercase shrink-0">
+                    {user.name.charAt(0)}
+                  </span>
+                  <span className="max-w-[100px] truncate text-sm font-semibold text-[#334155]">{user.name}</span>
+                  <ChevronDown size={14} className="text-[#94A3B8]" />
+                </Button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1 z-50">
+                  <div
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="absolute right-0 top-full mt-2 w-60 border border-[#E2E8F0] bg-white shadow-xl rounded-xl p-1.5 z-50 pointer-events-auto"
+                  >
                     <button
-                      onClick={() => navigate('profile')}
-                      className="w-full text-left px-3 py-2 border-b border-[#F1F5F9] mb-1 hover:bg-[#FFF7ED] rounded-t-lg transition-colors group"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setUserMenuOpen(false);
+                        navigate('login');
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setUserMenuOpen(false);
+                          navigate('login');
+                        }
+                      }}
+                      className="flex w-full items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[#F1F5F9] mb-1 rounded-lg hover:bg-[#FFF7ED] transition-colors group cursor-pointer text-left"
+                      title="View Customer Portal"
+                      aria-label="View Customer Portal"
                     >
-                      <p className="text-xs font-bold text-[#111827] truncate group-hover:text-[#C2410C]">{user.name}</p>
-                      <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
-                      {user.role && (
-                        <span className="inline-block mt-1 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">
-                          {user.role}
-                        </span>
-                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-[11px] text-[#64748B] truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-[#94A3B8] group-hover:text-[#C2410C] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </button>
-                    <button
-                      onClick={() => navigate('profile')}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
-                    >
-                      <User size={15} />
-                      My Profile
-                    </button>
+
                     {(user.role === 'admin' || user.role === 'operations') && (
                       <a
                         href="/admin"
@@ -311,13 +318,18 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                       </a>
                     )}
                     <button
-                      onClick={() => navigate('orders')}
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('orders');
+                      }}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
                     >
                       <ShoppingBag size={15} />
                       Orders
                     </button>
                     <button
+                      type="button"
                       onClick={handleLogout}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
                     >
@@ -404,19 +416,23 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
           {/* Mobile user badge */}
           {user && (
             <button
-              onClick={() => navigate('profile')}
-              className="mx-4 mt-4 mb-1 flex items-center justify-between w-[calc(100%-2rem)] rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left transition-colors hover:bg-[#FFEDD5]"
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                navigate('login');
+              }}
+              title="View Customer Portal"
+              aria-label="View Customer Portal"
+              className="mx-4 mt-4 mb-1 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left hover:bg-[#FFEDD5] transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">
-                  {user.name.charAt(0)}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-[#111827] truncate">{user.name}</p>
-                  <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
-                </div>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">
+                {user.name.charAt(0)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-[#111827] truncate">{user.name}</p>
+                <p className="text-[11px] text-[#64748B] truncate">{user.email}</p>
               </div>
-              <span className="text-xs font-bold text-[#C2410C]">Profile &rarr;</span>
+              <ChevronRight size={16} className="text-[#C2410C] shrink-0" />
             </button>
           )}
 

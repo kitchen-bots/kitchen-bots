@@ -15,7 +15,6 @@ import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import { submitEnquiry } from '../lib/api';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import ProductImage from '../components/ProductImage';
 import { getProductById } from '../data/products';
 
@@ -25,7 +24,7 @@ interface BulkEnquiryPageProps {
 }
 
 export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkEnquiryPageProps) {
-  const { items, clearCart, updateQuantity, removeFromCart, totalPrice } = useCart();
+  const { items, clearCart, updateQuantity, removeFromCart, totalPaise, totalPrice } = useCart();
 
   const selectedFallbackProduct = items.length === 0 && selectedProductId
     ? getProductById(selectedProductId)
@@ -129,14 +128,14 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-[#64748B] font-['Outfit']">
-                      Quotation Items
+                      Order Items
                     </span>
                     <span className="bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Outfit']">
                       {items.length} {items.length === 1 ? 'item' : 'items'}
                     </span>
                   </div>
                   <span className="text-sm font-bold text-[#111827] font-['Outfit']">
-                    Est. Total: ₹{totalPrice.toLocaleString('en-IN')}
+                    Total: {(totalPaise ?? Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise (₹{totalPrice.toLocaleString('en-IN')})
                   </span>
                 </div>
 
@@ -201,10 +200,8 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            disabled={item.quantity >= MAX_ITEM_QUANTITY}
                             aria-label="Increase quantity"
-                            title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items` : undefined}
-                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            className="w-7 h-full flex items-center justify-center text-[#475569] hover:bg-[#E2E8F0] transition-colors"
                           >
                             <Plus size={12} />
                           </button>
@@ -338,7 +335,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Full Name *</label>
+                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Customer Name *</label>
                         <input
                           type="text"
                           placeholder="e.g. Rahul Sharma"
@@ -350,7 +347,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Email Address *</label>
+                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Customer Email *</label>
                         <input
                           type="email"
                           placeholder="rahul@hotel.com"
@@ -365,7 +362,7 @@ export default function BulkEnquiryPage({ onNavigate, selectedProductId }: BulkE
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Phone Number</label>
+                        <label className="text-[14px] font-bold text-[#475569] ml-1 font-['Outfit']">Customer Phone</label>
                         <input
                           type="tel"
                           placeholder="+91 94907 01421"

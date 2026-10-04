@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { trackAddToCart } from '../lib/analytics';
-import { CartContext, type CartItem, MAX_ITEM_QUANTITY } from './CartContextData';
+import { CartContext, type CartItem, MIN_ITEM_QUANTITY, MAX_ITEM_QUANTITY } from './CartContextData';
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -12,7 +12,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(parsed)) {
         return parsed.map((item: CartItem) => ({
           ...item,
-          quantity: Math.min(MAX_ITEM_QUANTITY, Math.max(1, item.quantity || 1)),
+          quantity: Math.max(MIN_ITEM_QUANTITY, item.quantity || MIN_ITEM_QUANTITY),
         }));
       }
       return [];
@@ -32,17 +32,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = useCallback((newItem: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {
       const existingItem = prev.find(item => item.id === newItem.id);
-      if (existingItem && existingItem.quantity >= MAX_ITEM_QUANTITY) {
-        return prev;
-      }
-      const newQuantity = existingItem ? Math.min(MAX_ITEM_QUANTITY, existingItem.quantity + 1) : 1;
+      const newQuantity = existingItem ? existingItem.quantity + 1 : MIN_ITEM_QUANTITY;
 
       // Fire analytics
       trackAddToCart({
         productId: newItem.id,
         productName: newItem.name,
         price: newItem.price,
-        quantity: 1,
+        quantity: existingItem ? 1 : MIN_ITEM_QUANTITY,
       });
 
       if (existingItem) {
@@ -50,7 +47,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           item.id === newItem.id ? { ...item, quantity: newQuantity } : item
         );
       }
-      return [...prev, { ...newItem, quantity: 1 }];
+      return [...prev, { ...newItem, quantity: MIN_ITEM_QUANTITY }];
     });
   }, []);
 
@@ -59,14 +56,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {
-    if (quantity <= 0) {
+    if (quantity < MIN_ITEM_QUANTITY) {
       removeFromCart(id);
       return;
     }
-    const clampedQuantity = Math.min(MAX_ITEM_QUANTITY, Math.floor(quantity));
+    const sanitized = Math.min(MAX_ITEM_QUANTITY, Math.floor(quantity));
     setItems(prev =>
       prev.map(item =>
-        item.id === id ? { ...item, quantity: clampedQuantity } : item
+        item.id === id ? { ...item, quantity: sanitized } : item
       )
     );
   }, [removeFromCart]);
@@ -76,7 +73,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPaise = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0);
+  const totalPrice = totalPaise / 100;
 
   const value = {
     items,
@@ -85,6 +83,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     updateQuantity,
     clearCart,
     totalItems,
+    totalPaise,
     totalPrice,
   };
 

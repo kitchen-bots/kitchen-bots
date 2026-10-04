@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Orders: CollectionConfig = {
   slug: 'orders',
   admin: {
+    group: 'Commerce',
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'customerName', 'totalPaise', 'status', 'paymentStatus', 'createdAt'],
   },
@@ -20,9 +21,45 @@ export const Orders: CollectionConfig = {
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations'].includes(user.role as string)),
     delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
   },
+  hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        if (!data) return data;
+        const record = data as Record<string, unknown>;
+        // Standardize Order Number
+        if (!record.orderNumber && (record['Order Number'] || record.orderNumber || record.Quotation || record.quotation || record.quoteNumber || record.reference)) {
+          record.orderNumber = record['Order Number'] || record.orderNumber || record.Quotation || record.quotation || record.quoteNumber || record.reference;
+        }
+        // Standardize Customer Name
+        if (!record.customerName && (record['Customer Name'] || record.customerName || record.name || record.fullName)) {
+          record.customerName = record['Customer Name'] || record.customerName || record.name || record.fullName;
+        }
+        // Standardize Customer Email
+        if (!record.customerEmail && (record['Customer Email'] || record.customerEmail || record.Email || record.email)) {
+          record.customerEmail = record['Customer Email'] || record.customerEmail || record.Email || record.email;
+        }
+        // Standardize Customer Phone
+        if (!record.customerPhone && (record['Customer Phone'] || record.customerPhone || record['Phone no'] || record['Phone No'] || record.phone || record.Phone || record.phoneNo)) {
+          record.customerPhone = record['Customer Phone'] || record.customerPhone || record['Phone no'] || record['Phone No'] || record.phone || record.Phone || record.phoneNo;
+        }
+        // Standardize Total Paise
+        if (record.totalPaise === undefined || record.totalPaise === null) {
+          const tp = record['Total Paise'] ?? record.totalPaise ?? record['Total Price'] ?? record.totalPrice ?? record['Total paise'] ?? record.total;
+          if (tp !== undefined && tp !== null) {
+            const num = Number(tp);
+            if (!isNaN(num)) {
+              record.totalPaise = num < 100000 ? Math.round(num * 100) : Math.round(num);
+            }
+          }
+        }
+        return record;
+      },
+    ],
+  },
   fields: [
     {
       name: 'orderNumber',
+      label: 'Order Number',
       type: 'text',
       required: true,
       unique: true,
@@ -35,17 +72,20 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'customerName',
+      label: 'Customer Name',
       type: 'text',
       required: true,
     },
     {
       name: 'customerEmail',
+      label: 'Customer Email',
       type: 'email',
       required: true,
       index: true,
     },
     {
       name: 'customerPhone',
+      label: 'Customer Phone',
       type: 'text',
     },
     {
@@ -75,6 +115,7 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'totalPaise',
+      label: 'Total Paise',
       type: 'number',
       required: true,
       min: 0,

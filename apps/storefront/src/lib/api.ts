@@ -99,21 +99,34 @@ export function categoryIdToName(categoryId: string | number | undefined): Produ
 
 function extractImageUrl(val: unknown): string {
   if (!val) return '';
+  let candidate = '';
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         const parsed = JSON.parse(trimmed) as { url?: string; src?: string };
-        return parsed.url || parsed.src || '';
+        candidate = parsed.url || parsed.src || '';
       } catch {
-        return trimmed;
+        candidate = trimmed;
       }
+    } else {
+      candidate = trimmed;
     }
-    return trimmed;
-  }
-  if (typeof val === 'object' && val !== null) {
+  } else if (typeof val === 'object' && val !== null) {
     const obj = val as { url?: string; src?: string };
-    return obj.url || obj.src || '';
+    candidate = obj.url || obj.src || '';
+  }
+
+  if (!candidate) return '';
+  candidate = candidate.trim();
+  if (candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('data:') || candidate.startsWith('blob:')) {
+    return candidate;
+  }
+  const clean = candidate.replace(/[?#].*$/, '');
+  const hasExt = /\.(jpe?g|png|webp|svg|gif|mp4|webm|avif)($|\?)/i.test(candidate);
+  const isKnownDir = /^\/?(images|videos|3d-assets|assets)\//i.test(clean);
+  if (hasExt || isKnownDir) {
+    return candidate;
   }
   return '';
 }
@@ -121,7 +134,13 @@ function extractImageUrl(val: unknown): string {
 export function toStorefrontProduct(raw: RawProductInput): Product {
   const rawId = String(raw.id || '');
   const rawSlug = typeof raw.slug === 'string' && raw.slug ? raw.slug : rawId;
-  const local = getProductById(rawId) || PRODUCTS.find((p) => p.slug === rawSlug || String(p.id) === rawId);
+  const local =
+    getProductById(rawId) ||
+    getProductById(rawSlug) ||
+    PRODUCTS.find((p) => p.slug === rawSlug || String(p.id) === rawId || p.id === `prod-${rawId}` || p.id === rawSlug);
+
+  const canonicalId = local?.id || (rawId.startsWith('prod-') ? rawId : `prod-${rawId}`) || rawSlug;
+  const canonicalSlug = (typeof raw.slug === 'string' && raw.slug ? raw.slug : local?.slug) || rawSlug;
 
   let categoryName: ProductCategory = 'Collapsible BBQ';
   const rawCategory = raw.category;
@@ -159,13 +178,13 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
     rawImages = local.images;
   }
 
-  const images = rawImages.map((img) => getMediaUrl(img));
+  const images = rawImages.map((img) => getMediaUrl(img)).filter(Boolean);
   const primaryImage = images[0] || (local?.image ? getMediaUrl(local.image) : '');
-  const rawPrice = typeof raw.pricePaise === 'number' ? raw.pricePaise : null;
+  const rawPrice = typeof raw.pricePaise === 'number' && raw.pricePaise > 0 ? raw.pricePaise : null;
   const priceRupees =
     rawPrice && rawPrice > 0
       ? Math.round(rawPrice / 100)
-      : (local?.price ?? 0);
+      : (local?.price || 0);
 
   let features: string[] = [];
   if (Array.isArray(raw.features) && raw.features.length > 0) {
@@ -200,11 +219,12 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
 
   return {
     ...(local || {}),
-    id: rawId || local?.id || rawSlug,
-    slug: (typeof raw.slug === 'string' && raw.slug) || local?.slug || rawSlug,
+    id: canonicalId,
+    slug: canonicalSlug,
     name: (typeof raw.name === 'string' && raw.name) || local?.name || '',
     description: (typeof raw.description === 'string' && raw.description) || local?.description || '',
-    price: priceRupees,
+    price: priceRupees || local?.price || 0,
+    mrp: local?.mrp || (priceRupees ? Math.round(priceRupees * 1.22) : undefined),
     image: primaryImage,
     images,
     category: categoryName,
@@ -214,15 +234,15 @@ export function toStorefrontProduct(raw: RawProductInput): Product {
     videoPath: (typeof raw.videoPath === 'string' ? raw.videoPath : undefined) || local?.videoPath,
     sequenceId: (typeof raw.sequenceId === 'string' ? raw.sequenceId : undefined) || local?.sequenceId,
     sequenceFrameCount: (typeof raw.sequenceFrameCount === 'number' ? raw.sequenceFrameCount : undefined) || local?.sequenceFrameCount,
-    has3D: typeof raw.has3D === 'boolean' ? raw.has3D : local?.has3D,
-    hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : local?.hasVideo,
-    featured: typeof raw.featured === 'boolean' ? raw.featured : (local?.featured ?? false),
+    has3D: typeof raw.has3D === 'boolean' ? raw.has3D : (local?.has3D ?? false),
+    hasVideo: typeof raw.hasVideo === 'boolean' ? raw.hasVideo : (local?.hasVideo ?? false),
+    featured: typeof raw.featured === 'boolean' ? (raw.featured || Boolean(local?.featured)) : Boolean(local?.featured),
   };
 }
 
-export const CATALOG_CACHE_KEY = 'kb_catalog_cache';
+export const CATALOG_CACHE_KEY = 'kb_catalog_cache_v3';
 export const CATALOG_CACHE_TTL = 30 * 1000; // 30 seconds TTL for fast updates
-export const DEFAULT_API_TIMEOUT_MS = 3000; // 3 seconds timeout
+export const DEFAULT_API_TIMEOUT_MS = 8000; // 8 seconds timeout for serverless cold-starts
 
 interface CatalogCacheEnvelope {
   timestamp: number;
@@ -236,6 +256,8 @@ export function clearCatalogCache(): void {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       localStorage.removeItem(CATALOG_CACHE_KEY);
+      localStorage.removeItem('kb_catalog_cache');
+      localStorage.removeItem('kb_catalog_cache_v2');
     } catch {
       // Ignore storage errors
     }
@@ -244,6 +266,9 @@ export function clearCatalogCache(): void {
 
 export function setCatalogCache(products: Product[]): void {
   if (!Array.isArray(products) || products.length === 0) return;
+  // Ensure we never cache products with 0 price
+  if (products.some((p) => !p.price || p.price <= 0)) return;
+
   const envelope: CatalogCacheEnvelope = {
     timestamp: Date.now(),
     products,
@@ -260,19 +285,31 @@ export function setCatalogCache(products: Product[]): void {
 
 export function getCachedCatalog(): { products: Product[]; isStale: boolean } | null {
   if (memoryCatalogCache && Array.isArray(memoryCatalogCache.products) && memoryCatalogCache.products.length > 0) {
-    const isStale = Date.now() - memoryCatalogCache.timestamp > CATALOG_CACHE_TTL;
-    return { products: memoryCatalogCache.products, isStale };
+    const hasInvalid = memoryCatalogCache.products.some((p) => !p.price || p.price <= 0);
+    if (!hasInvalid) {
+      const isStale = Date.now() - memoryCatalogCache.timestamp > CATALOG_CACHE_TTL;
+      return { products: memoryCatalogCache.products, isStale };
+    }
+    memoryCatalogCache = null;
   }
 
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
+      // Clean up corrupted legacy cache keys
+      localStorage.removeItem('kb_catalog_cache');
+      localStorage.removeItem('kb_catalog_cache_v2');
+
       const raw = localStorage.getItem(CATALOG_CACHE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as CatalogCacheEnvelope;
         if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          memoryCatalogCache = parsed;
-          const isStale = Date.now() - parsed.timestamp > CATALOG_CACHE_TTL;
-          return { products: parsed.products, isStale };
+          const hasInvalid = parsed.products.some((p) => !p.price || p.price <= 0);
+          if (!hasInvalid) {
+            memoryCatalogCache = parsed;
+            const isStale = Date.now() - parsed.timestamp > CATALOG_CACHE_TTL;
+            return { products: parsed.products, isStale };
+          }
+          localStorage.removeItem(CATALOG_CACHE_KEY);
         }
       }
     } catch {
@@ -291,13 +328,23 @@ export function getCatalogSync(): Product[] {
   return PRODUCTS;
 }
 
-export function getCatalogProductSync(slugOrId: string): Product | null {
+export function getCatalogProductSync(slugOrId: string | number | undefined | null): Product | null {
+  if (!slugOrId) return null;
+  const directLocal = getProductById(slugOrId);
+  if (directLocal && directLocal.price > 0) {
+    return directLocal;
+  }
   const catalog = getCatalogSync();
+  const raw = String(slugOrId).trim();
+  const numOnly = raw.replace(/\D/g, '');
   const found = catalog.find(
-    (p) => String(p.id) === String(slugOrId) || p.slug === slugOrId
+    (p) =>
+      String(p.id) === raw ||
+      p.slug === raw ||
+      (numOnly && p.id.replace(/\D/g, '') === numOnly)
   );
-  if (found) return found;
-  return getProductById(slugOrId) || null;
+  if (found && found.price > 0) return found;
+  return directLocal || null;
 }
 
 export async function fetchCatalogProducts(
@@ -456,6 +503,41 @@ export async function fetchCatalogProduct(
         }
       }
     }
+
+    // If local product has an ID or slug different from slugOrId, try querying with that
+    if (local?.id && local.id !== slugOrId) {
+      const localIdUrl = `${baseUrl}/api/products?where[slug][equals]=${encodeURIComponent(local.id)}`;
+      const resLocal = await fetch(localIdUrl, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      });
+      if (resLocal.ok) {
+        const json = await resLocal.json();
+        const doc = (json.docs && json.docs[0]) || json.data || json.doc;
+        if (doc) {
+          const product = toStorefrontProduct(doc);
+          return product;
+        }
+      }
+    }
+
+    // Try numeric ID extracted from prod-X
+    const numOnly = slugOrId.replace(/\D/g, '');
+    if (numOnly && numOnly !== slugOrId) {
+      const directUrl = `${baseUrl}/api/products/${encodeURIComponent(numOnly)}`;
+      const resDirect = await fetch(directUrl, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      });
+      if (resDirect.ok) {
+        const item = await resDirect.json();
+        const doc = item.data || item.doc || item;
+        if (doc && (doc.id || doc.name)) {
+          const product = toStorefrontProduct(doc);
+          return product;
+        }
+      }
+    }
   } catch {
     // Continue to fallback
   } finally {
@@ -553,33 +635,97 @@ export async function submitEnquiry(
   };
 }
 
+export interface SubmitOrderPayload {
+  orderNumber?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  totalPaise: number;
+  items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
+  shippingAddress: {
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country?: string;
+  };
+  // Backward compatibility aliases
+  'Order Number'?: string;
+  Quotation?: string;
+  quotation?: string;
+  'Customer Name'?: string;
+  CustomerName?: string;
+  name?: string;
+  'Customer Email'?: string;
+  CustomerEmail?: string;
+  Email?: string;
+  email?: string;
+  'Customer Phone'?: string;
+  CustomerPhone?: string;
+  'Phone no'?: string;
+  phoneNo?: string;
+  phone?: string;
+  'Total Paise'?: number;
+  TotalPaise?: number;
+  'Total Price'?: number;
+  totalPrice?: number;
+}
+
 export async function submitOrder(
-  orderData: {
-    customerName: string;
-    customerEmail?: string;
-    customerPhone?: string;
-    items: Array<{ productId?: string; name: string; sku?: string; pricePaise: number; quantity: number }>;
-    totalPaise: number;
-    shippingAddress: {
-      fullName: string;
-      phone: string;
-      addressLine1: string;
-      addressLine2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country?: string;
-    };
-  },
+  orderData: SubmitOrderPayload,
   baseUrl = API_BASE_URL
 ): Promise<{ orderNumber: string; id: string }> {
-  const orderNumber = `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
+  const orderNumber =
+    orderData.orderNumber ||
+    orderData['Order Number'] ||
+    orderData.Quotation ||
+    orderData.quotation ||
+    `KB-ORD-${Date.now().toString(36).toUpperCase()}`;
+
+  const customerName =
+    orderData.customerName ||
+    orderData['Customer Name'] ||
+    orderData.CustomerName ||
+    orderData.name ||
+    orderData.shippingAddress.fullName ||
+    'Commercial Customer';
+
+  const customerEmail =
+    orderData.customerEmail ||
+    orderData['Customer Email'] ||
+    orderData.CustomerEmail ||
+    orderData.Email ||
+    orderData.email ||
+    `${customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`;
+
+  const customerPhone =
+    orderData.customerPhone ||
+    orderData['Customer Phone'] ||
+    orderData.CustomerPhone ||
+    orderData['Phone no'] ||
+    orderData.phoneNo ||
+    orderData.phone ||
+    orderData.shippingAddress.phone;
+
+  let totalPaise = orderData.totalPaise ?? orderData['Total Paise'] ?? orderData.TotalPaise;
+  if (totalPaise === undefined || totalPaise === null) {
+    const rawPrice = orderData['Total Price'] ?? orderData.totalPrice;
+    if (typeof rawPrice === 'number') {
+      totalPaise = rawPrice < 100000 ? Math.round(rawPrice * 100) : Math.round(rawPrice);
+    } else {
+      totalPaise = orderData.items.reduce((acc, i) => acc + (i.pricePaise * i.quantity), 0);
+    }
+  }
+
   const payloadBody = {
     orderNumber,
-    customerName: orderData.customerName,
-    customerEmail: orderData.customerEmail || `${orderData.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@kitchenbots.in`,
-    customerPhone: orderData.customerPhone || orderData.shippingAddress.phone,
-    totalPaise: orderData.totalPaise,
+    customerName,
+    customerEmail,
+    customerPhone,
+    totalPaise,
     status: 'pending',
     paymentStatus: 'pending',
     items: orderData.items.map((i) => ({
@@ -620,16 +766,22 @@ export async function submitOrder(
       try {
         const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
         stored.unshift({
+          orderNumber: ref,
           reference: ref,
           date: new Date().toISOString(),
-          name: orderData.customerName,
-          phone: orderData.customerPhone || orderData.shippingAddress.phone,
+          customerName,
+          customerEmail,
+          customerPhone,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
           address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
           city: orderData.shippingAddress.city,
           state: orderData.shippingAddress.state,
           pincode: orderData.shippingAddress.postalCode,
           items: orderData.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.pricePaise / 100 })),
-          total: orderData.totalPaise / 100,
+          totalPaise,
+          total: totalPaise / 100,
           status: 'Confirmed',
         });
         localStorage.setItem('kb_orders', JSON.stringify(stored));
@@ -646,16 +798,22 @@ export async function submitOrder(
   // Local persistence fallback
   const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
   stored.unshift({
+    orderNumber,
     reference: orderNumber,
     date: new Date().toISOString(),
-    name: orderData.customerName,
-    phone: orderData.customerPhone || orderData.shippingAddress.phone,
+    customerName,
+    customerEmail,
+    customerPhone,
+    name: customerName,
+    email: customerEmail,
+    phone: customerPhone,
     address: `${orderData.shippingAddress.addressLine1}, ${orderData.shippingAddress.city}`,
     city: orderData.shippingAddress.city,
     state: orderData.shippingAddress.state,
     pincode: orderData.shippingAddress.postalCode,
     items: orderData.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.pricePaise / 100 })),
-    total: orderData.totalPaise / 100,
+    totalPaise,
+    total: totalPaise / 100,
     status: 'Confirmed',
   });
   localStorage.setItem('kb_orders', JSON.stringify(stored));

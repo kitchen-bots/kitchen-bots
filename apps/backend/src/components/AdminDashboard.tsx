@@ -1,4 +1,5 @@
 import React from 'react';
+import { KITCHENBOTS_LOGO_WHITE_DATA_URL } from './brandAssets';
 
 interface AdminDashboardProps {
   payload?: Record<string, unknown>;
@@ -187,7 +188,7 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '20px',
-          padding: '24px 28px',
+          padding: '20px 24px',
           backgroundColor: '#121215',
           borderRadius: '12px',
           border: '1px solid #27272a',
@@ -196,61 +197,74 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <img
-            src="/images/kitchenbots-logo-white.svg"
-            alt="Kitchen Bots"
+            src={KITCHENBOTS_LOGO_WHITE_DATA_URL}
+            alt="KitchenBots India Pvt. Ltd."
             style={{
-              height: '38px',
+              height: '42px',
               width: 'auto',
               maxWidth: '220px',
               objectFit: 'contain',
               display: 'block',
+              flexShrink: 0,
             }}
           />
-          <div style={{ height: '32px', width: '1px', backgroundColor: '#27272a' }} />
+          <div style={{ height: '36px', width: '1px', backgroundColor: '#27272a', flexShrink: 0 }} />
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
+              <h1
                 style={{
-                  display: 'inline-block',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: '#22c55e',
-                  boxShadow: '0 0 8px rgba(34, 197, 94, 0.7)',
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: '#22c55e',
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: '#fafafa',
+                  margin: 0,
+                  letterSpacing: '-0.02em',
                 }}
               >
-                SUPABASE POSTGRESQL · CLUSTER ACTIVE
-              </span>
+                Operations & Equipment Command Desk
+              </h1>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#22c55e',
+                    boxShadow: '0 0 6px rgba(34, 197, 94, 0.8)',
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#22c55e',
+                  }}
+                >
+                  Supabase Active
+                </span>
+              </div>
             </div>
-            <h1
-              style={{
-                fontSize: '20px',
-                fontWeight: 700,
-                color: '#fafafa',
-                margin: 0,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Operations & Equipment Command Desk
-            </h1>
-            <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#71717a' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#71717a' }}>
               Real-time commercial automation, orders, machinery catalog, and B2B quotations.
             </p>
           </div>
         </div>
 
         {/* Action Shortcuts */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <a
             href="/admin/collections/products/create"
             style={{
@@ -571,9 +585,9 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #27272a', color: '#71717a' }}>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Reference</th>
+                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Order Number</th>
                     <th style={{ padding: '8px 10px', fontWeight: 600 }}>Customer</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Amount</th>
+                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Total Paise</th>
                     <th style={{ padding: '8px 10px', fontWeight: 600 }}>Status</th>
                   </tr>
                 </thead>

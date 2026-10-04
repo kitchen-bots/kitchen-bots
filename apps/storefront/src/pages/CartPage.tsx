@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
+import { MIN_ITEM_QUANTITY } from '../context/CartContextData';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, CheckCircle, MapPin, Phone, User, Mail, ChevronUp, X, Loader2, AlertCircle } from 'lucide-react';
 import type { Page } from '../App';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import { submitOrder } from '../lib/api';
+import OrderCompletionModal from '../components/OrderCompletionModal';
 
 interface CartPageProps {
   onNavigate: (page: Page) => void;
@@ -14,6 +15,7 @@ interface CartPageProps {
 
 interface CheckoutForm {
   name: string;
+  email: string;
   phone: string;
   address: string;
   city: string;
@@ -23,16 +25,20 @@ interface CheckoutForm {
 }
 
 interface PlacedOrder {
+  orderNumber: string;
   reference: string;
   date: string;
   name: string;
+  email: string;
   phone: string;
   address: string;
   city: string;
   state: string;
   pincode: string;
+  notes?: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   total: number;
+  totalPaise: number;
   status: string;
 }
 
@@ -63,14 +69,16 @@ function renderConfigValue(value: unknown): React.ReactNode {
 
 
 export default function CartPage({ onNavigate }: CartPageProps) {
-  const { items, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, totalPaise, totalPrice, totalItems } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<CheckoutForm>>({});
   const [form, setForm] = useState<CheckoutForm>({
     name: '',
+    email: '',
     phone: '',
     address: '',
     city: '',
@@ -133,15 +141,40 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (!Number.isFinite(newQuantity)) return;
     const sanitized = Math.floor(newQuantity);
-    if (sanitized >= 1 && sanitized <= MAX_ITEM_QUANTITY) {
+    if (sanitized < MIN_ITEM_QUANTITY) {
+      removeFromCart(id);
+    } else {
       updateQuantity(id, sanitized);
     }
   };
 
+  const isValidPhoneNumber = (phone: string): boolean => {
+    if (!phone || !phone.trim()) return false;
+    const clean = phone.trim().replace(/[\s\-.()]/g, '');
+    // 1. Direct 10-digit Indian mobile (starts with 6-9)
+    if (/^[6-9]\d{9}$/.test(clean)) return true;
+    // 2. Indian mobile with prefixes: +91, 91, 0091, 0
+    if (/^(?:\+91|91|0091|0)[6-9]\d{9}$/.test(clean)) return true;
+    // 3. International E.164 format with + prefix (7 to 15 digits)
+    if (/^\+[1-9]\d{6,14}$/.test(clean)) return true;
+    // 4. Any valid phone format between 7 and 15 digits
+    if (/^\d{7,15}$/.test(clean)) return true;
+    return false;
+  };
+
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutForm> = {};
-    if (!form.name.trim()) errors.name = 'Name is required';
-    if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ''))) errors.phone = 'Enter a valid 10-digit Indian mobile number';
+    if (!form.name.trim()) errors.name = 'Customer Name is required';
+    if (!form.email.trim()) {
+      errors.email = 'Customer Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = 'Enter a valid email address';
+    }
+    if (!form.phone.trim()) {
+      errors.phone = 'Customer Phone is required';
+    } else if (!isValidPhoneNumber(form.phone)) {
+      errors.phone = 'Enter a valid mobile or phone number with country code (e.g. +91 94907 01421)';
+    }
     if (!form.address.trim()) errors.address = 'Address is required';
     if (!form.city.trim()) errors.city = 'City is required';
     if (!form.state.trim()) errors.state = 'State is required';
@@ -157,11 +190,14 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const orderTotalPaise = totalPaise ?? Math.round(totalPrice * 100);
+
     try {
       const res = await submitOrder({
         customerName: form.name.trim(),
+        customerEmail: form.email.trim(),
         customerPhone: form.phone.trim(),
-        totalPaise: Math.round(totalPrice * 100),
+        totalPaise: orderTotalPaise,
         items: items.map((i) => ({
           productId: i.id,
           name: i.name,
@@ -181,22 +217,27 @@ export default function CartPage({ onNavigate }: CartPageProps) {
       });
 
       const order: PlacedOrder = {
+        orderNumber: res.orderNumber,
         reference: res.orderNumber,
         date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         name: form.name.trim(),
+        email: form.email.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
         city: form.city.trim(),
         state: form.state.trim(),
         pincode: form.pincode.trim(),
+        notes: form.notes.trim() || undefined,
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
         total: totalPrice,
+        totalPaise: orderTotalPaise,
         status: 'Order Confirmed',
       };
 
       clearCart();
       setConfirmedOrder(order);
       setShowCheckout(false);
+      setShowSuccessPopup(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unable to place order right now. Please try again.';
       setSubmitError(message);
@@ -208,70 +249,99 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   // ─── Order Confirmed Screen ───────────────────────────────────────────────
   if (confirmedOrder) {
     return (
-      <main className="min-h-screen bg-[#FAFAFA] pt-20 sm:pt-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-12 md:pb-16">
-          <div className="max-w-xl mx-auto">
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 sm:p-10 shadow-sm text-center">
-              <div className="w-16 h-16 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <CheckCircle className="w-8 h-8 text-[#16A34A]" />
-              </div>
-              <h1 className="font-['Outfit'] text-2xl sm:text-3xl font-bold text-[#111827] mb-1">
-                Order Placed
-              </h1>
-              <p className="text-[#64748B] font-['DM_Sans'] text-sm mb-6">
-                We will contact you within 24 hours to confirm delivery details.
-              </p>
+      <>
+        <OrderCompletionModal
+          isOpen={showSuccessPopup}
+          order={confirmedOrder}
+          onClose={() => setShowSuccessPopup(false)}
+          onNavigate={onNavigate}
+        />
 
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-5 text-left mb-6 space-y-3 text-sm font-['DM_Sans']">
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Order reference</span>
-                  <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.reference}</span>
+        <main className="min-h-screen bg-[#FAFAFA] pt-20 sm:pt-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-12 md:pb-16">
+            <div className="max-w-xl mx-auto">
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 sm:p-10 shadow-sm text-center">
+                <div className="w-16 h-16 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle className="w-8 h-8 text-[#16A34A]" />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Date</span>
-                  <span className="text-[#0F172A]">{confirmedOrder.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Name</span>
-                  <span className="text-[#0F172A] font-medium">{confirmedOrder.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B]">Contact</span>
-                  <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-[#64748B] shrink-0">Delivery to</span>
-                  <span className="text-[#0F172A] text-right">{confirmedOrder.address}, {confirmedOrder.city}, {confirmedOrder.state} - {confirmedOrder.pincode}</span>
-                </div>
-                <div className="pt-2 border-t border-[#E2E8F0]">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-[#475569]">Estimated total</span>
-                    <span className="text-[#111827] font-['Outfit'] text-base">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+                <h1 className="font-['Outfit'] text-2xl sm:text-3xl font-bold text-[#111827] mb-1">
+                  Order Placed Successfully
+                </h1>
+                <p className="text-[#64748B] font-['DM_Sans'] text-sm mb-6">
+                  We will contact you within 24 hours to confirm delivery and logistics details.
+                </p>
+
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-5 text-left mb-6 space-y-3 text-sm font-['DM_Sans']">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B]">Order Number</span>
+                    <span className="font-mono font-bold text-[#0F172A]">{confirmedOrder.orderNumber || confirmedOrder.reference}</span>
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-1">Final amount confirmed on invoice. GST &amp; delivery calculated separately.</p>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Date</span>
+                    <span className="text-[#0F172A]">{confirmedOrder.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Customer Name</span>
+                    <span className="text-[#0F172A] font-medium">{confirmedOrder.name}</span>
+                  </div>
+                  {confirmedOrder.email && (
+                    <div className="flex justify-between">
+                      <span className="text-[#64748B]">Customer Email</span>
+                      <span className="text-[#0F172A]">{confirmedOrder.email}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B]">Customer Phone</span>
+                    <span className="text-[#0F172A]">{confirmedOrder.phone}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-[#64748B] shrink-0">Delivery to</span>
+                    <span className="text-[#0F172A] text-right">{confirmedOrder.address}, {confirmedOrder.city}, {confirmedOrder.state} - {confirmedOrder.pincode}</span>
+                  </div>
+                  {confirmedOrder.notes && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[#64748B] shrink-0">Order notes</span>
+                      <span className="text-[#475569] text-right italic">{confirmedOrder.notes}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-[#E2E8F0]">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-[#475569]">Total Paise</span>
+                      <span className="text-[#111827] font-['Outfit'] text-base">{(confirmedOrder.totalPaise ?? Math.round(confirmedOrder.total * 100)).toLocaleString('en-IN')} paise (₹{confirmedOrder.total.toLocaleString('en-IN')})</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8] mt-1">Final amount confirmed on invoice. GST &amp; delivery calculated separately.</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Button
-                  onClick={() => onNavigate('login')}
-                  className="w-full rounded-xl font-bold bg-kb-primary hover:bg-[#145e2e] text-white"
-                  size="lg"
-                >
-                  Track Order in My Account
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onNavigate('products')}
-                  className="w-full rounded-xl font-medium border-[#CBD5E1]"
-                >
-                  Continue Shopping
-                </Button>
+                <div className="space-y-2.5">
+                  <Button
+                    onClick={() => setShowSuccessPopup(true)}
+                    variant="outline"
+                    className="w-full rounded-xl font-bold border-[#CBD5E1] text-[#0F172A] hover:bg-[#F8FAFC]"
+                    size="lg"
+                  >
+                    View Order Confirmation Popup
+                  </Button>
+                  <Button
+                    onClick={() => onNavigate('login')}
+                    className="w-full rounded-xl font-bold bg-kb-primary hover:bg-[#145e2e] text-white"
+                    size="lg"
+                  >
+                    Track Order in My Account
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => onNavigate('products')}
+                    className="w-full rounded-xl font-medium text-[#64748B] hover:text-[#0F172A]"
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 
@@ -427,8 +497,9 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
+                              disabled={item.quantity <= MIN_ITEM_QUANTITY}
                               aria-label={`Decrease quantity of ${item.name}`}
+                              title={item.quantity <= MIN_ITEM_QUANTITY ? `Minimum order is ${MIN_ITEM_QUANTITY} units` : undefined}
                               className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
                             >
                               <Minus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -442,20 +513,13 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                             <button
                               type="button"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= MAX_ITEM_QUANTITY}
                               aria-label={`Increase quantity of ${item.name}`}
-                              title={item.quantity >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
-                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary disabled:opacity-40 disabled:cursor-not-allowed hover:disabled:bg-transparent hover:disabled:text-[#475569]"
+                              className="w-8 h-full flex items-center justify-center text-[#475569] hover:text-[#111827] hover:bg-[#E2E8F0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-kb-primary"
                             >
                               <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
-                        {item.quantity >= MAX_ITEM_QUANTITY && (
-                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
-                            Max limit ({MAX_ITEM_QUANTITY})
-                          </span>
-                        )}
                       </div>
 
                       <Button
@@ -502,9 +566,14 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                 <div className="h-px bg-[#E2E8F0] my-4" />
 
                 <div className="flex justify-between items-baseline pt-1">
-                  <span className="font-['Outfit'] text-base font-bold text-[#111827]">
-                    Estimated Total
-                  </span>
+                  <div>
+                    <span className="font-['Outfit'] text-base font-bold text-[#111827] block">
+                      Total Paise
+                    </span>
+                    <span className="text-[11px] text-[#64748B] font-['DM_Sans']">
+                      {(Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise
+                    </span>
+                  </div>
                   <span className="font-['Outfit'] text-2xl font-bold text-[#111827]">
                     ₹{totalPrice.toLocaleString('en-IN')}
                   </span>
@@ -578,9 +647,15 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
               {/* Order mini-summary */}
               <div className="px-6 py-4 bg-[#F8FAFC] border-b border-[#F1F5F9]">
-                <div className="flex justify-between text-sm font-['DM_Sans']">
-                  <span className="text-[#64748B]">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
-                  <span className="font-['Outfit'] font-bold text-[#111827]">₹{totalPrice.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between items-baseline text-sm font-['DM_Sans']">
+                  <div>
+                    <span className="font-['Outfit'] font-bold text-xs uppercase tracking-wider text-[#64748B] block">Total Paise</span>
+                    <span className="text-[#64748B] text-xs">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-['Outfit'] font-bold text-[#111827]">{(Math.round(totalPrice * 100)).toLocaleString('en-IN')} paise</span>
+                    <span className="block text-[11px] text-[#64748B]">₹{totalPrice.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
                 <ul className="mt-2 space-y-1">
                   {items.map((i) => (
@@ -593,10 +668,10 @@ export default function CartPage({ onNavigate }: CartPageProps) {
 
               {/* Form */}
               <form onSubmit={handlePlaceOrder} className="px-6 py-5 space-y-4" noValidate>
-                {/* Name */}
+                {/* Customer Name */}
                 <div className="space-y-1">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-name">
-                    Full Name <span className="text-[#C2410C]">*</span>
+                    Customer Name <span className="text-[#C2410C]">*</span>
                   </label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
@@ -614,10 +689,31 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                   {formErrors.name && <p className="text-xs text-[#DC2626]">{formErrors.name}</p>}
                 </div>
 
-                {/* Phone */}
+                {/* Customer Email */}
+                <div className="space-y-1">
+                  <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-email">
+                    Customer Email <span className="text-[#C2410C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+                    <input
+                      id="co-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      placeholder="e.g. procurement@restaurant.com"
+                      className={`h-11 w-full rounded-xl border pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:ring-1 ${formErrors.email ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]' : 'border-[#CBD5E1] focus:border-[#C2410C] focus:ring-[#C2410C]'}`}
+                    />
+                  </div>
+                  {formErrors.email && <p className="text-xs text-[#DC2626]">{formErrors.email}</p>}
+                </div>
+
+                {/* Customer Phone */}
                 <div className="space-y-1">
                   <label className="block font-['Outfit'] text-xs font-bold uppercase tracking-wider text-[#64748B]" htmlFor="co-phone">
-                    Mobile Number <span className="text-[#C2410C]">*</span>
+                    Customer Phone <span className="text-[#C2410C]">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
@@ -628,7 +724,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                       autoComplete="tel"
                       value={form.phone}
                       onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                      placeholder="10-digit mobile number"
+                      placeholder="e.g. +91 94907 01421 or 9876543210"
                       className={`h-11 w-full rounded-xl border pl-10 pr-4 font-['DM_Sans'] text-sm text-[#0F172A] outline-none transition-colors focus:ring-1 ${formErrors.phone ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]' : 'border-[#CBD5E1] focus:border-[#C2410C] focus:ring-[#C2410C]'}`}
                     />
                   </div>

@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Minus, Plus, ShoppingCart, Eye, RotateCw, Film } from 'lucide-react';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
-import { getCatalogSync } from '../lib/api';
+import { getCatalogSync, fetchCatalogProducts } from '../lib/api';
 import type { Product } from '../types/product';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
@@ -15,18 +14,48 @@ interface ProductFleetSectionProps {
   onProductClick?: (id: string) => void;
 }
 
-const FEATURED_PRODUCTS = getCatalogSync().filter(product => product.featured).slice(0, 4);
-
 const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
   maximumFractionDigits: 0,
 }).format(price);
 
+function getDisplayProducts(catalog: Product[]): Product[] {
+  if (!Array.isArray(catalog) || catalog.length === 0) return [];
+  const valid = catalog.filter((p) => p && typeof p.price === 'number' && p.price > 0);
+  const featured = valid.filter((p) => Boolean(p.featured));
+  if (featured.length >= 4) {
+    return featured.slice(0, 4);
+  }
+  const remaining = valid.filter((p) => !featured.some((f) => f.id === p.id));
+  return [...featured, ...remaining].slice(0, 4);
+}
+
 export default function ProductFleetSection({ onBrowse, onProductClick, onCartOpen }: ProductFleetSectionProps) {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState<Product[]>(() => getDisplayProducts(getCatalogSync()));
   const { addToCart, items, updateQuantity } = useCart();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    let ignore = false;
+    fetchCatalogProducts()
+      .then((items) => {
+        if (!ignore && Array.isArray(items) && items.length > 0) {
+          const display = getDisplayProducts(items);
+          if (display.length > 0) {
+            setProducts(display);
+          }
+        }
+      })
+      .catch(() => {
+        // Retain initial synchronous catalog
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   return (
     <section className="relative z-20 pb-24 lg:pb-32">
@@ -46,7 +75,7 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_PRODUCTS.map(product => {
+          {products.map(product => {
             const cartItem = items.find(item => item.id === product.id);
             const quantityInCart = cartItem?.quantity ?? 0;
 
@@ -86,8 +115,14 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
                   <button
                     type="button"
                     className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
-                    onClick={() => setQuickViewProduct(product)}
-                    aria-label={`Quick View ${product.name}`}
+                    onClick={() => {
+                      if (onProductClick) {
+                        onProductClick(product.id);
+                      } else {
+                        setQuickViewProduct(product);
+                      }
+                    }}
+                    aria-label={`View ${product.name}`}
                   >
                     <ProductImage
                       src={product.image}
@@ -106,15 +141,25 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
                         e.stopPropagation();
                         setQuickViewProduct(product);
                       }}
-                      className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98 text-xs py-2 h-9"
+                      className="w-full rounded-xl bg-white/95 backdrop-blur-md border-[#CBD5E1] text-[#0F172A] font-bold shadow-md hover:bg-white active:scale-98 text-xs py-2 h-9 cursor-pointer"
                     >
                       <Eye size={14} className="mr-1.5 text-[#C2410C]" /> Quick View (360° / Video)
                     </Button>
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col p-6">
-                  <button type="button" className="text-left" onClick={() => setQuickViewProduct(product)}>
-                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-kb-tertiary transition-colors">{product.name}</h3>
+                  <button
+                    type="button"
+                    className="text-left cursor-pointer"
+                    onClick={() => {
+                      if (onProductClick) {
+                        onProductClick(product.id);
+                      } else {
+                        setQuickViewProduct(product);
+                      }
+                    }}
+                  >
+                    <h3 className="font-['Outfit'] text-[18px] font-bold leading-snug text-[#111827] hover:text-[#C2410C] transition-colors">{product.name}</h3>
                   </button>
                   <p className="mt-2.5 line-clamp-2 font-['DM_Sans'] text-sm leading-relaxed text-[#64748B]">{product.description}</p>
                   <div className="mt-5 font-['Outfit'] text-[20px] font-bold text-[#111827]">{formatPrice(product.price)}</div>
@@ -141,10 +186,8 @@ export default function ProductFleetSection({ onBrowse, onProductClick, onCartOp
                           e.stopPropagation();
                           updateQuantity(product.id, quantityInCart + 1);
                         }}
-                        disabled={quantityInCart >= MAX_ITEM_QUANTITY}
-                        className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:bg-[#C2410C]"
+                        className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all"
                         aria-label={`Increase quantity of ${product.name}`}
-                        title={quantityInCart >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
                       >
                         <Plus size={15} className="stroke-[2.5]" />
                       </button>

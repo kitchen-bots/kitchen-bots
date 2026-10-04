@@ -55,27 +55,34 @@ interface StoredOrder {
 
 export default function LoginPage({ onNavigate }: LoginPageProps) {
   const { showToast } = useToast();
-  const { login, signup, logout } = useAuth();
+  const { user: authUser, login, signup, logout } = useAuth();
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [localUser, setLocalUser] = useState<UserAccount | null>(null);
 
-  // Load existing session if any
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    try {
-      const stored = localStorage.getItem('kb_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          name: parsed.name || 'Customer',
-          email: parsed.email || '',
-          company: parsed.company || 'Direct Customer',
-        };
+  // Derived user: prioritize live authUser from AuthContext, fallback to localUser or localStorage
+  const currentUser: UserAccount | null = authUser
+    ? {
+        name: authUser.name || 'Customer',
+        email: authUser.email || '',
+        company: authUser.company || 'Direct Customer',
       }
-      return null;
-    } catch {
-      return null;
-    }
-  });
+    : localUser ?? (() => {
+        try {
+          const stored = localStorage.getItem('kb_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return {
+              name: parsed.name || 'Customer',
+              email: parsed.email || '',
+              company: parsed.company || 'Direct Customer',
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })();
 
   // Load stored customer enquiries
   const [enquiries] = useState<StoredEnquiry[]>(() => {
@@ -120,7 +127,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
     };
 
     login(account.email, account.name);
-    setCurrentUser(account);
+    setLocalUser(account);
     showToast(`Welcome back, ${account.name}!`);
   };
 
@@ -143,7 +150,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
         await login(email, name);
       }
       const account: UserAccount = { name, email, company };
-      setCurrentUser(account);
+      setLocalUser(account);
       showToast(`Account created for ${name}!`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Signup failed';
@@ -153,7 +160,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
   const handleSignOut = () => {
     logout();
-    setCurrentUser(null);
+    setLocalUser(null);
     showToast('Signed out successfully');
   };
 
@@ -164,14 +171,14 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
       company: 'AeroBake Commercial Facilities',
     };
     login(demoAccount.email, demoAccount.name);
-    setCurrentUser(demoAccount);
+    setLocalUser(demoAccount);
     showToast('Signed in with Demo Engineering Account');
   };
 
   // If user is logged in, show the Customer Portal
   if (currentUser) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-20 sm:pt-24">
         <div className="mx-auto w-full max-w-[1200px] px-6 lg:px-12">
           {/* Header Profile Bar */}
           <div className="flex flex-col justify-between gap-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm md:flex-row md:items-center">
@@ -180,11 +187,8 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                 <User size={26} className="text-[#C2410C]" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div>
                   <h1 className="font-['Outfit'] text-2xl font-bold text-[#0F172A]">{currentUser.name}</h1>
-                  <span className="rounded-md bg-[#F0FDF4] px-2 py-0.5 text-xs font-bold text-[#16A34A] border border-[#DCFCE7]">
-                    Verified Customer
-                  </span>
                 </div>
                 <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
                   {currentUser.email} • {currentUser.company}
@@ -267,21 +271,11 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
           {/* Machinery Enquiries & Tracking Section */}
           <div className="mt-8 rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 border-b border-[#F1F5F9] pb-6 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-['Outfit'] text-xl font-bold text-[#0F172A]">Equipment Enquiries & Quotations</h2>
-                <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
-                  Track production status, engineering reviews, and quotations submitted under this account.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="self-start rounded-xl font-semibold sm:self-auto border-[#CBD5E1] hover:bg-[#F8FAFC]"
-                onClick={() => onNavigate('bulk-enquiry')}
-              >
-                Submit New Request
-              </Button>
+            <div className="border-b border-[#F1F5F9] pb-6">
+              <h2 className="font-['Outfit'] text-xl font-bold text-[#0F172A]">Equipment Enquiries & Quotations</h2>
+              <p className="mt-1 font-['DM_Sans'] text-sm text-[#64748B]">
+                Track production status, engineering reviews, and quotations submitted under this account.
+              </p>
             </div>
 
             {enquiries.length > 0 ? (
@@ -438,7 +432,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
   // If not logged in, render minimal, premium Sign In / Create Account container
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-28">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 pt-20 sm:pt-24">
       <div className="mx-auto w-full max-w-[960px] px-6">
         <div className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] md:grid md:grid-cols-[380px_1fr]">
 
