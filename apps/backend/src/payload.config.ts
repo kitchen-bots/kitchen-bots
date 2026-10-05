@@ -63,7 +63,7 @@ export default buildConfig({
     Documents,
     Media,
     Users,
-  ],
+  ].map(collection => ({ ...collection, lockDocuments: false })),
   editor: lexicalEditor(),
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://kitchen-bots.vercel.app'),
   secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
@@ -98,10 +98,10 @@ export default buildConfig({
     pool: {
       connectionString,
       ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
-      max: process.env.VERCEL ? 4 : 5,
+      max: process.env.VERCEL ? 2 : 5,
       min: 0,
       idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 30000,
     },
     push: false,
     disableCreateDatabase: true,
@@ -109,23 +109,23 @@ export default buildConfig({
   plugins: [
     ...(process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY
       ? [
-          s3Storage({
-            collections: {
-              media: true,
+        s3Storage({
+          collections: {
+            media: true,
+          },
+          bucket: process.env.R2_BUCKET_NAME || 'kitchen-bots-media',
+          config: {
+            credentials: {
+              accessKeyId: process.env.R2_ACCESS_KEY_ID,
+              secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
             },
-            bucket: process.env.R2_BUCKET_NAME || 'kitchen-bots-media',
-            config: {
-              credentials: {
-                accessKeyId: process.env.R2_ACCESS_KEY_ID,
-                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-              },
-              region: 'auto',
-              endpoint:
-                process.env.R2_ENDPOINT ||
-                (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
-            },
-          }),
-        ]
+            region: 'auto',
+            endpoint:
+              process.env.R2_ENDPOINT ||
+              (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
+          },
+        }),
+      ]
       : []),
   ],
 });
