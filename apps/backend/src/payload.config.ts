@@ -54,7 +54,7 @@ export default buildConfig({
     Services,
     Documents,
     Media,
-  ],
+  ].map(collection => ({ ...collection, lockDocuments: false })),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
   cors: [
