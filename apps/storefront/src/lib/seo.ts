@@ -81,6 +81,12 @@ export const PAGE_SEO: Record<string, SEOMeta> = {
         ogImage: DEFAULT_OG_IMAGE,
         ogType: 'website',
     },
+    profile: {
+        title: 'My Profile | KitchenBots India',
+        description: 'View and manage your account details, equipment enquiries, and orders.',
+        ogImage: DEFAULT_OG_IMAGE,
+        ogType: 'website',
+    },
     '404': {
         title: 'Page Not Found | KitchenBots India',
         description: 'The requested page could not be found. Browse our heavy-duty commercial BBQ grills and kitchen equipment.',

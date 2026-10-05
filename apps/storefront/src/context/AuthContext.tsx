@@ -136,7 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = useCallback(async (email: string, password: string, name?: string, company?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users`, {
+      const targetUrl = API_BASE_URL ? `${API_BASE_URL}/api/users` : '/api/users';
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          name: name?.trim(),
+          name: name?.trim() || email.split('@')[0],
           company: company?.trim(),
           role: 'customer',
         }),
@@ -153,32 +154,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         const data = await res.json();
+        const doc = data.doc || data.user || data;
         const authedUser: AuthUser = {
-          id: data.doc.id,
-          email: data.doc.email,
-          name: data.doc.name || name || email.split('@')[0],
+          id: String(doc.id || ''),
+          email: doc.email || email.trim(),
+          name: doc.name || name || email.split('@')[0],
           role: 'customer',
-          company: data.doc.company || company,
+          company: doc.company || company,
         };
+        const receivedToken = data.token;
+        if (receivedToken) {
+          setToken(receivedToken);
+          localStorage.setItem(STORAGE_TOKEN_KEY, receivedToken);
+        }
         setUser(authedUser);
         localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(authedUser));
         setIsLoading(false);
         return true;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const message =
+          errData?.errors?.[0]?.message ||
+          errData?.message ||
+          `Registration failed (${res.status})`;
+        setIsLoading(false);
+        throw new Error(message);
       }
-    } catch {
-      // Local fallback
+    } catch (err: unknown) {
+      setIsLoading(false);
+      if (err instanceof Error) {
+        throw err;
+      }
+      throw new Error('Registration failed due to a network error');
     }
-
-    const localUser: AuthUser = {
-      email: email.trim(),
-      name: name?.trim() || email.split('@')[0],
-      role: 'customer',
-      company: company?.trim(),
-    };
-    setUser(localUser);
-    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(localUser));
-    setIsLoading(false);
-    return true;
   }, []);
 
   const logout = useCallback(async () => {

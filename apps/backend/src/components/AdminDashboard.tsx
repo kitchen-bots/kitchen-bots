@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
 import { KITCHENBOTS_LOGO_WHITE_DATA_URL } from './brandAssets';
 
 interface AdminDashboardProps {
@@ -7,86 +8,409 @@ interface AdminDashboardProps {
   [key: string]: unknown;
 }
 
+
 export function AdminDashboard(_props?: AdminDashboardProps) {
+  const [dashboardData, setDashboardData] = useState({
+    revenue: null as number | null,
+    activeOrders: null as number | null,
+    activeProducts: null as number | null,
+    quotations: null as number | null,
+    leads: null as number | null,
+    serviceTickets: null as number | null,
+    categoryCount: null as number | null,
+  });
+  const [monthlyRevenue, setMonthlyRevenue] = useState<number[]>(
+    Array(12).fill(0),
+  );
+
+  const [recentOrders, setRecentOrders] = useState<
+    Array<{
+      id: string;
+      customer: string;
+      items: string;
+      amount: string;
+      status: string;
+      statusColor: string;
+    }>
+  >([]);
+
+  const [recentLeads, setRecentLeads] = useState<
+    Array<{
+      contact: string;
+      company: string;
+      interest: string;
+      status: string;
+      statusColor: string;
+    }>
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCount = async (
+      collection: string,
+      where?: string,
+    ): Promise<number> => {
+      const query = where
+        ? `?limit=1&${where}`
+        : '?limit=1';
+
+      const response = await fetch(`/api/${collection}${query}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load ${collection}`);
+      }
+
+      const data = await response.json();
+      return Number(data.totalDocs ?? 0);
+    };
+
+    const loadDashboardData = async () => {
+      try {
+        const [
+          activeProducts,
+          pendingOrders,
+          processingOrders,
+          shippedOrders,
+          quotations,
+          leads,
+          openServices,
+          inProgressServices,
+          waitingPartsServices,
+          categoriesResponse,
+          ordersResponse,
+          enquiriesResponse,
+        ] = await Promise.all([
+          fetchCount('products', 'where[status][equals]=Active'),
+          fetchCount('orders', 'where[status][equals]=pending'),
+          fetchCount('orders', 'where[status][equals]=processing'),
+          fetchCount('orders', 'where[status][equals]=shipped'),
+          fetchCount('quotes'),
+          fetchCount('enquiries'),
+          fetchCount('services', 'where[status][equals]=open'),
+          fetchCount('services', 'where[status][equals]=in_progress'),
+          fetchCount('services', 'where[status][equals]=waiting_parts'),
+
+          fetch('/api/categories?limit=1', {
+            credentials: 'include',
+          }),
+
+          fetch('/api/orders?limit=1000&sort=-createdAt', {
+            credentials: 'include',
+          }),
+
+          fetch('/api/enquiries?limit=4&sort=-createdAt', {
+            credentials: 'include',
+          }),
+        ]);
+
+        if (
+          !categoriesResponse.ok ||
+          !ordersResponse.ok ||
+          !enquiriesResponse.ok
+        ) {
+          throw new Error('Failed to load dashboard records');
+        }
+
+        const categoriesData = await categoriesResponse.json();
+        const ordersData = await ordersResponse.json();
+        const enquiriesData = await enquiriesResponse.json();
+
+        const orders = ordersData.docs ?? [];
+        const enquiries = enquiriesData.docs ?? [];
+
+        const revenuePaise = orders
+          .filter(
+            (order: { status?: string }) => order.status !== 'cancelled',
+          )
+          .reduce(
+            (total: number, order: { totalPaise?: number }) =>
+              total + Number(order.totalPaise ?? 0),
+            0,
+          );
+
+        const fiscalYearStart =
+          new Date().getMonth() >= 3
+            ? new Date().getFullYear()
+            : new Date().getFullYear() - 1;
+
+        const fiscalYearStartDate = new Date(
+          fiscalYearStart,
+          3,
+          1,
+        );
+
+        const fiscalYearEndDate = new Date(
+          fiscalYearStart + 1,
+          3,
+          1,
+        );
+
+        const monthlyRevenuePaise = Array(12).fill(0);
+
+        orders.forEach(
+          (order: {
+            createdAt?: string;
+            status?: string;
+            totalPaise?: number;
+          }) => {
+            if (
+              order.status === 'cancelled' ||
+              !order.createdAt
+            ) {
+              return;
+            }
+
+            const createdAt = new Date(order.createdAt);
+
+            if (
+              createdAt < fiscalYearStartDate ||
+              createdAt >= fiscalYearEndDate
+            ) {
+              return;
+            }
+
+            const monthIndex = (createdAt.getMonth() - 3 + 12) % 12;
+
+            monthlyRevenuePaise[monthIndex] += Number(
+              order.totalPaise ?? 0,
+            );
+          },
+        );
+
+        if (!cancelled) {
+          setMonthlyRevenue(
+            monthlyRevenuePaise.map(
+              (value) => value / 100000,
+            ),
+          );
+        }
+
+        const formatOrderAmount = (paise: number) =>
+          `₹${(paise / 100).toLocaleString('en-IN', {
+            maximumFractionDigits: 0,
+          })}`;
+
+        const getOrderStatusColor = (status: string) => {
+          switch (status) {
+            case 'delivered':
+              return '#22c55e';
+            case 'shipped':
+              return '#22c55e';
+            case 'processing':
+              return '#3b82f6';
+            case 'pending':
+              return '#f59e0b';
+            case 'cancelled':
+              return '#ef4444';
+            default:
+              return '#a855f7';
+          }
+        };
+
+        const getOrderStatusLabel = (status: string) =>
+          status
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (char: string) => char.toUpperCase());
+
+        const formattedOrders = orders
+          .slice(0, 4)
+          .map(
+            (order: {
+              orderNumber?: string;
+              customerName?: string;
+              totalPaise?: number;
+              status?: string;
+              items?: Array<{
+                name?: string;
+                quantity?: number;
+              }>;
+            }) => ({
+              id: order.orderNumber ?? '—',
+              customer: order.customerName ?? 'Unknown Customer',
+              items:
+                order.items
+                  ?.slice(0, 2)
+                  .map(
+                    (item) =>
+                      `${item.quantity ?? 1}x ${item.name ?? 'Product'}`,
+                  )
+                  .join(', ') || 'No items',
+              amount: formatOrderAmount(Number(order.totalPaise ?? 0)),
+              status: getOrderStatusLabel(order.status ?? 'pending'),
+              statusColor: getOrderStatusColor(order.status ?? 'pending'),
+            }),
+          );
+
+        const getLeadStatusColor = (status: string) => {
+          switch (status) {
+            case 'new':
+              return '#22c55e';
+            case 'in_progress':
+              return '#f59e0b';
+            case 'contacted':
+              return '#3b82f6';
+            case 'resolved':
+              return '#22c55e';
+            case 'archived':
+              return '#71717a';
+            default:
+              return '#a855f7';
+          }
+        };
+
+        const getLeadStatusLabel = (status: string) =>
+          status
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (char: string) => char.toUpperCase());
+
+        const formattedLeads = enquiries.map(
+          (enquiry: {
+            name?: string;
+            company?: string;
+            message?: string;
+            status?: string;
+          }) => ({
+            contact: enquiry.name ?? 'Unknown Contact',
+            company: enquiry.company ?? 'No Company',
+            interest: enquiry.message ?? 'General enquiry',
+            status: getLeadStatusLabel(enquiry.status ?? 'new'),
+            statusColor: getLeadStatusColor(enquiry.status ?? 'new'),
+          }),
+        );
+
+        if (!cancelled) {
+          setDashboardData({
+            revenue: revenuePaise,
+            activeOrders:
+              pendingOrders + processingOrders + shippedOrders,
+            activeProducts,
+            quotations,
+            leads,
+            serviceTickets:
+              openServices + inProgressServices + waitingPartsServices,
+            categoryCount: Number(categoriesData.totalDocs ?? 0),
+          });
+
+          setRecentOrders(formattedOrders);
+          setRecentLeads(formattedLeads);
+        }
+      } catch (error) {
+        console.error('Failed to load admin dashboard data:', error);
+      }
+    };
+
+    loadDashboardData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatRupees = (paise: number | null) => {
+    if (paise === null) return '—';
+
+    return `₹${(paise / 100).toLocaleString('en-IN', {
+      maximumFractionDigits: 0,
+    })}`;
+  };
+
+  const formatCount = (value: number | null) => {
+    if (value === null) return '—';
+    return value.toString().padStart(2, '0');
+  };
+
   const kpis = [
     {
       title: 'Commercial Revenue',
-      value: '₹18,45,000',
-      trend: '+14.2% MoM',
+      value: formatRupees(dashboardData.revenue),
+      trend: 'Live',
       isPositive: true,
-      sub: 'Fiscal Year 2026 YTD',
+      sub: 'Non-cancelled orders',
       badge: 'Commercial',
       link: '/admin/collections/orders',
     },
     {
       title: 'Active Orders',
-      value: '04',
-      trend: '+2 this week',
+      value: formatCount(dashboardData.activeOrders),
+      trend: 'Live',
       isPositive: true,
-      sub: '2 In Fabrication · 2 Dispatched',
+      sub: 'Pending · Processing · Shipped',
       badge: 'Fulfillment',
       link: '/admin/collections/orders',
     },
     {
       title: 'Equipment Fleet',
-      value: '12',
-      trend: '6 Series Active',
+      value: formatCount(dashboardData.activeProducts),
+      trend: 'Live',
       isPositive: true,
-      sub: 'All Authentic CAD Models',
+      sub: 'Active catalog products',
       badge: 'Catalog',
       link: '/admin/collections/products',
     },
     {
       title: 'B2B Quotations',
-      value: '07',
-      trend: '3 Under Review',
+      value: formatCount(dashboardData.quotations),
+      trend: 'Live',
       isPositive: true,
-      sub: '₹24.8L Pending Pipeline',
+      sub: 'All quotation requests',
       badge: 'B2B Sales',
       link: '/admin/collections/quotes',
     },
     {
       title: 'Commercial Leads',
-      value: '19',
-      trend: '+5 New Today',
+      value: formatCount(dashboardData.leads),
+      trend: 'Live',
       isPositive: true,
-      sub: 'Inquiries via Storefront Desk',
+      sub: 'All commercial enquiries',
       badge: 'CRM Leads',
       link: '/admin/collections/enquiries',
     },
     {
       title: 'Service & Warranty',
-      value: '02',
-      trend: '100% SLA Normal',
+      value: formatCount(dashboardData.serviceTickets),
+      trend: 'Live',
       isPositive: true,
-      sub: 'Preventative Maintenance',
+      sub: 'Open · In Progress · Waiting Parts',
       badge: 'Support',
       link: '/admin/collections/services',
     },
   ];
-
   // Monthly revenue data points for SVG chart (APR through MAR)
-  const revenuePoints = [
-    { month: 'APR', val: 1.2, label: '₹1.2L' },
-    { month: 'MAY', val: 1.6, label: '₹1.6L' },
-    { month: 'JUN', val: 2.1, label: '₹2.1L' },
-    { month: 'JUL', val: 2.8, label: '₹2.8L' },
-    { month: 'AUG', val: 2.4, label: '₹2.4L' },
-    { month: 'SEP', val: 3.5, label: '₹3.5L' },
-    { month: 'OCT', val: 3.9, label: '₹3.9L' },
-    { month: 'NOV', val: 4.6, label: '₹4.6L' },
-    { month: 'DEC', val: 5.2, label: '₹5.2L' },
-    { month: 'JAN', val: 4.8, label: '₹4.8L' },
-    { month: 'FEB', val: 5.4, label: '₹5.4L' },
-    { month: 'MAR', val: 6.2, label: '₹6.2L' },
+  const fiscalMonths = [
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+    'JAN',
+    'FEB',
+    'MAR',
   ];
+
+  const revenuePoints = fiscalMonths.map((month, index) => ({
+    month,
+    val: monthlyRevenue[index],
+    label: `₹${monthlyRevenue[index].toFixed(1)}L`,
+  }));
 
   // SVG Chart Geometry
   const chartWidth = 720;
   const chartHeight = 180;
   const paddingX = 40;
   const paddingY = 25;
-  const maxVal = 7.0;
+  const maxRevenue = Math.max(...monthlyRevenue, 0);
+
+  const maxVal =
+    maxRevenue > 0
+      ? Math.ceil(maxRevenue * 1.2)
+      : 1;
   const innerW = chartWidth - paddingX * 2;
   const innerH = chartHeight - paddingY * 2;
 
@@ -102,73 +426,6 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
 
   const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(chartHeight - paddingY).toFixed(1)} L ${points[0].x.toFixed(1)} ${(chartHeight - paddingY).toFixed(1)} Z`;
 
-  // Sample recent commercial orders
-  const recentOrders = [
-    {
-      id: 'KB-ORD-9421',
-      customer: 'Barbeque Nation Hospitality',
-      items: '2x Santa Maria 72" Heavy Duty',
-      amount: '₹4,65,000',
-      status: 'Manufacturing',
-      statusColor: '#f59e0b',
-    },
-    {
-      id: 'KB-ORD-9388',
-      customer: 'Taj Gateway Outdoor Kitchens',
-      items: '1x Automated Charcoal BBQ SS-304',
-      amount: '₹2,85,000',
-      status: 'Processing',
-      statusColor: '#3b82f6',
-    },
-    {
-      id: 'KB-ORD-9352',
-      customer: 'Pitmaster Pro Catering Co',
-      items: '4x Rocket Stove RS-4 High-Output',
-      amount: '₹1,24,000',
-      status: 'Dispatched',
-      statusColor: '#22c55e',
-    },
-    {
-      id: 'KB-ORD-9310',
-      customer: 'Hyderabad Smokehouse Hub',
-      items: '1x Commercial Custom Rotisserie',
-      amount: '₹1,95,000',
-      status: 'Confirmed',
-      statusColor: '#a855f7',
-    },
-  ];
-
-  // Sample commercial leads
-  const recentLeads = [
-    {
-      contact: 'Vikram Reddy',
-      company: 'Smoke & Fire Grills Group',
-      interest: 'Santa Maria Heavy Duty (Commercial)',
-      status: 'Proposal Sent',
-      statusColor: '#3b82f6',
-    },
-    {
-      contact: 'Ananya Sharma',
-      company: 'CloudKitchens India Network',
-      interest: '6x Rocket Stoves Batch Order',
-      status: 'New Lead',
-      statusColor: '#22c55e',
-    },
-    {
-      contact: 'Rajesh Verma',
-      company: 'Highway Dhaba Enterprise',
-      interest: 'Automated Skewer BBQ Machine',
-      status: 'Requirement Gathering',
-      statusColor: '#f59e0b',
-    },
-    {
-      contact: 'Capt. Sunil Nair',
-      company: 'Southern Resort & Retreat',
-      interest: 'Bespoke Santa Maria + Parilla Combo',
-      status: 'Site Visit Scheduled',
-      statusColor: '#a855f7',
-    },
-  ];
 
   // Audit activity events
   const auditLogs = [
@@ -443,7 +700,7 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
                 border: '1px solid #27272a',
               }}
             >
-              FY 2025–2026
+              FY APR–MAR
             </span>
             <span
               style={{
@@ -880,12 +1137,6 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#a1a1aa' }}>Object Storage</span>
-                <span style={{ color: '#22c55e', fontWeight: 600, fontFamily: 'ui-monospace, monospace' }}>
-                  Cloudflare R2 (Connected)
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#a1a1aa' }}>Edge Routing</span>
                 <span style={{ color: '#22c55e', fontWeight: 600, fontFamily: 'ui-monospace, monospace' }}>
                   Single-Domain Proxy (Live)
@@ -894,49 +1145,15 @@ export function AdminDashboard(_props?: AdminDashboardProps) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#a1a1aa' }}>Catalog Records</span>
                 <span style={{ color: '#f97316', fontWeight: 600, fontFamily: 'ui-monospace, monospace' }}>
-                  12 Models · 6 Categories
+                  {dashboardData.activeProducts === null ||
+                    dashboardData.categoryCount === null
+                    ? '—'
+                    : `${dashboardData.activeProducts} Active Models · ${dashboardData.categoryCount} Categories`}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Audit Timeline */}
-          <div
-            style={{
-              backgroundColor: '#121215',
-              border: '1px solid #27272a',
-              borderRadius: '12px',
-              padding: '18px 20px',
-            }}
-          >
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#fafafa', marginBottom: '4px' }}>
-              Audit Events
-            </div>
-            <div style={{ fontSize: '12px', color: '#71717a', marginBottom: '14px' }}>
-              Recent administrative and system activity
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {auditLogs.map((log, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '10px', fontSize: '12px' }}>
-                  <span
-                    style={{
-                      fontFamily: 'ui-monospace, monospace',
-                      fontSize: '10px',
-                      color: '#71717a',
-                      whiteSpace: 'nowrap',
-                      minWidth: '55px',
-                    }}
-                  >
-                    {log.time}
-                  </span>
-                  <div style={{ color: '#a1a1aa' }}>
-                    <span style={{ color: '#fafafa', fontWeight: 500 }}>{log.actor}:</span> {log.text}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

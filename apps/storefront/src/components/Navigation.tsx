@@ -281,6 +281,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        setUserMenuOpen(false);
                         navigate('login');
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
@@ -288,6 +289,7 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
+                          setUserMenuOpen(false);
                           navigate('login');
                         }
                       }}
@@ -315,6 +317,17 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                         Admin Operations
                       </a>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('orders');
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
+                    >
+                      <ShoppingBag size={15} />
+                      Orders
+                    </button>
                     <button
                       type="button"
                       onClick={handleLogout}
@@ -404,7 +417,10 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
           {user && (
             <button
               type="button"
-              onClick={() => navigate('login')}
+              onClick={() => {
+                setMobileOpen(false);
+                navigate('login');
+              }}
               title="View Customer Portal"
               aria-label="View Customer Portal"
               className="mx-4 mt-4 mb-1 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left hover:bg-[#FFEDD5] transition-colors cursor-pointer"
@@ -478,6 +494,18 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
             <div className="mt-4 border-t border-[#F1F5F9] pt-4 flex flex-col gap-2">
               {user ? (
                 <>
+                  <button
+                    onClick={() => navigate('profile')}
+                    className={`flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${currentPage === 'profile' ? 'bg-[#FFF7ED] text-[#C2410C]' : 'text-[#334155] hover:bg-[#F8FAFC]'}`}
+                  >
+                    <User size={18} /> My Profile
+                  </button>
+                  <button
+                    onClick={() => navigate('orders')}
+                    className={`flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${currentPage === 'orders' ? 'bg-[#FFF7ED] text-[#C2410C]' : 'text-[#334155] hover:bg-[#F8FAFC]'}`}
+                  >
+                    <ShoppingBag size={18} /> Orders
+                  </button>
                   {(user.role === 'admin' || user.role === 'operations') && (
                     <a
                       href="/admin"
