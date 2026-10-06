@@ -67,7 +67,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
           setProducts(items);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       ignore = true;
     };
@@ -84,7 +84,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
             const link = new Image();
             link.src = resolved;
             if (typeof link.decode === 'function') {
-              link.decode().catch(() => {});
+              link.decode().catch(() => { });
             }
           }
         }
@@ -157,15 +157,14 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                 {CATEGORIES.map(category => (
                   <button
                     key={category}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
-                      activeCategory === category
+                    className={`shrink-0 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${activeCategory === category
                         ? 'bg-[#C2410C] text-white shadow-sm'
                         : 'border border-[#CBD5E1] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:text-[#111827]'
-                    }`}
+                      }`}
                     onClick={() => setActiveCategory(category)}
                     aria-pressed={activeCategory === category}
                   >
-                    {category === 'All' ? 'All products (12)' : category}
+                    {category === 'All' ? `All products (${products.length})` : category}
                   </button>
                 ))}
               </div>
@@ -205,155 +204,155 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
 
           <div className={view === 'grid' ? 'grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'grid gap-5'}>
             {filteredProducts.map(product => {
-                const cartItem = items.find(item => item.id === product.id);
-                const quantityInCart = cartItem?.quantity ?? 0;
-                const images = product.images?.length ? product.images : [product.image];
-                const isHovered = hoveredProductId === product.id;
-                const displayImage = isHovered && images.length > 1 ? images[1] : images[0];
+              const cartItem = items.find(item => item.id === product.id);
+              const quantityInCart = cartItem?.quantity ?? 0;
+              const images = product.images?.length ? product.images : [product.image];
+              const isHovered = hoveredProductId === product.id;
+              const displayImage = isHovered && images.length > 1 ? images[1] : images[0];
 
-                return (
-                  <article
-                    key={product.id}
-                    onMouseEnter={() => setHoveredProductId(product.id)}
-                    onMouseLeave={() => setHoveredProductId(null)}
+              return (
+                <article
+                  key={product.id}
+                  onMouseEnter={() => setHoveredProductId(product.id)}
+                  onMouseLeave={() => setHoveredProductId(null)}
+                  className={view === 'grid'
+                    ? 'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white transition-all duration-300 hover:border-[#CBD5E1] hover:shadow-xl'
+                    : 'group relative grid overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white transition-all duration-300 hover:border-[#CBD5E1] hover:shadow-xl md:grid-cols-[300px_1fr]'}
+                >
+                  {/* Thumbnail / Image Area */}
+                  <div
                     className={view === 'grid'
-                      ? 'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white transition-all duration-300 hover:border-[#CBD5E1] hover:shadow-xl'
-                      : 'group relative grid overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white transition-all duration-300 hover:border-[#CBD5E1] hover:shadow-xl md:grid-cols-[300px_1fr]'}
+                      ? 'relative aspect-square overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] p-6 text-center'
+                      : 'relative min-h-[260px] overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] p-6 text-center'}
                   >
-                    {/* Thumbnail / Image Area */}
-                    <div
-                      className={view === 'grid'
-                        ? 'relative aspect-square overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] p-6 text-center'
-                        : 'relative min-h-[260px] overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#F1F5F9] p-6 text-center'}
+                    {/* Media Feature Badges */}
+                    <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5">
+                      {product.sequenceId && (
+                        <span className="flex items-center gap-1 rounded-lg bg-black/75 px-2 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
+                          <RotateCw size={11} className="text-[#FDBA74] animate-spin-slow" /> 360° 3D
+                        </span>
+                      )}
+                      {product.video && (
+                        <span className="flex items-center gap-1 rounded-lg bg-[#C2410C]/90 px-2 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
+                          <Film size={11} /> Video
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Main Image Clickable */}
+                    <button
+                      type="button"
+                      onClick={() => onProductClick(product.id)}
+                      className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
+                      aria-label={`View details for ${product.name}`}
                     >
-                      {/* Media Feature Badges */}
-                      <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5">
-                        {product.sequenceId && (
-                          <span className="flex items-center gap-1 rounded-lg bg-black/75 px-2 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                            <RotateCw size={11} className="text-[#FDBA74] animate-spin-slow" /> 360° 3D
-                          </span>
-                        )}
-                        {product.video && (
-                          <span className="flex items-center gap-1 rounded-lg bg-[#C2410C]/90 px-2 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                            <Film size={11} /> Video
-                          </span>
-                        )}
-                      </div>
+                      <ProductImage
+                        src={displayImage}
+                        alt={product.name}
+                        className="h-full w-full object-contain will-change-transform transition-transform duration-150 ease-out group-hover:scale-105"
+                      />
+                    </button>
+                  </div>
 
-                      {/* Main Image Clickable */}
-                      <button
-                        type="button"
-                        onClick={() => onProductClick(product.id)}
-                        className="h-full w-full flex items-center justify-center cursor-pointer outline-none"
-                        aria-label={`View details for ${product.name}`}
-                      >
-                        <ProductImage
-                          src={displayImage}
-                          alt={product.name}
-                          className="h-full w-full object-contain will-change-transform transition-transform duration-150 ease-out group-hover:scale-105"
-                        />
-                      </button>
+                  {/* Product Info Block */}
+                  <div className="flex min-w-0 flex-1 flex-col p-6 sm:p-7">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C2410C]">
+                        {product.category}
+                      </span>
+                      {product.featured && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-700 px-2 py-0.5 rounded-md border border-orange-200">
+                          Featured
+                        </span>
+                      )}
                     </div>
 
-                    {/* Product Info Block */}
-                    <div className="flex min-w-0 flex-1 flex-col p-6 sm:p-7">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C2410C]">
-                          {product.category}
+                    <button type="button" className="text-left mt-1.5" onClick={() => onProductClick(product.id)}>
+                      <h2 className="font-['Outfit'] text-[20px] font-bold leading-snug text-[#0F172A] hover:text-[#C2410C] transition-colors">
+                        {product.name}
+                      </h2>
+                    </button>
+
+                    <p className="mt-2 line-clamp-2 font-['DM_Sans'] text-[13px] sm:text-[14px] leading-relaxed text-[#64748B]">
+                      {product.shortDescription || product.description}
+                    </p>
+
+                    {/* Key features bullets */}
+                    <ul className="mt-4 grid gap-1.5 font-['DM_Sans'] text-[12px] text-[#475569]">
+                      {product.features?.slice(0, 3).map(feature => (
+                        <li key={feature} className="truncate">• {feature}</li>
+                      ))}
+                    </ul>
+
+                    {/* Price & MRP */}
+                    <div className="mt-5 flex items-baseline gap-2.5">
+                      <span className="font-['Outfit'] text-[22px] sm:text-[24px] font-bold text-[#0F172A]">
+                        {formatPrice(product.price)}
+                      </span>
+                      {product.mrp && product.mrp > product.price && (
+                        <span className="text-xs text-[#94A3B8] line-through font-medium">
+                          MRP {formatPrice(product.mrp)}
                         </span>
-                        {product.featured && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-700 px-2 py-0.5 rounded-md border border-orange-200">
-                            Featured
-                          </span>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
-                      <button type="button" className="text-left mt-1.5" onClick={() => onProductClick(product.id)}>
-                        <h2 className="font-['Outfit'] text-[20px] font-bold leading-snug text-[#0F172A] hover:text-[#C2410C] transition-colors">
-                          {product.name}
-                        </h2>
-                      </button>
-
-                      <p className="mt-2 line-clamp-2 font-['DM_Sans'] text-[13px] sm:text-[14px] leading-relaxed text-[#64748B]">
-                        {product.shortDescription || product.description}
-                      </p>
-
-                      {/* Key features bullets */}
-                      <ul className="mt-4 grid gap-1.5 font-['DM_Sans'] text-[12px] text-[#475569]">
-                        {product.features?.slice(0, 3).map(feature => (
-                          <li key={feature} className="truncate">• {feature}</li>
-                        ))}
-                      </ul>
-
-                      {/* Price & MRP */}
-                      <div className="mt-5 flex items-baseline gap-2.5">
-                        <span className="font-['Outfit'] text-[22px] sm:text-[24px] font-bold text-[#0F172A]">
-                          {formatPrice(product.price)}
-                        </span>
-                        {product.mrp && product.mrp > product.price && (
-                          <span className="text-xs text-[#94A3B8] line-through font-medium">
-                            MRP {formatPrice(product.mrp)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Action Buttons: Add to Cart & View Details */}
-                      <div className="mt-auto flex flex-wrap gap-2.5 pt-6">
-                        {quantityInCart > 0 ? (
-                          <div className="flex h-11 min-w-[130px] flex-1 items-center justify-between rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] p-1 shadow-xs">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(product.id, quantityInCart - 1);
-                              }}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F172A] border border-[#E2E8F0] shadow-xs hover:bg-[#F1F5F9] active:scale-95 transition-all"
-                              aria-label={`Decrease quantity of ${product.name}`}
-                            >
-                              <Minus size={14} className="stroke-[2.5]" />
-                            </button>
-                            <span className="font-['Outfit'] font-bold text-xs text-[#0F172A] select-none">
-                              {quantityInCart} in cart
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(product.id, quantityInCart + 1);
-                              }}
-                              disabled={quantityInCart >= MAX_ITEM_QUANTITY}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:bg-[#C2410C]"
-                              aria-label={`Increase quantity of ${product.name}`}
-                              title={quantityInCart >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
-                            >
-                              <Plus size={14} className="stroke-[2.5]" />
-                            </button>
-                          </div>
-                        ) : (
-                          <Button
-                            className="h-11 min-w-[130px] flex-1 rounded-xl font-bold bg-[#C2410C] hover:bg-[#9A3412]"
-                            onClick={() => {
-                              addToCart({ id: product.id, name: product.name, price: product.price, image: product.image });
-                              showToast(`${product.name} added to cart`, 'View cart', () => onCartOpen?.());
+                    {/* Action Buttons: Add to Cart & View Details */}
+                    <div className="mt-auto flex flex-wrap gap-2.5 pt-6">
+                      {quantityInCart > 0 ? (
+                        <div className="flex h-11 min-w-[130px] flex-1 items-center justify-between rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] p-1 shadow-xs">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(product.id, quantityInCart - 1);
                             }}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F172A] border border-[#E2E8F0] shadow-xs hover:bg-[#F1F5F9] active:scale-95 transition-all"
+                            aria-label={`Decrease quantity of ${product.name}`}
                           >
-                            <ShoppingCart size={16} className="mr-1.5" /> Add to cart
-                          </Button>
-                        )}
-
+                            <Minus size={14} className="stroke-[2.5]" />
+                          </button>
+                          <span className="font-['Outfit'] font-bold text-xs text-[#0F172A] select-none">
+                            {quantityInCart} in cart
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(product.id, quantityInCart + 1);
+                            }}
+                            disabled={quantityInCart >= MAX_ITEM_QUANTITY}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C2410C] text-white shadow-xs hover:bg-[#9A3412] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:bg-[#C2410C]"
+                            aria-label={`Increase quantity of ${product.name}`}
+                            title={quantityInCart >= MAX_ITEM_QUANTITY ? `Maximum limit of ${MAX_ITEM_QUANTITY} items per order` : undefined}
+                          >
+                            <Plus size={14} className="stroke-[2.5]" />
+                          </button>
+                        </div>
+                      ) : (
                         <Button
-                          variant="outline"
-                          className="h-11 min-w-[110px] flex-1 rounded-xl border-[#CBD5E1] font-bold text-[#0F172A] hover:bg-[#F8FAFC]"
-                          onClick={() => onProductClick(product.id)}
+                          className="h-11 min-w-[130px] flex-1 rounded-xl font-bold bg-[#C2410C] hover:bg-[#9A3412]"
+                          onClick={() => {
+                            addToCart({ id: product.id, name: product.name, price: product.price, image: product.image });
+                            showToast(`${product.name} added to cart`, 'View cart', () => onCartOpen?.());
+                          }}
                         >
-                          Details <ArrowRight size={15} className="ml-1" />
+                          <ShoppingCart size={16} className="mr-1.5" /> Add to cart
                         </Button>
-                      </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="h-11 min-w-[110px] flex-1 rounded-xl border-[#CBD5E1] font-bold text-[#0F172A] hover:bg-[#F8FAFC]"
+                        onClick={() => onProductClick(product.id)}
+                      >
+                        Details <ArrowRight size={15} className="ml-1" />
+                      </Button>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
 
           {filteredProducts.length === 0 && (
             <div className="py-24 text-center">
