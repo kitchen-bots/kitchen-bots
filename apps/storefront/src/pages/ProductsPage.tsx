@@ -164,7 +164,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
                     onClick={() => setActiveCategory(category)}
                     aria-pressed={activeCategory === category}
                   >
-                    {category === 'All' ? 'All products (12)' : category}
+                    {category === 'All' ? `All products (${products.length})` : category}
                   </button>
                 ))}
               </div>
