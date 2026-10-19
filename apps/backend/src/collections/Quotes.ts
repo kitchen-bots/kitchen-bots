@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Quotes: CollectionConfig = {
   slug: 'quotes',
+  lockDocuments: false,
   admin: {
     group: 'Sales & Support',
     useAsTitle: 'quoteNumber',

@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Services: CollectionConfig = {
   slug: 'services',
+  lockDocuments: false,
   admin: {
     group: 'Sales & Support',
     useAsTitle: 'ticketNumber',

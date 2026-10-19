@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Products: CollectionConfig = {
   slug: 'products',
+  lockDocuments: false,
   admin: {
     group: 'Commerce',
     useAsTitle: 'name',
@@ -28,6 +29,8 @@ export const Products: CollectionConfig = {
             data: {
               product: null,
             },
+            req,
+            overrideAccess: true,
           });
         } catch {
           // Non-blocking cleanup

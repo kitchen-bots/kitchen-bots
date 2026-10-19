@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Enquiries: CollectionConfig = {
   slug: 'enquiries',
+  lockDocuments: false,
   admin: {
     group: 'Sales & Support',
     useAsTitle: 'reference',

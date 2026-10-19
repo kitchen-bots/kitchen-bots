@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Documents: CollectionConfig = {
   slug: 'documents',
+  lockDocuments: false,
   admin: {
     group: 'Content & Media',
     useAsTitle: 'title',
