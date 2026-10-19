@@ -98,10 +98,10 @@ export default buildConfig({
     pool: {
       connectionString,
       ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
-      max: process.env.VERCEL ? 2 : 5,
+      max: 5,
       min: 0,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 5000,
+      connectionTimeoutMillis: 30000,
     },
     push: false,
     disableCreateDatabase: true,

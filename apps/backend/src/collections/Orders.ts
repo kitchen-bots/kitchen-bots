@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
+  lockDocuments: false,
   admin: {
     group: 'Commerce',
     useAsTitle: 'orderNumber',
