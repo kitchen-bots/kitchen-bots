@@ -2,8 +2,9 @@ import type { CollectionConfig } from 'payload';
 
 export const Enquiries: CollectionConfig = {
   slug: 'enquiries',
+  lockDocuments: false,
   admin: {
-    group: 'SALES & FINANCE',
+    group: 'Sales & Support',
     useAsTitle: 'reference',
     defaultColumns: ['reference', 'name', 'company', 'email', 'status', 'createdAt'],
   },
@@ -12,6 +13,18 @@ export const Enquiries: CollectionConfig = {
     create: () => true, // Public enquiry submission
     update: ({ req: { user } }) => Boolean(user && ['admin', 'operations'].includes(user.role as string)),
     delete: ({ req: { user } }) => Boolean(user && user.role === 'admin'),
+  },
+  hooks: {
+    beforeValidate: [
+      ({ data }) => {
+        if (!data) return data;
+        const record = data as Record<string, unknown>;
+        if (!record.reference) {
+          record.reference = `KB-ENQ-${Date.now().toString(36).toUpperCase()}`;
+        }
+        return record;
+      },
+    ],
   },
   fields: [
     {

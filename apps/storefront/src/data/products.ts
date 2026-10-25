@@ -633,5 +633,17 @@ export const PRODUCTS: Product[] = RAW_PRODUCTS.map(p => ({
   videoPath: p.videoPath ? getMediaUrl(p.videoPath) : undefined,
 }));
 
-export const getProductById = (idOrSlug: string) =>
-  PRODUCTS.find(p => p.id === idOrSlug || p.slug === idOrSlug);
+export const getProductById = (idOrSlug: string | number | undefined | null): Product | undefined => {
+  if (!idOrSlug) return undefined;
+  const raw = String(idOrSlug).trim();
+  const lower = raw.toLowerCase();
+  const numOnly = raw.replace(/\D/g, '');
+
+  return PRODUCTS.find((p) => {
+    if (p.id === raw || (p.slug && p.slug === raw)) return true;
+    if (p.id.toLowerCase() === lower || (p.slug && p.slug.toLowerCase() === lower)) return true;
+    if (raw === `prod-${p.id}` || p.id === `prod-${raw}`) return true;
+    if (numOnly && p.id.replace(/\D/g, '') === numOnly) return true;
+    return false;
+  });
+};

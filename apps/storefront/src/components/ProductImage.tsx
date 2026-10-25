@@ -21,10 +21,27 @@ export function ContentImage({
 }: ImageProps) {
   const [failed, setFailed] = useState(false);
 
+  // If missing or not a string, show placeholder immediately without emitting broken img tag
+  if (!src || typeof src !== 'string' || !src.trim()) {
+    return (
+      <div
+        className={`flex h-full w-full items-center justify-center bg-[#F1F5F9] text-[#94A3B8] ${className}`}
+        role="img"
+        aria-label={alt || 'Image unavailable'}
+      >
+        <ImageOff size={24} className="opacity-40" />
+      </div>
+    );
+  }
+
   // If local logo or already full URL, use as is; otherwise route through getMediaUrl
-  const resolvedSrc = src.startsWith('/images/kitchenbots-logo') || src.startsWith('/images/kitchen-bots-white')
-    ? src
-    : getMediaUrl(src);
+  const cleanSrc = src.trim();
+  const resolvedSrc =
+    cleanSrc.startsWith('/images/kitchenbots-') ||
+    cleanSrc.startsWith('/images/kitchen-bots-') ||
+    cleanSrc.startsWith('/images/logo-')
+      ? cleanSrc
+      : getMediaUrl(cleanSrc);
 
   if (failed || !resolvedSrc) {
     return (

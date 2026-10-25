@@ -5,11 +5,19 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import { useCart } from '../modules/cart-system';
-import { getCatalogSync } from '../lib/api';
+import { getCatalogSync, fetchCatalogProducts } from '../lib/api';
+import type { Product } from '../types/product';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const featuredProducts = getCatalogSync().filter(p => p.featured).slice(0, 6);
+function getFeaturedProducts(catalog: Product[]): Product[] {
+  if (!Array.isArray(catalog) || catalog.length === 0) return [];
+  const valid = catalog.filter((p) => p && typeof p.price === 'number' && p.price > 0);
+  const featured = valid.filter((p) => Boolean(p.featured));
+  if (featured.length >= 6) return featured.slice(0, 6);
+  const remaining = valid.filter((p) => !featured.some((f) => f.id === p.id));
+  return [...featured, ...remaining].slice(0, 6);
+}
 
 interface ProductCarouselProps {
   onProductClick: (id: string) => void;
@@ -18,8 +26,27 @@ interface ProductCarouselProps {
 export default function ProductCarousel({ onProductClick }: ProductCarouselProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => getFeaturedProducts(getCatalogSync()));
   const [activeIndex, setActiveIndex] = useState(0);
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    let ignore = false;
+    fetchCatalogProducts()
+      .then((items) => {
+        if (!ignore && Array.isArray(items) && items.length > 0) {
+          const display = getFeaturedProducts(items);
+          if (display.length > 0) {
+            setFeaturedProducts(display);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -77,7 +104,7 @@ export default function ProductCarousel({ onProductClick }: ProductCarouselProps
       ctx.revert();
       carousel.removeEventListener('scroll', handleScroll);
     };
-  }, [activeIndex]);
+  }, [activeIndex, featuredProducts.length]);
 
   const scrollToCard = (index: number) => {
     setActiveIndex(index);

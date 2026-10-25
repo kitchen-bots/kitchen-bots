@@ -18,7 +18,14 @@ import { Media } from './collections/Media';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const rawDbUri = process.env.DATABASE_URI || 'postgresql://postgres:postgres@127.0.0.1:5432/kitchen_bots';
+const DEFAULT_REMOTE_DB = 'postgresql://postgres.thavrhaxomanrpsmfklx:kitchen-bots-password@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
+const rawDbUri =
+  process.env.DATABASE_URI && !process.env.DATABASE_URI.includes('127.0.0.1') && !process.env.DATABASE_URI.includes('localhost')
+    ? process.env.DATABASE_URI
+    : (process.env.VERCEL || process.env.NODE_ENV === 'production'
+      ? DEFAULT_REMOTE_DB
+      : (process.env.DATABASE_URI || DEFAULT_REMOTE_DB));
+
 const isRemoteDb = rawDbUri.includes('supabase.com') || rawDbUri.includes('pooler') || rawDbUri.includes('sslmode=');
 // Strip sslmode from URI string so pg doesn't conflict with our ssl config object
 const connectionString = isRemoteDb ? rawDbUri.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/\?$/, '') : rawDbUri;
@@ -38,29 +45,32 @@ export default buildConfig({
       Nav: '@/components/CustomNav#CustomNav',
       beforeDashboard: ['@/components/AdminDashboard#AdminDashboard'],
       actions: ['@/components/StorefrontLink#StorefrontLink'],
+      beforeNavLinks: ['@/components/NavHeader#NavHeader'],
+      afterNavLinks: ['@/components/NavFooter#NavFooter'],
     },
   },
   collections: [
-    Users,
-    Categories,
     Products,
+    Categories,
     Orders,
     Quotes,
     Enquiries,
     Services,
     Documents,
     Media,
-  ].map(collection => ({ ...collection, lockDocuments: false })),
+    Users,
+  ].map((collection) => ({ ...collection, lockDocuments: false })),
   editor: lexicalEditor(),
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://kitchen-bots.vercel.app'),
   secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
   cors: [
     'https://kitchenbots.in',
     'https://kitchen-bots.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    'http://localhost:5173',
     'http://127.0.0.1:5173',
     process.env.NEXT_PUBLIC_SERVER_URL || '',
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
@@ -70,9 +80,9 @@ export default buildConfig({
     'https://kitchen-bots.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    'http://localhost:5173',
     'http://127.0.0.1:5173',
     process.env.NEXT_PUBLIC_SERVER_URL || '',
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
@@ -87,25 +97,31 @@ export default buildConfig({
       max: 5,
       min: 0,
       idleTimeoutMillis: 5000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 30000,
     },
     push: false,
     disableCreateDatabase: true,
   }),
   plugins: [
-    s3Storage({
-      collections: {
-        media: true,
-      },
-      bucket: process.env.R2_BUCKET_NAME || 'kitchen-bots-media',
-      config: {
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-        },
-        region: 'auto',
-        endpoint: process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
-      },
-    }),
+    ...(process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY
+      ? [
+          s3Storage({
+            collections: {
+              media: true,
+            },
+            bucket: process.env.R2_BUCKET_NAME || 'kitchen-bots-media',
+            config: {
+              credentials: {
+                accessKeyId: process.env.R2_ACCESS_KEY_ID,
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+              },
+              region: 'auto',
+              endpoint:
+                process.env.R2_ENDPOINT ||
+                (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined),
+            },
+          }),
+        ]
+      : []),
   ],
 });

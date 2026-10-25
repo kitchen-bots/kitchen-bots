@@ -14,8 +14,8 @@ import {
 import type { Page } from '../App';
 import type { Product, ProductCategory } from '../types/product';
 import { useCart } from '../hooks/use-cart';
-import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { useToast } from '../hooks/use-toast';
+import { MAX_ITEM_QUANTITY } from '../context/CartContextData';
 import { Button } from '../components/ui/button';
 import ProductImage from '../components/ProductImage';
 import { fetchCatalogProducts, getCatalogSync } from '../lib/api';
@@ -63,7 +63,7 @@ export default function ProductsPage({ onProductClick, onCartOpen, onNavigate }:
     let ignore = false;
     fetchCatalogProducts()
       .then((items) => {
-        if (!ignore && items.length > 0) {
+        if (!ignore && Array.isArray(items) && items.length > 0 && items.every((p) => p.price > 0)) {
           setProducts(items);
         }
       })

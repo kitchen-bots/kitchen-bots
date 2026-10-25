@@ -33,10 +33,11 @@ import './App.css';
 import BlogPage from './pages/BlogPage';
 import CartPage from './pages/CartPage';
 import ProfilePage from './pages/ProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry' | 'profile' | 'orders';
+export type Page = 'home' | 'products' | 'product-detail' | 'contact' | 'about' | 'policies' | 'capabilities' | 'blog' | 'login' | 'forgot-password' | 'cart' | 'wishlist' | 'bulk-enquiry' | 'profile' | 'orders' | '404';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -48,21 +49,40 @@ function App() {
   // Sync state with URL on initial load and back/forward
   useEffect(() => {
     const handleLocationChange = () => {
-      setSelectedProductId(new URLSearchParams(window.location.search).get('id'));
-      setCatalogKey(key => key + 1);
-      const rawPath = window.location.pathname.replace('/', '');
+      const queryId = new URLSearchParams(window.location.search).get('id');
+      const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
       const path = rawPath as Page;
-      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry', 'profile', 'orders'];
+      const validPages: Page[] = ['home', 'products', 'product-detail', 'contact', 'about', 'policies', 'capabilities', 'blog', 'login', 'forgot-password', 'cart', 'wishlist', 'bulk-enquiry', 'profile', 'orders', '404'];
       
       if (rawPath === 'admin' || rawPath.startsWith('admin/')) {
         window.location.reload();
         return;
       }
 
+      // Check product detail deep link: /products/:id or /product/:id
+      const productMatch = rawPath.match(/^(?:products|product)\/(.+)$/);
+      if (productMatch) {
+        setSelectedProductId(decodeURIComponent(productMatch[1]));
+        setCurrentPage('product-detail');
+        setCatalogKey(key => key + 1);
+        return;
+      }
+
+      if (queryId) {
+        setSelectedProductId(queryId);
+      }
+      setCatalogKey(key => key + 1);
+
       if (rawPath === '' || rawPath === 'home') {
         setCurrentPage('home');
+      } else if (rawPath === 'account' || rawPath === 'portal' || rawPath === 'orders' || rawPath === 'my-orders') {
+        setCurrentPage('login');
+      } else if (rawPath === 'checkout') {
+        setCurrentPage('cart');
       } else if (validPages.includes(path)) {
         setCurrentPage(path);
+      } else {
+        setCurrentPage('404');
       }
     };
 
@@ -109,7 +129,7 @@ function App() {
     const path = page === 'home'
       ? '/'
       : page === 'product-detail' && productId
-        ? `/product-detail?${new URLSearchParams({ id: productId })}`
+        ? `/products/${encodeURIComponent(productId)}`
         : `/${page}`;
     window.history.pushState({}, '', path);
     window.scrollTo(0, 0);
@@ -167,6 +187,8 @@ function App() {
         return <ProfilePage onNavigate={navigateTo} />;
       case 'orders':
         return <ProfilePage onNavigate={navigateTo} scrollToOrders />;
+      case '404':
+        return <NotFoundPage onNavigate={navigateTo} />;
       case 'home':
       default:
         return (
@@ -218,7 +240,7 @@ function App() {
                 </AnimatePresence>
               </main>
 
-              {currentPage !== 'contact' && <Footer onNavigate={navigateTo} />}
+              {currentPage !== 'contact' && <Footer onNavigate={navigateTo} onCatalog={browseCatalog} />}
               
               <CartDrawer 
                 isOpen={isCartOpen} 

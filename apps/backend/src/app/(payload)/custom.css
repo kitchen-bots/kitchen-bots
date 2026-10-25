@@ -598,6 +598,7 @@ input:focus, textarea:focus, select:focus {
   cursor: not-allowed !important;
 }
 
+
 /* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -617,3 +618,175 @@ input:focus, textarea:focus, select:focus {
   background: #94a3b8;
 }
 
+/* ==========================================================================
+   NAV FOOTER, NAV HEADER & STOREFRONT LINK COMPATIBILITY
+   ========================================================================== */
+
+.kb-nav-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+}
+
+.kb-nav-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 12px 12px 2px;
+  position: relative;
+}
+
+.kb-nav-brand-link {
+  display: block;
+  text-decoration: none !important;
+  transition: opacity 0.15s ease;
+}
+
+.kb-nav-brand-link:hover {
+  opacity: 0.9;
+}
+
+.kb-nav-brand-full-logo {
+  height: 38px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+}
+
+.kb-nav-brand-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.kb-nav-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  flex-shrink: 0;
+}
+
+.kb-nav-status-text {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.kb-nav-brand-badge {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+}
+
+.kb-nav-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.kb-nav-storefront-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #334155 !important;
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.kb-nav-storefront-btn:hover {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.kb-nav-storefront-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kb-nav-storefront-icon {
+  width: 14px;
+  height: 14px;
+  color: #2563eb;
+}
+
+.kb-nav-external-icon {
+  width: 12px;
+  height: 12px;
+  color: #64748b;
+}
+
+.kb-nav-system-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 10px;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+}
+
+.kb-nav-system-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kb-nav-system-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.kb-nav-system-ver {
+  color: #94a3b8;
+}
+
+.kb-storefront-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155 !important;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+
+.kb-storefront-link:hover {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
