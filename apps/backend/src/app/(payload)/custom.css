@@ -1,125 +1,619 @@
-/* Kitchen Bots Payload CMS Custom Admin Theme */
+/* Kitchen Bots Enterprise Operations Design System
+   Reference: shadcnblocks-admin ecommerce light-theme dashboard
+   Strict Light mode default, neutral surfaces, crisp borders, high-legibility typography
+*/
 
 :root,
-[data-theme='dark'] {
-  --theme-bg: #09090b !important;
-  --theme-elevation-0: #09090b !important;
-  --theme-elevation-50: #121215 !important;
-  --theme-elevation-100: #18181b !important;
-  --theme-elevation-150: #202024 !important;
-  --theme-elevation-200: #27272a !important;
-  
-  --theme-border-color: #27272a !important;
-  --theme-text: #fafafa !important;
-  --theme-text-secondary: #a1a1aa !important;
+[data-theme='light'],
+[data-theme='dark'],
+body {
+  /* Clean Light Foundation - Force override all dark Payload defaults */
+  --theme-bg: #f8fafc !important;
+  --theme-elevation-0: #ffffff !important;
+  --theme-elevation-50: #f8fafc !important;
+  --theme-elevation-100: #ffffff !important;
+  --theme-elevation-150: #f1f5f9 !important;
+  --theme-elevation-200: #e2e8f0 !important;
 
-  /* Brand accent: Kitchen Bots Amber */
-  --theme-primary: #f97316 !important;
-  --theme-primary-hover: #ea580c !important;
-  --theme-primary-active: #c2410c !important;
-  --theme-accent-500: #f97316 !important;
+  /* Crisp Neutral Borders & Dividers */
+  --theme-border-color: #e2e8f0 !important;
+  --kb-border: #e2e8f0;
+  --kb-border-subtle: #f1f5f9;
 
-  --theme-success-500: #22c55e !important;
-  --theme-warning-500: #f59e0b !important;
-  --theme-error-500: #ef4444 !important;
+  /* High-legibility Enterprise Typography */
+  --theme-text: #0f172a !important;
+  --theme-text-secondary: #475569 !important;
+  --theme-text-muted: #64748b !important;
+  --kb-text-primary: #0f172a;
+  --kb-text-secondary: #475569;
+  --kb-text-muted: #64748b;
+
+  /* Card and Panel Backgrounds */
+  --kb-card-bg: #ffffff;
+  --kb-card-header: #f8fafc;
+  --kb-subcard-bg: #f8fafc;
+
+  /* Default Palette: Ocean Blue (#2563EB, #0EA5E9, #64748B) */
+  --kb-accent-primary: #2563eb;
+  --kb-accent-secondary: #0ea5e9;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(37, 99, 235, 0.08);
+  --kb-accent-border: rgba(37, 99, 235, 0.25);
+
+  --theme-primary: var(--kb-accent-primary) !important;
+  --theme-primary-hover: var(--kb-accent-secondary) !important;
+  --theme-primary-active: var(--kb-accent-primary) !important;
+  --theme-accent-500: var(--kb-accent-primary) !important;
+
+  /* Semantic Feedback Palette */
+  --theme-success-500: #059669 !important;
+  --theme-warning-500: #d97706 !important;
+  --theme-error-500: #e11d48 !important;
 }
 
-/* Rounded corners consistency */
-.btn {
-  border-radius: 6px !important;
+/* ── 6 Coordinated Accent Palettes ── */
+
+/* 1. Ocean Blue: #2563EB, #0EA5E9, #64748B */
+[data-palette='ocean'],
+:root[data-palette='ocean'] {
+  --kb-accent-primary: #2563eb;
+  --kb-accent-secondary: #0ea5e9;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(37, 99, 235, 0.08);
+  --kb-accent-border: rgba(37, 99, 235, 0.25);
+  --theme-primary: #2563eb !important;
 }
 
-/* Sidebar styling */
-.nav {
-  border-right: 1px solid #27272a !important;
+/* 2. Emerald: #059669, #14B8A6, #64748B */
+[data-palette='emerald'],
+:root[data-palette='emerald'] {
+  --kb-accent-primary: #059669;
+  --kb-accent-secondary: #14b8a6;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(5, 150, 105, 0.08);
+  --kb-accent-border: rgba(5, 150, 105, 0.25);
+  --theme-primary: #059669 !important;
 }
 
-/* Input fields */
-input, textarea, select {
-  border-color: #27272a !important;
-  background-color: #121215 !important;
+/* 3. Violet: #7C3AED, #A78BFA, #64748B */
+[data-palette='violet'],
+:root[data-palette='violet'] {
+  --kb-accent-primary: #7c3aed;
+  --kb-accent-secondary: #a78bfa;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(124, 58, 237, 0.08);
+  --kb-accent-border: rgba(124, 58, 237, 0.25);
+  --theme-primary: #7c3aed !important;
 }
 
-input:focus, textarea:focus, select:focus {
-  border-color: #f97316 !important;
-  outline: none !important;
-  box-shadow: 0 0 0 1px #f97316 !important;
+/* 4. Amber: #D97706, #F59E0B, #64748B */
+[data-palette='amber'],
+:root[data-palette='amber'] {
+  --kb-accent-primary: #d97706;
+  --kb-accent-secondary: #f59e0b;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(217, 119, 6, 0.08);
+  --kb-accent-border: rgba(217, 119, 6, 0.25);
+  --theme-primary: #d97706 !important;
 }
 
-/* Storefront Link in Admin Header */
-.kb-storefront-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #e4e4e7 !important;
-  background-color: #18181b;
-  border: 1px solid #27272a;
-  border-radius: 6px;
-  padding: 6px 12px;
-  text-decoration: none !important;
-  transition: all 0.15s ease;
+/* 5. Rose: #E11D48, #FB7185, #64748B */
+[data-palette='rose'],
+:root[data-palette='rose'] {
+  --kb-accent-primary: #e11d48;
+  --kb-accent-secondary: #fb7185;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(225, 29, 72, 0.08);
+  --kb-accent-border: rgba(225, 29, 72, 0.25);
+  --theme-primary: #e11d48 !important;
 }
 
-.kb-storefront-link:hover {
-  background-color: #27272a !important;
-  border-color: #3f3f46 !important;
-  color: #fafafa !important;
+/* 6. Teal: #0F766E, #2DD4BF, #64748B */
+[data-palette='teal'],
+:root[data-palette='teal'] {
+  --kb-accent-primary: #0f766e;
+  --kb-accent-secondary: #2dd4bf;
+  --kb-accent-neutral: #64748b;
+  --kb-accent-light: rgba(15, 118, 110, 0.08);
+  --kb-accent-border: rgba(15, 118, 110, 0.25);
+  --theme-primary: #0f766e !important;
 }
 
-/* Polished Table Styling */
+/* ==========================================================================
+   GLOBAL APP SHELL & INTEGRATED SHADCN E-COMMERCE LAYOUT
+   ========================================================================== */
+
+body, html {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Top App Header */
+.app-header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 10px 24px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ==========================================================================
+   GLOBAL APP SHELL & INTEGRATED CHATGPT-STYLE SIDEBAR LAYOUT
+   ========================================================================== */
+
+/* Main application layout wrapper */
+.template-default {
+  display: flex !important;
+  background-color: #f8fafc !important;
+  min-height: 100vh !important;
+}
+
+/* Nav component container overrides */
+.nav,
+aside.kb-chatgpt-sidebar {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  z-index: 50 !important;
+}
+
+/* ── ChatGPT-Inspired Workspace Spacing ──
+   Eliminate excessive margins. Provide a consistent 260px offset for expanded
+   sidebar and 68px for collapsed, with 24px content gutters.
+*/
+.template-default {
+  display: flex !important;
+  background-color: #f8fafc !important;
+  min-height: 100vh !important;
+}
+
+.template-default__wrap,
+.template-default__content {
+  margin-left: 260px !important;
+  transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  width: calc(100% - 260px) !important;
+  max-width: calc(100% - 260px) !important;
+  background-color: #f8fafc !important;
+  padding-inline: 24px !important;
+  padding-block: 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* When collapsed via state/class */
+body.kb-sidebar-collapsed .template-default__wrap,
+body.kb-sidebar-collapsed .template-default__content {
+  margin-left: 68px !important;
+  width: calc(100% - 68px) !important;
+  max-width: calc(100% - 68px) !important;
+}
+
+/* Mobile responsive drawer */
+@media (max-width: 768px) {
+  .template-default__wrap,
+  .template-default__content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+    padding-block: 16px !important;
+  }
+}
+
+/* Hide Default Payload CMS Collection Cards Grid & Modular Widgets on Dashboard home */
+.dashboard__collections,
+.collection-cards,
+.dashboard .collection-list,
+.dashboard .card-grid,
+.dashboard > div:not(.admin-dashboard-root),
+.modular-dashboard,
+.dashboard-step-nav,
+.widget-container,
+.step-nav {
+  display: none !important;
+}
+
+/* ==========================================================================
+   DATA TABLES (SHADCN ECOMMERCE PATTERN)
+   ========================================================================== */
+
 .table {
+  width: 100% !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
-  border: 1px solid #27272a !important;
+  border: 1px solid #e2e8f0 !important;
   border-radius: 8px !important;
+  background-color: #ffffff !important;
   overflow: hidden !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+.table thead {
+  background-color: #f8fafc !important;
 }
 
 .table th {
-  background-color: #121215 !important;
-  font-family: ui-monospace, SFMono-Regular, monospace !important;
-  font-size: 11px !important;
+  background-color: #f8fafc !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.08em !important;
-  color: #a1a1aa !important;
-  border-bottom: 1px solid #27272a !important;
-  padding: 10px 14px !important;
+  letter-spacing: 0.04em !important;
+  color: #64748b !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 12px 16px !important;
+  white-space: nowrap !important;
 }
 
 .table td {
-  border-bottom: 1px solid #1c1917 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+  color: #334155 !important;
+  vertical-align: middle !important;
+}
+
+.table tr:last-child td {
+  border-bottom: none !important;
+}
+
+.table tbody tr {
+  transition: background-color 0.1s ease !important;
+}
+
+.table tbody tr:hover td {
+  background-color: #f8fafc !important;
+}
+
+.table a {
+  color: var(--kb-accent-primary, #2563eb) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+}
+
+.table a:hover {
+  text-decoration: underline !important;
+}
+
+/* Badges */
+.status-badge {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+}
+
+/* Form fields & Inputs */
+input, textarea, select {
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--kb-accent-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--kb-accent-light) !important;
+}
+
+/* Buttons */
+.btn--style-primary {
+  background-color: var(--kb-accent-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--kb-accent-primary) !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+}
+
+.btn--style-primary:hover {
+  background-color: var(--kb-accent-secondary) !important;
+  border-color: var(--kb-accent-secondary) !important;
+}
+
+.btn--style-secondary {
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+}
+
+.btn--style-secondary:hover {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ==========================================================================
+   FORM & DOCUMENT EDIT VIEWS (SHADCN PATTERN)
+   Constrain max-width, center containers, logical section cards
+   ========================================================================== */
+
+/* Main form wrapper: Responsive container that doesn't feel cramped on wide viewports */
+.collection-edit,
+.document-edit,
+.doc-header,
+.collection-edit__form {
+  max-width: 1280px !important;
+  margin-inline: auto !important;
+  width: 100% !important;
+}
+
+/* Constrain document form width and center */
+.doc-fields {
+  max-width: 1280px !important;
+  margin-inline: auto !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 28px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 2-Column Responsive Field Grid on Desktop (Reference: payload-theme) */
+@media (min-width: 900px) {
+  .collection-edit .document-fields__fields.render-fields,
+  .document-fields__fields .render-fields:not(.row__fields) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px 22px !important;
+    align-items: start !important;
+  }
+
+  /* Compact input types share a 2-column row */
+  .collection-edit .field-type.text,
+  .collection-edit .field-type.number,
+  .collection-edit .field-type.email,
+  .collection-edit .field-type.select,
+  .collection-edit .field-type.date-time-field,
+  .collection-edit .field-type.relationship {
+    grid-column: span 1 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Wide types take full width */
+  .collection-edit .field-type.textarea,
+  .collection-edit .field-type.rich-text-lexical,
+  .collection-edit .field-type.json,
+  .collection-edit .field-type.array,
+  .collection-edit .field-type.blocks,
+  .collection-edit .field-type.group,
+  .collection-edit .field-type.collapsible {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Edit document controls header & save toolbar */
+.doc-header {
+  padding-block: 16px !important;
+  margin-bottom: 16px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.doc-controls {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 12px 18px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.field-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  margin-bottom: 6px !important;
+}
+
+.field-description {
+  font-size: 12px !important;
+  color: #64748b !important;
+  margin-top: 4px !important;
+}
+
+/* Field grouping and collapsible blocks */
+.field-type.collapsible,
+.field-type.group {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  background-color: #fafbfc !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+}
+
+/* Array field cards */
+.array-field__drawer-toggler,
+.array-field__header {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
   padding: 10px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   REACT-SELECT & RELATIONSHIP CONTROLS (SHADCN PATTERN)
+   Clean alignment, proper padding, no text truncation
+   ========================================================================== */
+
+.rs__control,
+.react-select__control {
+  min-height: 38px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  padding: 2px 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.rs__control:hover,
+.react-select__control:hover {
+  border-color: #94a3b8 !important;
+}
+
+.rs__control--is-focused,
+.react-select__control--is-focused {
+  border-color: var(--kb-accent-primary) !important;
+  box-shadow: 0 0 0 2px var(--kb-accent-light) !important;
+}
+
+.rs__value-container,
+.react-select__value-container {
+  padding: 2px 8px !important;
+  font-size: 13px !important;
+  color: #0f172a !important;
+}
+
+.rs__single-value,
+.react-select__single-value {
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.rs__placeholder,
+.react-select__placeholder {
+  color: #94a3b8 !important;
   font-size: 13px !important;
 }
 
-.table tr:hover td {
-  background-color: #18181b !important;
+.rs__menu,
+.react-select__menu {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+  z-index: 100 !important;
+  padding: 4px !important;
 }
 
-/* Card & Container Polish */
-.card {
-  border: 1px solid #27272a !important;
-  background-color: #121215 !important;
-  border-radius: 10px !important;
+.rs__option,
+.react-select__option {
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  color: #334155 !important;
+  cursor: pointer !important;
 }
 
-/* Custom Industrial Dark Scrollbar */
+.rs__option--is-focused,
+.react-select__option--is-focused {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.rs__option--is-selected,
+.react-select__option--is-selected {
+  background-color: var(--kb-accent-light) !important;
+  color: var(--kb-accent-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   COLLECTION LIST CONTROLS & TOOLBARS (SHADCN PATTERN)
+   ========================================================================== */
+
+.list-controls {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.search-filter input {
+  min-width: 240px !important;
+  height: 38px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  padding: 6px 12px !important;
+}
+
+/* Collection List Header */
+.collection-list__header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding-block: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.collection-list__header h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+}
+
+/* Pagination controls */
+.pagination {
+  display: flex !important;
+  align-items: center !important;
+  justifyContent: space-between !important;
+  padding: 14px 16px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-top: none !important;
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+  font-size: 13px !important;
+  color: #64748b !important;
+}
+
+.pagination__button {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #334155 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pagination__button:hover:not(:disabled) {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.pagination__button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #f8fafc;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #94a3b8;
 }
+

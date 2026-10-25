@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Services: CollectionConfig = {
   slug: 'services',
   admin: {
+    group: 'OPERATIONS',
     useAsTitle: 'ticketNumber',
     defaultColumns: ['ticketNumber', 'companyName', 'equipmentName', 'priority', 'status', 'createdAt'],
   },

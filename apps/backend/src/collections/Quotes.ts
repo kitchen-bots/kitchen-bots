@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Quotes: CollectionConfig = {
   slug: 'quotes',
   admin: {
+    group: 'SALES & FINANCE',
     useAsTitle: 'quoteNumber',
     defaultColumns: ['quoteNumber', 'companyName', 'contactName', 'status', 'estimatedPaise', 'createdAt'],
   },

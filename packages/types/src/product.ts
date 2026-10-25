@@ -55,6 +55,10 @@ export interface Product {
   sku?: string;
   salesMode?: 'direct' | 'quote' | 'both';
   status?: 'Active' | 'Draft' | 'Archived';
+  stockOnHand?: number;
+  reservedStock?: number;
+  minStockThreshold?: number;
+  warehouseLocation?: string;
 }
 
 export interface CartItem {

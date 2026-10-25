@@ -3,8 +3,9 @@ import type { CollectionConfig } from 'payload';
 export const Enquiries: CollectionConfig = {
   slug: 'enquiries',
   admin: {
+    group: 'SALES & FINANCE',
     useAsTitle: 'reference',
-    defaultColumns: ['reference', 'name', 'email', 'company', 'status', 'createdAt'],
+    defaultColumns: ['reference', 'name', 'company', 'email', 'status', 'createdAt'],
   },
   access: {
     read: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),

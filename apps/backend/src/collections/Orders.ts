@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload';
 export const Orders: CollectionConfig = {
   slug: 'orders',
   admin: {
+    group: 'OPERATIONS',
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'customerName', 'totalPaise', 'status', 'paymentStatus', 'createdAt'],
   },
@@ -75,6 +76,7 @@ export const Orders: CollectionConfig = {
     },
     {
       name: 'totalPaise',
+      label: 'Total Paise',
       type: 'number',
       required: true,
       min: 0,

@@ -26,20 +26,16 @@ const connectionString = isRemoteDb ? rawDbUri.replace(/([?&])sslmode=[^&]+(&|$)
 export default buildConfig({
   admin: {
     user: Users.slug,
-    theme: 'dark',
+    theme: 'light',
     meta: {
       titleSuffix: '- Kitchen Bots Admin',
-    },
-    autoLogin: {
-      email: 'admin@kitchenbots.com',
-      password: 'admin123456',
-      prefillOnly: true,
     },
     components: {
       graphics: {
         Logo: '@/components/Logo#Logo',
         Icon: '@/components/Icon#Icon',
       },
+      Nav: '@/components/CustomNav#CustomNav',
       beforeDashboard: ['@/components/AdminDashboard#AdminDashboard'],
       actions: ['@/components/StorefrontLink#StorefrontLink'],
     },
@@ -60,12 +56,24 @@ export default buildConfig({
   cors: [
     'https://kitchenbots.in',
     'https://kitchen-bots.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
     process.env.NEXT_PUBLIC_SERVER_URL || '',
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
   ].filter(Boolean),
   csrf: [
     'https://kitchenbots.in',
     'https://kitchen-bots.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
     process.env.NEXT_PUBLIC_SERVER_URL || '',
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
   ].filter(Boolean),
@@ -76,7 +84,12 @@ export default buildConfig({
     pool: {
       connectionString,
       ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
+      max: 5,
+      min: 0,
+      idleTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
     },
+    push: false,
     disableCreateDatabase: true,
   }),
   plugins: [
