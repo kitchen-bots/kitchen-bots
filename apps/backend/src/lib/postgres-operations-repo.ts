@@ -13,6 +13,8 @@ export class PostgresOperationsRepository {
 
       if (poolOrConnectionString) {
         connStr = poolOrConnectionString;
+      } else if (isProduction && process.env.DATABASE_URI) {
+        connStr = process.env.DATABASE_URI;
       } else if (process.env.OPERATIONS_DATABASE_URI) {
         if (isProduction) {
           throw new Error('OPERATIONS_DATABASE_URI is restricted to isolated test/development environments and must not be used in production');
@@ -629,8 +631,8 @@ export class PostgresOperationsRepository {
 
       // Release active reservations if any exist for this order
       const activeRes = await client.query(
-        `SELECT id, product_id, sku, quantity 
-         FROM "inventory_reservations" 
+        `SELECT id, product_id, sku, quantity
+         FROM "inventory_reservations"
          WHERE order_id = $1 AND status = 'active'
          FOR UPDATE`,
         [params.orderId]
@@ -638,8 +640,8 @@ export class PostgresOperationsRepository {
 
       for (const res of activeRes.rows) {
         await client.query(
-          `UPDATE "inventory_reservations" 
-           SET status = 'released', updated_at = NOW() 
+          `UPDATE "inventory_reservations"
+           SET status = 'released', updated_at = NOW()
            WHERE id = $1`,
           [res.id]
         );
@@ -871,13 +873,21 @@ export class PostgresOperationsRepository {
     phone?: string;
     department: string;
     jobTitle: string;
+    employeeType?: string;
+    employmentStatus?: string;
+    tags?: string[];
     dateOfJoining: string;
+    address?: Record<string, unknown>;
+    salaryDetails?: Record<string, unknown>;
+    bankDetails?: Record<string, unknown>;
+    avatarUrl?: string;
   }) {
     const id = `emp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const res = await this.pool.query(
       `INSERT INTO "staff_profiles" (
-        id, employee_id, full_name, email, phone, department, job_title, status, date_of_joining, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, NOW(), NOW())
+        id, employee_id, full_name, email, phone, department, job_title, status, date_of_joining,
+        employee_type, employment_status, tags, address, salary_details, bank_details, avatar_url, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
       RETURNING *`,
       [
         id,
@@ -887,10 +897,102 @@ export class PostgresOperationsRepository {
         params.phone || null,
         params.department,
         params.jobTitle,
+        params.employmentStatus || 'active',
         params.dateOfJoining,
+        params.employeeType || 'full-time',
+        params.employmentStatus || 'active',
+        params.tags || [],
+        JSON.stringify(params.address || {}),
+        JSON.stringify(params.salaryDetails || {}),
+        JSON.stringify(params.bankDetails || {}),
+        params.avatarUrl || null,
       ]
     );
     return res.rows[0];
+  }
+
+  public async updateStaffProfile(staffId: string, params: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    department?: string;
+    jobTitle?: string;
+    employeeType?: string;
+    employmentStatus?: string;
+    tags?: string[];
+    address?: Record<string, unknown>;
+    salaryDetails?: Record<string, unknown>;
+    bankDetails?: Record<string, unknown>;
+    avatarUrl?: string;
+  }) {
+    const existing = await this.pool.query(`SELECT * FROM "staff_profiles" WHERE id = $1`, [staffId]);
+    if (existing.rows.length === 0) {
+      throw new Error('Staff profile not found');
+    }
+    const cur = existing.rows[0];
+    const res = await this.pool.query(
+      `UPDATE "staff_profiles"
+       SET full_name = COALESCE($1, full_name),
+           email = COALESCE($2, email),
+           phone = COALESCE($3, phone),
+           department = COALESCE($4, department),
+           job_title = COALESCE($5, job_title),
+           employee_type = COALESCE($6, employee_type),
+           employment_status = COALESCE($7, employment_status),
+           status = COALESCE($7::enum_employment_status, status),
+           tags = COALESCE($8, tags),
+           address = COALESCE($9, address),
+           salary_details = COALESCE($10, salary_details),
+           bank_details = COALESCE($11, bank_details),
+           avatar_url = COALESCE($12, avatar_url),
+           updated_at = NOW()
+       WHERE id = $13
+       RETURNING *`,
+      [
+        params.fullName ?? null,
+        params.email ?? null,
+        params.phone ?? null,
+        params.department ?? null,
+        params.jobTitle ?? null,
+        params.employeeType ?? null,
+        params.employmentStatus ?? null,
+        params.tags ?? null,
+        params.address ? JSON.stringify(params.address) : null,
+        params.salaryDetails ? JSON.stringify(params.salaryDetails) : null,
+        params.bankDetails ? JSON.stringify(params.bankDetails) : null,
+        params.avatarUrl ?? null,
+        staffId,
+      ]
+    );
+    return res.rows[0];
+  }
+
+  public async getStaffDetail(staffId: string, revealBank: boolean = false) {
+    const res = await this.pool.query(
+      `SELECT * FROM "staff_profiles" WHERE id = $1`,
+      [staffId]
+    );
+    if (res.rows.length === 0) return null;
+    const staff = res.rows[0];
+
+    // Fetch payslips for this staff
+    const payslips = await this.pool.query(
+      `SELECT * FROM "hr_payslips" WHERE staff_id = $1 ORDER BY month_year DESC`,
+      [staffId]
+    );
+    staff.payslips = payslips.rows;
+
+    // Mask bank details unless explicitly authorized and requested
+    if (!revealBank && staff.bank_details && typeof staff.bank_details === 'object') {
+      const bank = { ...staff.bank_details };
+      if (bank.accountNumber) {
+        const acc = String(bank.accountNumber);
+        bank.accountNumber = acc.length > 4 ? `••••••••${acc.slice(-4)}` : '••••••••';
+      }
+      staff.bank_details = bank;
+    }
+
+    return staff;
   }
 
   public async recordAttendance(params: {
@@ -1316,15 +1418,25 @@ export class PostgresOperationsRepository {
     };
   }
 
-  public async getLeaveRequests(status?: string) {
+  public async getLeaveRequests(status?: string, staffId?: string) {
     let query = `SELECT l.*, s.full_name, s.employee_id, s.department
                  FROM "leave_requests" l
                  JOIN "staff_profiles" s ON l.staff_id = s.id`;
     const params: unknown[] = [];
-    if (status) {
-      query += ` WHERE l.status = $1`;
+    const conditions: string[] = [];
+
+    if (status && status !== 'all') {
       params.push(status);
+      conditions.push(`l.status = $${params.length}`);
     }
+    if (staffId && staffId !== 'all') {
+      params.push(staffId);
+      conditions.push(`l.staff_id = $${params.length}`);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
     query += ` ORDER BY l.created_at DESC`;
     const res = await this.pool.query(query, params);
     return res.rows;
@@ -1339,6 +1451,455 @@ export class PostgresOperationsRepository {
        ORDER BY p.created_at DESC`
     );
     return res.rows;
+  }
+
+  // HR Expenses methods
+  public async getExpenses(filters?: { id?: string; category?: string; staffId?: string; status?: string; startDate?: string; endDate?: string }) {
+    let query = `SELECT e.*, s.employee_id
+                 FROM "hr_expenses" e
+                 LEFT JOIN "staff_profiles" s ON e.staff_id = s.id`;
+    const params: unknown[] = [];
+    const conditions: string[] = [];
+
+    if (filters?.id) {
+      params.push(filters.id);
+      conditions.push(`e.id = $${params.length}`);
+    }
+    if (filters?.category && filters.category !== 'all') {
+      params.push(filters.category);
+      conditions.push(`e.category = $${params.length}`);
+    }
+    if (filters?.staffId && filters.staffId !== 'all') {
+      params.push(filters.staffId);
+      conditions.push(`e.staff_id = $${params.length}`);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      params.push(filters.status);
+      conditions.push(`e.status = $${params.length}`);
+    }
+    if (filters?.startDate) {
+      params.push(filters.startDate);
+      conditions.push(`e.expense_date >= $${params.length}`);
+    }
+    if (filters?.endDate) {
+      params.push(filters.endDate);
+      conditions.push(`e.expense_date <= $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+    query += ` ORDER BY e.expense_date DESC, e.submitted_at DESC`;
+
+    const res = await this.pool.query(query, params);
+    return res.rows;
+  }
+
+  public async createExpense(params: {
+    staffId?: string;
+    claimantName: string;
+    category: 'Employee expenses' | 'Travel' | 'Food and meals' | 'Accommodation' | 'Transport' | 'Other operational expenses';
+    amountPaise: number;
+    currency?: string;
+    expenseDate: string;
+    description: string;
+    receiptUrl?: string;
+  }) {
+    const id = `exp-rec-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const expenseId = `EXP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const res = await this.pool.query(
+      `INSERT INTO "hr_expenses" (
+        id, expense_id, staff_id, claimant_name, category, amount_paise, currency, expense_date, description, receipt_url, status, submitted_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', NOW())
+      RETURNING *`,
+      [
+        id,
+        expenseId,
+        params.staffId || null,
+        params.claimantName,
+        params.category,
+        params.amountPaise,
+        params.currency || 'INR',
+        params.expenseDate,
+        params.description,
+        params.receiptUrl || null,
+      ]
+    );
+    return res.rows[0];
+  }
+
+  public async reviewExpense(expenseId: string, decision: 'approved' | 'rejected', reviewer: string, reviewNotes?: string) {
+    const res = await this.pool.query(
+      `UPDATE "hr_expenses"
+       SET status = $1, reviewed_by = $2, review_notes = $3, reviewed_at = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [decision, reviewer, reviewNotes || null, expenseId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Expense record not found');
+    }
+    return res.rows[0];
+  }
+
+  public async getStaffProfileByAuth(userId?: number | string | null, email?: string | null) {
+    if (userId) {
+      const resById = await this.pool.query(
+        `SELECT * FROM "staff_profiles" WHERE user_id = $1 LIMIT 1`,
+        [Number(userId)]
+      );
+      if (resById.rows.length > 0) return resById.rows[0];
+    }
+    if (email && email.trim()) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const resByEmail = await this.pool.query(
+        `SELECT * FROM "staff_profiles" WHERE LOWER(TRIM(email)) = $1`,
+        [normalizedEmail]
+      );
+      // Fail safely if ambiguous matches exist (multiple staff records with the same email)
+      if (resByEmail.rows.length === 1) {
+        return resByEmail.rows[0];
+      }
+      if (resByEmail.rows.length > 1) {
+        console.warn(`Ambiguous staff profile match detected for email: ${normalizedEmail}. Multiple records exist.`);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  public async getEmployeeAttendanceHistory(staffId: string, limit: number = 60) {
+    const res = await this.pool.query(
+      `SELECT * FROM "attendance_records"
+       WHERE staff_id = $1
+       ORDER BY date DESC, created_at DESC
+       LIMIT $2`,
+      [staffId, limit]
+    );
+    return res.rows;
+  }
+
+  public async getEmployeePayslips(staffId: string) {
+    const res = await this.pool.query(
+      `SELECT * FROM "hr_payslips"
+       WHERE staff_id = $1
+       ORDER BY month_year DESC`,
+      [staffId]
+    );
+    return res.rows;
+  }
+
+  public async createOrUpdatePayslip(params: {
+    staffId: string;
+    monthYear: string;
+    grossPaise: number;
+    netPaise: number;
+    documentUrl: string;
+  }) {
+    const id = `payslip-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const res = await this.pool.query(
+      `INSERT INTO "hr_payslips" (id, staff_id, month_year, gross_paise, net_paise, document_url, issued_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (staff_id, month_year)
+       DO UPDATE SET
+         gross_paise = EXCLUDED.gross_paise,
+         net_paise = EXCLUDED.net_paise,
+         document_url = EXCLUDED.document_url,
+         issued_at = NOW()
+       RETURNING *`,
+      [id, params.staffId, params.monthYear, params.grossPaise, params.netPaise, params.documentUrl]
+    );
+    return res.rows[0];
+  }
+
+  public async getEmployeeTasks(staffId: string) {
+    const res = await this.pool.query(
+      `SELECT * FROM "production_task_allocations"
+       WHERE staff_id = $1
+       ORDER BY deadline ASC NULLS LAST, created_at DESC`,
+      [staffId]
+    );
+    return res.rows;
+  }
+
+  public async updateTaskStatusForEmployee(params: {
+    taskId: string;
+    staffId: string;
+    status: 'in_progress' | 'completed' | 'blocked';
+    blockerReason?: string;
+  }) {
+    const res = await this.pool.query(
+      `UPDATE "production_task_allocations"
+       SET status = $1, blocker_reason = $2, completed_at = CASE WHEN $1 = 'completed' THEN NOW() ELSE completed_at END
+       WHERE id = $3 AND staff_id = $4
+       RETURNING *`,
+      [params.status, params.blockerReason || null, params.taskId, params.staffId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Task not found or not assigned to authenticated employee');
+    }
+    return res.rows[0];
+  }
+
+  public async reimburseExpense(params: {
+    expenseId: string;
+    reimbursementRef: string;
+    reviewer: string;
+  }) {
+    const res = await this.pool.query(
+      `UPDATE "hr_expenses"
+       SET status = 'reimbursed',
+           reimbursement_ref = $1,
+           reimbursed_at = NOW(),
+           review_notes = COALESCE(review_notes || ' | ', '') || 'Reimbursed by ' || $2 || ' with Ref: ' || $1
+       WHERE id = $3 AND status = 'approved'
+       RETURNING *`,
+      [params.reimbursementRef, params.reviewer, params.expenseId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Expense claim not found or not in approved status for reimbursement');
+    }
+    return res.rows[0];
+  }
+
+  // Employee Helpdesk Tickets
+  public async getEmployeeTickets(filters?: { staffId?: string; status?: string }) {
+    let query = `SELECT t.*, s.full_name as employee_name, s.department as employee_department
+                 FROM "employee_tickets" t
+                 LEFT JOIN "staff_profiles" s ON t.staff_id = s.id`;
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters?.staffId) {
+      params.push(filters.staffId);
+      conditions.push(`t.staff_id = $${params.length}`);
+    }
+    if (filters?.status && filters.status !== 'all') {
+      params.push(filters.status);
+      conditions.push(`t.status = $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+    query += ` ORDER BY t.created_at DESC`;
+
+    const res = await this.pool.query(query, params);
+    return res.rows;
+  }
+
+  public async getTicketWithMessages(ticketId: string, staffIdFilter?: string) {
+    let ticketQuery = `SELECT t.*, s.full_name as employee_name, s.department as employee_department
+                       FROM "employee_tickets" t
+                       LEFT JOIN "staff_profiles" s ON t.staff_id = s.id
+                       WHERE t.id = $1`;
+    const params: unknown[] = [ticketId];
+    if (staffIdFilter) {
+      params.push(staffIdFilter);
+      ticketQuery += ` AND t.staff_id = $2`;
+    }
+
+    const tRes = await this.pool.query(ticketQuery, params);
+    if (tRes.rows.length === 0) return null;
+
+    const mRes = await this.pool.query(
+      `SELECT * FROM "employee_ticket_messages" WHERE ticket_id = $1 ORDER BY created_at ASC`,
+      [ticketId]
+    );
+
+    return {
+      ...tRes.rows[0],
+      messages: mRes.rows,
+    };
+  }
+
+  public async createEmployeeTicket(params: {
+    staffId: string;
+    category: string;
+    subject: string;
+    description: string;
+    priority?: string;
+    attachmentUrl?: string;
+  }) {
+    const id = `tkt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const ticketNumber = `TKT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const res = await this.pool.query(
+      `INSERT INTO "employee_tickets" (
+        id, ticket_number, staff_id, category, subject, description, priority, status, attachment_url, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', $8, NOW(), NOW())
+      RETURNING *`,
+      [
+        id,
+        ticketNumber,
+        params.staffId,
+        params.category,
+        params.subject,
+        params.description,
+        params.priority || 'medium',
+        params.attachmentUrl || null,
+      ]
+    );
+    return res.rows[0];
+  }
+
+  public async addTicketMessage(params: {
+    ticketId: string;
+    senderType: 'employee' | 'staff' | 'admin';
+    senderId: string;
+    senderName: string;
+    message: string;
+    attachmentUrl?: string;
+  }) {
+    const id = `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const res = await this.pool.query(
+      `INSERT INTO "employee_ticket_messages" (
+        id, ticket_id, sender_type, sender_id, sender_name, message, attachment_url, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      RETURNING *`,
+      [
+        id,
+        params.ticketId,
+        params.senderType,
+        params.senderId,
+        params.senderName,
+        params.message,
+        params.attachmentUrl || null,
+      ]
+    );
+
+    // Update ticket timestamp
+    await this.pool.query(
+      `UPDATE "employee_tickets" SET updated_at = NOW() WHERE id = $1`,
+      [params.ticketId]
+    );
+
+    return res.rows[0];
+  }
+
+  public async updateTicketStatus(params: {
+    ticketId: string;
+    status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    resolutionNotes?: string;
+    assignedTo?: string;
+  }) {
+    const res = await this.pool.query(
+      `UPDATE "employee_tickets"
+       SET status = $1,
+           resolution_notes = COALESCE($2, resolution_notes),
+           assigned_to = COALESCE($3, assigned_to),
+           resolved_at = CASE WHEN $1 IN ('resolved', 'closed') THEN NOW() ELSE resolved_at END,
+           updated_at = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [params.status, params.resolutionNotes || null, params.assignedTo || null, params.ticketId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Ticket not found');
+    }
+    return res.rows[0];
+  }
+
+  // Secure File Attachments
+  public async saveSecureAttachment(params: {
+    id: string;
+    originalFilename: string;
+    storedFilename: string;
+    mimeType: string;
+    sizeBytes: number;
+    uploadedByUserId: string;
+    uploadedByStaffId?: string;
+    category: 'receipt' | 'ticket' | 'payslip' | 'task';
+    referenceId?: string;
+  }) {
+    const res = await this.pool.query(
+      `INSERT INTO "secure_attachments" (
+        id, original_filename, stored_filename, mime_type, size_bytes,
+        uploaded_by_user_id, uploaded_by_staff_id, category, reference_id, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      RETURNING *`,
+      [
+        params.id,
+        params.originalFilename,
+        params.storedFilename,
+        params.mimeType,
+        params.sizeBytes,
+        params.uploadedByUserId,
+        params.uploadedByStaffId || null,
+        params.category,
+        params.referenceId || null,
+      ]
+    );
+    return res.rows[0];
+  }
+
+  public async getSecureAttachment(attachmentId: string) {
+    const res = await this.pool.query(
+      `SELECT * FROM "secure_attachments" WHERE id = $1 LIMIT 1`,
+      [attachmentId]
+    );
+    if (res.rows.length === 0) return null;
+    return res.rows[0];
+  }
+
+  // Inbound Emails methods
+  public async getInboundEmails(filters?: { status?: string }) {
+    let query = `SELECT * FROM "inbound_emails"`;
+    const params: unknown[] = [];
+    if (filters?.status && filters.status !== 'all') {
+      query += ` WHERE status = $1`;
+      params.push(filters.status);
+    }
+    query += ` ORDER BY received_at DESC`;
+    const res = await this.pool.query(query, params);
+    return res.rows;
+  }
+
+  public async saveInboundEmail(params: {
+    messageId: string;
+    fromAddress: string;
+    fromName?: string;
+    toAddress: string;
+    subject: string;
+    bodyText?: string;
+    bodyHtml?: string;
+    attachments?: Array<{ filename: string; contentType: string; size: number; url?: string }>;
+  }) {
+    // Idempotency: return existing if message_id exists
+    const existing = await this.pool.query(`SELECT * FROM "inbound_emails" WHERE message_id = $1`, [params.messageId]);
+    if (existing.rows.length > 0) {
+      return { email: existing.rows[0], duplicate: true };
+    }
+
+    const id = `email-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const res = await this.pool.query(
+      `INSERT INTO "inbound_emails" (
+        id, message_id, from_address, from_name, to_address, subject, body_text, body_html, attachments, status, received_at, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'unread', NOW(), NOW())
+      RETURNING *`,
+      [
+        id,
+        params.messageId,
+        params.fromAddress,
+        params.fromName || null,
+        params.toAddress,
+        params.subject,
+        params.bodyText || null,
+        params.bodyHtml || null,
+        JSON.stringify(params.attachments || []),
+      ]
+    );
+    return { email: res.rows[0], duplicate: false };
+  }
+
+  public async updateInboundEmailStatus(id: string, status: 'unread' | 'read' | 'archived') {
+    const res = await this.pool.query(
+      `UPDATE "inbound_emails" SET status = $1 WHERE id = $2 RETURNING *`,
+      [status, id]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Email not found');
+    }
+    return res.rows[0];
   }
 
   // ---------------------------------------------------------------------------
@@ -1409,7 +1970,7 @@ export class PostgresOperationsRepository {
   public async generateOperationalReport(reportType: 'financial' | 'inventory' | 'manufacturing') {
     if (reportType === 'financial') {
       const invStats = await this.pool.query(`
-        SELECT 
+        SELECT
           COUNT(*)::integer as total_invoices,
           COALESCE(SUM(total_paise), 0)::numeric as gross_billed_paise,
           COALESCE(SUM(paid_paise), 0)::numeric as total_collected_paise,
@@ -1954,8 +2515,8 @@ export class PostgresOperationsRepository {
       for (const res of expiredRes.rows) {
         // Mark reservation expired
         await client.query(
-          `UPDATE "inventory_reservations" 
-           SET status = 'expired', updated_at = NOW() 
+          `UPDATE "inventory_reservations"
+           SET status = 'expired', updated_at = NOW()
            WHERE id = $1`,
           [res.id]
         );
@@ -2014,9 +2575,9 @@ export class PostgresOperationsRepository {
 
       // Lock reservations for this order
       const resRows = await client.query(
-        `SELECT id, product_id, sku, quantity, status, expires_at 
-         FROM "inventory_reservations" 
-         WHERE order_id = $1 
+        `SELECT id, product_id, sku, quantity, status, expires_at
+         FROM "inventory_reservations"
+         WHERE order_id = $1
          FOR UPDATE`,
         [params.orderId]
       );
@@ -2064,8 +2625,8 @@ export class PostgresOperationsRepository {
               r.sku,
               r.quantity,
               String(params.orderId),
-              params.isCodApproval 
-                ? `Stock deducted on COD Approval for Order #${params.orderId}` 
+              params.isCodApproval
+                ? `Stock deducted on COD Approval for Order #${params.orderId}`
                 : `Stock deducted on Payment Confirmation for Order #${params.orderId}`,
               params.performedBy || 'system_fulfillment',
             ]
@@ -2087,6 +2648,175 @@ export class PostgresOperationsRepository {
     } catch (err) {
       await client.query('ROLLBACK;');
       throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. USER MANAGEMENT & RBAC ADMINISTRATION
+  // ---------------------------------------------------------------------------
+
+  public async getUsersList(filters?: {
+    search?: string;
+    role?: string;
+    linkedStatus?: 'linked' | 'unlinked' | 'all';
+    limit?: number;
+    offset?: number;
+  }) {
+    let query = `
+      SELECT
+        u.id,
+        u.email,
+        u.name,
+        u.role,
+        u.phone,
+        u.company,
+        u.created_at,
+        u.updated_at,
+        s.id as staff_id,
+        s.employee_id,
+        s.full_name as staff_name,
+        s.department as staff_department,
+        s.job_title as staff_job_title,
+        s.status as staff_status
+      FROM "users" u
+      LEFT JOIN "staff_profiles" s ON u.id = s.user_id
+    `;
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters?.role && filters.role !== 'all') {
+      params.push(filters.role);
+      conditions.push(`u.role = $${params.length}`);
+    }
+
+    if (filters?.search && filters.search.trim()) {
+      params.push(`%${filters.search.trim().toLowerCase()}%`);
+      const pIdx = params.length;
+      conditions.push(`(LOWER(u.name) LIKE $${pIdx} OR LOWER(u.email) LIKE $${pIdx} OR LOWER(COALESCE(u.company, '')) LIKE $${pIdx} OR LOWER(COALESCE(s.employee_id, '')) LIKE $${pIdx})`);
+    }
+
+    if (filters?.linkedStatus === 'linked') {
+      conditions.push(`s.id IS NOT NULL`);
+    } else if (filters?.linkedStatus === 'unlinked') {
+      conditions.push(`s.id IS NULL`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    query += ` ORDER BY u.created_at DESC`;
+
+    const limit = filters?.limit || 100;
+    const offset = filters?.offset || 0;
+    params.push(limit);
+    query += ` LIMIT $${params.length}`;
+    params.push(offset);
+    query += ` OFFSET $${params.length}`;
+
+    const res = await this.pool.query(query, params);
+
+    // Get metrics
+    const statsRes = await this.pool.query(`
+      SELECT
+        COUNT(*)::int as total,
+        COUNT(CASE WHEN role = 'admin' THEN 1 END)::int as admins,
+        COUNT(CASE WHEN role = 'operations' THEN 1 END)::int as operations,
+        COUNT(CASE WHEN role = 'hr' THEN 1 END)::int as hr,
+        COUNT(CASE WHEN role = 'finance' THEN 1 END)::int as finance,
+        COUNT(CASE WHEN role = 'employee' THEN 1 END)::int as employees,
+        COUNT(CASE WHEN role = 'customer' THEN 1 END)::int as customers
+      FROM "users"
+    `);
+
+    const linkedCountRes = await this.pool.query(`
+      SELECT COUNT(DISTINCT user_id)::int as linked
+      FROM "staff_profiles"
+      WHERE user_id IS NOT NULL
+    `);
+
+    return {
+      users: res.rows,
+      stats: {
+        ...statsRes.rows[0],
+        linkedProfiles: linkedCountRes.rows[0]?.linked || 0,
+      },
+    };
+  }
+
+  public async updateUserRoleAndLink(params: {
+    userId: number;
+    role?: string;
+    name?: string;
+    phone?: string;
+    company?: string;
+    staffProfileId?: string | null;
+  }) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN;');
+
+      // 1. Update user fields
+      const updates: string[] = [];
+      const values: unknown[] = [];
+
+      if (params.name !== undefined) {
+        values.push(params.name);
+        updates.push(`name = $${values.length}`);
+      }
+      if (params.role !== undefined) {
+        values.push(params.role);
+        updates.push(`role = $${values.length}`);
+      }
+      if (params.phone !== undefined) {
+        values.push(params.phone);
+        updates.push(`phone = $${values.length}`);
+      }
+      if (params.company !== undefined) {
+        values.push(params.company);
+        updates.push(`company = $${values.length}`);
+      }
+
+      if (updates.length > 0) {
+        updates.push(`updated_at = NOW()`);
+        values.push(params.userId);
+        await client.query(
+          `UPDATE "users" SET ${updates.join(', ')} WHERE id = $${values.length}`,
+          values
+        );
+      }
+
+      // 2. Handle staff profile linking if requested
+      if (params.staffProfileId !== undefined) {
+        // Unlink any existing staff profile for this user
+        await client.query(`UPDATE "staff_profiles" SET user_id = NULL WHERE user_id = $1`, [params.userId]);
+
+        if (params.staffProfileId) {
+          // Check if target staff profile is already linked to another user
+          const existing = await client.query(`SELECT id, user_id FROM "staff_profiles" WHERE id = $1`, [params.staffProfileId]);
+          if (existing.rows.length === 0) {
+            throw new Error('Staff profile not found');
+          }
+          await client.query(`UPDATE "staff_profiles" SET user_id = $1 WHERE id = $2`, [params.userId, params.staffProfileId]);
+        }
+      }
+
+      await client.query('COMMIT;');
+
+      const updated = await this.pool.query(
+        `SELECT u.id, u.email, u.name, u.role, u.phone, u.company, u.created_at, u.updated_at,
+                s.id as staff_id, s.employee_id, s.full_name as staff_name, s.department as staff_department
+         FROM "users" u
+         LEFT JOIN "staff_profiles" s ON u.id = s.user_id
+         WHERE u.id = $1`,
+        [params.userId]
+      );
+      return updated.rows[0];
+    } catch (e) {
+      await client.query('ROLLBACK;');
+      throw e;
     } finally {
       client.release();
     }

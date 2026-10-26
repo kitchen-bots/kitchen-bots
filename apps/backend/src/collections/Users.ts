@@ -43,7 +43,10 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Operations', value: 'operations' },
+        { label: 'HR', value: 'hr' },
+        { label: 'Finance', value: 'finance' },
         { label: 'Editor', value: 'editor' },
+        { label: 'Employee', value: 'employee' },
         { label: 'Customer', value: 'customer' },
       ],
       access: {
