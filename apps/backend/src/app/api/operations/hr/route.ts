@@ -7,8 +7,11 @@ const repo = new PostgresOperationsRepository();
 // GET /api/operations/hr?tab=staff|attendance|leaves|allocations|work_logs|summary&date=...&status=...&staffId=...
 export async function GET(req: NextRequest) {
   const user = await authenticateRequest(req);
-  if (!authorizeRole(user, ['admin', 'operations', 'editor'])) {
-    return NextResponse.json({ error: 'Unauthorized: Operational role required' }, { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
+  }
+  if (!authorizeRole(user, ['admin', 'operations', 'hr', 'finance', 'editor'])) {
+    return NextResponse.json({ error: 'Forbidden: Operational role required' }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -18,6 +21,14 @@ export async function GET(req: NextRequest) {
   const staffId = searchParams.get('staffId') || undefined;
 
   try {
+    if (tab === 'staff_detail') {
+      if (!staffId) return NextResponse.json({ error: 'staffId required' }, { status: 400 });
+      const revealBank = searchParams.get('reveal_bank') === 'true' && authorizeRole(user, ['admin']);
+      const detail = await repo.getStaffDetail(staffId, revealBank);
+      if (!detail) return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+      return NextResponse.json({ staff: detail });
+    }
+
     if (tab === 'attendance') {
       const records = await repo.getAttendanceRecords(date);
       return NextResponse.json({ records });
@@ -30,17 +41,48 @@ export async function GET(req: NextRequest) {
 
     if (tab === 'work_logs') {
       const logs = await repo.getDailyWorkLogs({ staffId, date, status });
-      return NextResponse.json({ logs });
+      return NextResponse.json({ logs, workLogs: logs });
     }
 
     if (tab === 'leaves') {
-      const leaves = await repo.getLeaveRequests(status);
+      const leaves = await repo.getLeaveRequests(status, staffId);
       return NextResponse.json({ leaves });
+    }
+
+    if (tab === 'expenses') {
+      const category = searchParams.get('category') || undefined;
+      const startDate = searchParams.get('startDate') || undefined;
+      const endDate = searchParams.get('endDate') || undefined;
+      const expenses = await repo.getExpenses({ category, staffId, status, startDate, endDate });
+      return NextResponse.json({ expenses });
     }
 
     if (tab === 'allocations') {
       const allocations = await repo.getProductionAllocations();
       return NextResponse.json({ allocations });
+    }
+
+    if (tab === 'tickets') {
+      const tickets = await repo.getEmployeeTickets({ status });
+      return NextResponse.json({ tickets });
+    }
+
+    if (tab === 'ticket_details') {
+      const ticketId = searchParams.get('ticketId');
+      if (!ticketId) {
+        return NextResponse.json({ error: 'ticketId required' }, { status: 400 });
+      }
+      const ticket = await repo.getTicketWithMessages(ticketId);
+      return NextResponse.json({ ticket });
+    }
+
+    if (tab === 'payslips') {
+      const targetStaffId = searchParams.get('staffId');
+      if (!targetStaffId) {
+        return NextResponse.json({ error: 'staffId required for payslips' }, { status: 400 });
+      }
+      const payslips = await repo.getEmployeePayslips(targetStaffId);
+      return NextResponse.json({ payslips });
     }
 
     // Default: staff directory
@@ -56,7 +98,10 @@ export async function GET(req: NextRequest) {
 // Action: 'register_staff' | 'check_in' | 'check_out' | 'record_break' | 'correct_attendance' | 'submit_work_log' | 'review_work_log' | 'request_leave' | 'process_leave' | 'allocate_task'
 export async function POST(req: NextRequest) {
   const user = await authenticateRequest(req);
-  if (!authorizeRole(user, ['admin', 'operations'])) {
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
+  }
+  if (!authorizeRole(user, ['admin', 'operations', 'hr', 'finance'])) {
     return NextResponse.json({ error: 'Forbidden: Insufficient privileges for HR operations' }, { status: 403 });
   }
 
@@ -65,7 +110,22 @@ export async function POST(req: NextRequest) {
     const { action } = body;
 
     if (action === 'register_staff') {
-      const { employeeId, fullName, email, phone, department, jobTitle, dateOfJoining } = body;
+      const {
+        employeeId,
+        fullName,
+        email,
+        phone,
+        department,
+        jobTitle,
+        employeeType,
+        employmentStatus,
+        tags,
+        dateOfJoining,
+        address,
+        salaryDetails,
+        bankDetails,
+        avatarUrl,
+      } = body;
       if (!employeeId || !fullName || !email || !department || !jobTitle || !dateOfJoining) {
         return NextResponse.json({ error: 'Missing required staff fields' }, { status: 400 });
       }
@@ -76,9 +136,125 @@ export async function POST(req: NextRequest) {
         phone,
         department,
         jobTitle,
+        employeeType,
+        employmentStatus,
+        tags,
         dateOfJoining,
+        address,
+        salaryDetails,
+        bankDetails,
+        avatarUrl,
       });
       return NextResponse.json({ success: true, staff }, { status: 201 });
+    }
+
+    if (action === 'update_staff') {
+      const { staffId, ...updateFields } = body;
+      if (!staffId) {
+        return NextResponse.json({ error: 'staffId required' }, { status: 400 });
+      }
+      const staff = await repo.updateStaffProfile(staffId, updateFields);
+      return NextResponse.json({ success: true, staff });
+    }
+
+    if (action === 'create_expense') {
+      const { staffId, claimantName, category, amountPaise, currency, expenseDate, description, receiptUrl } = body;
+      if (!claimantName || !category || !amountPaise || !expenseDate || !description) {
+        return NextResponse.json({ error: 'Missing required expense fields' }, { status: 400 });
+      }
+      const expense = await repo.createExpense({
+        staffId,
+        claimantName,
+        category,
+        amountPaise: Number(amountPaise),
+        currency,
+        expenseDate,
+        description,
+        receiptUrl,
+      });
+      return NextResponse.json({ success: true, expense }, { status: 201 });
+    }
+
+    if (action === 'review_expense') {
+      const { expenseId, decision, reviewNotes } = body;
+      if (!expenseId || !decision) {
+        return NextResponse.json({ error: 'expenseId and decision (approved/rejected) required' }, { status: 400 });
+      }
+      // Security: Prevent self-approval of expense claims
+      const staffCaller = await repo.getStaffProfileByAuth(user.id, user.email);
+      const existingExpenses = await repo.getExpenses({ id: expenseId });
+      const targetExpense = existingExpenses.find((e: any) => e.id === expenseId);
+      if (targetExpense && staffCaller && targetExpense.staff_id === staffCaller.id) {
+        return NextResponse.json({ error: 'Forbidden: Self-approval of expense claims is not permitted' }, { status: 403 });
+      }
+      const expense = await repo.reviewExpense(expenseId, decision, user?.email || 'Operations Manager', reviewNotes);
+      return NextResponse.json({ success: true, expense });
+    }
+
+    if (action === 'reimburse_expense') {
+      // Security: Only finance and admin roles can mark expenses as reimbursed
+      if (!authorizeRole(user, ['admin', 'finance'])) {
+        return NextResponse.json({ error: 'Forbidden: Only Finance or Admin can reimburse expenses' }, { status: 403 });
+      }
+      const { expenseId, reimbursementRef } = body;
+      if (!expenseId || !reimbursementRef) {
+        return NextResponse.json({ error: 'expenseId and reimbursementRef are required' }, { status: 400 });
+      }
+      const expense = await repo.reimburseExpense({
+        expenseId,
+        reimbursementRef,
+        reviewer: user?.email || 'Finance Officer',
+      });
+      return NextResponse.json({ success: true, expense });
+    }
+
+    if (action === 'upload_payslip') {
+      // Security: Only finance, hr, or admin roles can upload payslips
+      if (!authorizeRole(user, ['admin', 'hr', 'finance'])) {
+        return NextResponse.json({ error: 'Forbidden: Only HR, Finance, or Admin can upload payslips' }, { status: 403 });
+      }
+      const { staffId, monthYear, grossPaise, netPaise, documentUrl } = body;
+      if (!staffId || !monthYear || !grossPaise || !netPaise || !documentUrl) {
+        return NextResponse.json({ error: 'Missing required payslip fields' }, { status: 400 });
+      }
+      const payslip = await repo.createOrUpdatePayslip({
+        staffId,
+        monthYear,
+        grossPaise: Number(grossPaise),
+        netPaise: Number(netPaise),
+        documentUrl,
+      });
+      return NextResponse.json({ success: true, payslip }, { status: 201 });
+    }
+
+    if (action === 'update_ticket_status') {
+      const { ticketId, status, resolutionNotes, assignedTo } = body;
+      if (!ticketId || !status) {
+        return NextResponse.json({ error: 'ticketId and status required' }, { status: 400 });
+      }
+      const ticket = await repo.updateTicketStatus({
+        ticketId,
+        status,
+        resolutionNotes,
+        assignedTo,
+      });
+      return NextResponse.json({ success: true, ticket });
+    }
+
+    if (action === 'reply_ticket_admin') {
+      const { ticketId, message, attachmentUrl } = body;
+      if (!ticketId || !message?.trim()) {
+        return NextResponse.json({ error: 'ticketId and message required' }, { status: 400 });
+      }
+      const msg = await repo.addTicketMessage({
+        ticketId,
+        senderType: 'admin',
+        senderId: String(user.id),
+        senderName: user.name || user.email || 'Support Admin',
+        message: message.trim(),
+        attachmentUrl,
+      });
+      return NextResponse.json({ success: true, message: msg }, { status: 201 });
     }
 
     if (action === 'check_in') {

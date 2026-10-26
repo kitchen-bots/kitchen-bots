@@ -76,7 +76,50 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'People',
     items: [
       { id: 'hr', label: 'HR & Attendance', href: '/admin?tab=hr', tab: 'hr', icon: UserCheck },
-      { id: 'users', label: 'User Management & Permissions', href: '/admin/collections/users', icon: ShieldCheck },
+      { id: 'employee', label: 'Employee Self-Service', href: '/admin?tab=employee', tab: 'employee', icon: Users },
+      { id: 'users', label: 'User Management & Permissions', href: '/admin?tab=users', tab: 'users', icon: ShieldCheck },
+    ],
+  },
+];
+
+const HR_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'People & Attendance',
+    items: [
+      { id: 'hr', label: 'HR Workspace & Staff', href: '/admin?tab=hr', tab: 'hr', icon: UserCheck },
+      { id: 'employee', label: 'My Self-Service', href: '/admin?tab=employee', tab: 'employee', icon: Users },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { id: 'documents', label: 'Documents & Reports', href: '/admin?tab=documents', tab: 'documents', icon: FileText },
+    ],
+  },
+];
+
+const FINANCE_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Finance & Invoicing',
+    items: [
+      { id: 'invoices', label: 'Invoices', href: '/admin?tab=invoicing', tab: 'invoicing', icon: Receipt },
+      { id: 'payments', label: 'Payment Records', href: '/admin?tab=payments', tab: 'payments', icon: CreditCard },
+      { id: 'hr', label: 'Payroll & Expenses', href: '/admin?tab=hr', tab: 'hr', icon: UserCheck },
+    ],
+  },
+  {
+    label: 'Self-Service',
+    items: [
+      { id: 'employee', label: 'My Workspace', href: '/admin?tab=employee', tab: 'employee', icon: Users },
+    ],
+  },
+];
+
+const EMPLOYEE_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Self-Service Portal',
+    items: [
+      { id: 'employee', label: 'My Workspace', href: '/admin?tab=employee', tab: 'employee', icon: UserCheck },
     ],
   },
 ];
@@ -317,7 +360,14 @@ export const CustomNav: React.FC = () => {
           gap: '14px',
         }}
       >
-        {NAV_GROUPS.map((group) => (
+        {(() => {
+          const role = userProfile?.role;
+          let groups = NAV_GROUPS;
+          if (role === 'employee') groups = EMPLOYEE_NAV_GROUPS;
+          else if (role === 'hr') groups = HR_NAV_GROUPS;
+          else if (role === 'finance') groups = FINANCE_NAV_GROUPS;
+          return groups;
+        })().map((group) => (
           <div key={group.label} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {!collapsed && (
               <div

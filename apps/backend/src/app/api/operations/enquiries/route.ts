@@ -58,8 +58,11 @@ function normalizeEnquiry(row: any, followups: any[] = []): EnquiryRecord {
 // GET /api/operations/enquiries?id=...&source=direct|website|all&status=...&search=...
 export async function GET(req: NextRequest) {
   const user = await authenticateRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
+  }
   if (!authorizeRole(user, ['admin', 'operations', 'editor'])) {
-    return NextResponse.json({ error: 'Unauthorized: Operational credentials required' }, { status: 401 });
+    return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);

@@ -7,8 +7,11 @@ const repo = new PostgresOperationsRepository();
 // GET /api/operations/reports?type=financial|inventory|manufacturing&format=json|csv
 export async function GET(req: NextRequest) {
   const user = await authenticateRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
+  }
   if (!authorizeRole(user, ['admin', 'operations', 'editor'])) {
-    return NextResponse.json({ error: 'Unauthorized: Operational role required' }, { status: 401 });
+    return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);

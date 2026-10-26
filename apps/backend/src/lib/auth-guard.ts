@@ -4,7 +4,8 @@ import crypto from 'crypto';
 export interface AuthenticatedUser {
   id: number | string;
   email: string;
-  role: 'admin' | 'operations' | 'editor' | 'customer';
+  name?: string;
+  role: 'admin' | 'operations' | 'hr' | 'finance' | 'editor' | 'employee' | 'customer';
 }
 
 /**
@@ -50,9 +51,21 @@ function verifyJwtToken(token: string, secret: string): { id: number | string; e
  * 3. Cookie: payload-token=<token>
  */
 export async function authenticateRequest(req: NextRequest): Promise<AuthenticatedUser | null> {
-  const rawSecret = process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026';
+  const rawSecret = process.env.PAYLOAD_SECRET;
+  if (!rawSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      // In production, never fallback to a predictable default secret
+      return null;
+    }
+  }
+
+  const effectiveSecret = rawSecret || (process.env.NODE_ENV !== 'production' ? 'dev-local-only-payload-secret-key-32ch' : '');
+  if (!effectiveSecret) {
+    return null;
+  }
+
   // Canonical Payload CMS secret key: SHA-256 of raw secret sliced to 32 hex chars
-  const canonicalSecret = crypto.createHash('sha256').update(rawSecret).digest('hex').slice(0, 32);
+  const canonicalSecret = crypto.createHash('sha256').update(effectiveSecret).digest('hex').slice(0, 32);
 
   let token: string | null = null;
 
@@ -120,8 +133,8 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
  */
 export function authorizeRole(
   user: AuthenticatedUser | null,
-  allowedRoles: Array<'admin' | 'operations' | 'editor'> = ['admin', 'operations']
+  allowedRoles: Array<AuthenticatedUser['role']> = ['admin', 'operations']
 ): boolean {
   if (!user) return false;
-  return allowedRoles.includes(user.role as 'admin' | 'operations' | 'editor');
+  return allowedRoles.includes(user.role);
 }

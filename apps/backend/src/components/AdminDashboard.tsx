@@ -55,6 +55,9 @@ import { ServicesWorkspace } from './ServicesWorkspace';
 import { DocumentsWorkspace } from './DocumentsWorkspace';
 import { InvoicesWorkspace } from './InvoicesWorkspace';
 import { PaymentsWorkspace, BillingPaymentRecord } from './PaymentsWorkspace';
+import { HrWorkspace } from './HrWorkspace';
+import { EmployeePortal } from './EmployeePortal';
+import { UserManagementWorkspace } from './UserManagementWorkspace';
 
 interface OrderRecord {
   id: string;
@@ -230,17 +233,34 @@ export function resolveMediaUrl(rawPath?: string | null): string {
 }
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'inventory' | 'ledger' | 'manufacturing' | 'crm' | 'enquiries' | 'services' | 'documents' | 'invoicing' | 'payments' | 'hr' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'inventory' | 'ledger' | 'manufacturing' | 'crm' | 'enquiries' | 'services' | 'documents' | 'invoicing' | 'payments' | 'hr' | 'reports' | 'employee' | 'users'>('overview');
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Sync activeTab and orderStatusTab with URL search params on mount & popstate
   useEffect(() => {
+    // Identify active user role
+    fetch('/api/users/me', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user?.role) {
+          setUserRole(data.user.role);
+          // If the authenticated user is an employee and no specific tab or admin tab is requested, default to employee portal
+          const params = new URLSearchParams(window.location.search);
+          const currentUrlTab = params.get('tab');
+          if (data.user.role === 'employee' && (!currentUrlTab || currentUrlTab === 'overview' || currentUrlTab === 'hr')) {
+            setActiveTab('employee');
+          }
+        }
+      })
+      .catch(() => {});
+
     const syncTabFromUrl = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab');
-        const validTabs = ['overview', 'orders', 'products', 'inventory', 'ledger', 'manufacturing', 'crm', 'enquiries', 'services', 'documents', 'invoicing', 'payments', 'hr', 'reports'];
+        const validTabs = ['overview', 'orders', 'products', 'inventory', 'ledger', 'manufacturing', 'crm', 'enquiries', 'services', 'documents', 'invoicing', 'payments', 'hr', 'reports', 'employee', 'users'];
         if (tab && validTabs.includes(tab)) {
           setActiveTab(tab as any);
         }
@@ -252,7 +272,6 @@ export function AdminDashboard() {
         // ignore
       }
     };
-
 
     syncTabFromUrl();
     window.addEventListener('popstate', syncTabFromUrl);
@@ -1135,6 +1154,28 @@ export function AdminDashboard() {
             <span>Palette: {currentTheme.name}</span>
           </button>
 
+          {/* Employee Portal / Admin View Switcher */}
+          <button
+            onClick={() => handleTabChange(activeTab === 'employee' ? 'overview' : 'employee')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              backgroundColor: activeTab === 'employee' ? '#0f172a' : '#f1f5f9',
+              color: activeTab === 'employee' ? '#ffffff' : '#334155',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 600,
+              border: '1px solid #cbd5e1',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            }}
+          >
+            <UserCheck size={14} />
+            <span>{activeTab === 'employee' ? '← Admin HR Console' : 'Employee Self-Service'}</span>
+          </button>
+
           <a
             href="/admin/collections/orders/create"
             style={{
@@ -1354,9 +1395,64 @@ export function AdminDashboard() {
         </div>
       </div>
 
+      {/* ── Employee Access Boundary Guard ── */}
+      {userRole === 'employee' && activeTab !== 'employee' && (
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #fed7aa',
+            borderRadius: '10px',
+            padding: '40px 24px',
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            margin: '20px 0',
+          }}
+        >
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#fff7ed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              color: '#ea580c',
+            }}
+          >
+            <Shield size={24} />
+          </div>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px', color: '#0f172a' }}>
+            Administrative View Restricted
+          </h2>
+          <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '480px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+            You are signed in with an Employee account. Commercial fleet, invoices, organization-wide HR, and administrative operations are reserved for authorized operations and administrators.
+          </p>
+          <button
+            onClick={() => handleTabChange('employee')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              backgroundColor: currentTheme.primary,
+              color: '#ffffff',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <UserCheck size={16} />
+            <span>Open My Employee Self-Service Workspace</span>
+          </button>
+        </div>
+      )}
 
       {/* ── Tab: Overview ── */}
-      {activeTab === 'overview' && (
+      {userRole !== 'employee' && activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Revenue Breakdown & Operational Flow Analytics (Shadcn Pattern) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
@@ -3636,706 +3732,53 @@ export function AdminDashboard() {
         />
       )}
 
-      {/* ── Tab: HR & Staff Allocation (Module 9) ── */}
+      {/* ── Tab: HR & Staff Allocation (Module 9 Upgraded) ── */}
       {activeTab === 'hr' && (
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)' }}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
-                HR Attendance, Shift Timers & Daily Work Logs
-              </h2>
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                PostgreSQL-backed biometric check-in, break deductions, auditable corrections, and employee work logs.
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="date"
-                value={hrDateFilter}
-                onChange={async (e) => {
-                  const newDate = e.target.value;
-                  setHrDateFilter(newDate);
-                  try {
-                    const [attRes, sumRes] = await Promise.all([
-                      fetch(`/api/operations/hr?tab=attendance&date=${newDate}`, { credentials: 'include' }),
-                      fetch(`/api/operations/hr?tab=summary&date=${newDate}`, { credentials: 'include' }),
-                    ]);
-                    if (attRes.ok) {
-                      const d = await attRes.json();
-                      setAttendanceList(d.records || []);
-                    }
-                    if (sumRes.ok) {
-                      const s = await sumRes.json();
-                      setHrSummary(s.summary || null);
-                    }
-                  } catch (err) {
-                    console.error('Failed to filter attendance by date', err);
-                  }
-                }}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
-              />
-              <button
-                onClick={() => setIsSubmittingWorkLog(true)}
-                style={{
-                  padding: '8px 14px',
-                  backgroundColor: currentTheme.primary,
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Plus size={14} /> New Work Log
-              </button>
-            </div>
-          </div>
+        <HrWorkspace
+          currentTheme={currentTheme}
+          staffList={staffList}
+          attendanceList={attendanceList}
+          workLogsList={workLogsList}
+          leaveList={leaveList}
+          onRefreshData={async () => {
+            try {
+              const [hrStaffRes, hrAttRes, hrLeavesRes, hrWorkLogsRes] = await Promise.all([
+                fetch('/api/operations/hr?tab=staff', { credentials: 'include' }),
+                fetch(`/api/operations/hr?tab=attendance&date=${hrDateFilter}`, { credentials: 'include' }),
+                fetch('/api/operations/hr?tab=leaves', { credentials: 'include' }),
+                fetch('/api/operations/hr?tab=work_logs', { credentials: 'include' }),
+              ]);
+              if (hrStaffRes.ok) {
+                const d = await hrStaffRes.json();
+                setStaffList(d.staff || []);
+              }
+              if (hrAttRes.ok) {
+                const d = await hrAttRes.json();
+                setAttendanceList(d.records || []);
+              }
+              if (hrLeavesRes.ok) {
+                const d = await hrLeavesRes.json();
+                setLeaveList(d.leaves || []);
+              }
+              if (hrWorkLogsRes.ok) {
+                const d = await hrWorkLogsRes.json();
+                setWorkLogsList(d.logs || d.workLogs || []);
+              }
+            } catch (err) {
+              console.error('Failed to reload HR datasets', err);
+            }
+          }}
+        />
+      )}
 
-          {/* KPI Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Active Staff</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>{hrSummary?.totalStaff ?? staffList.length}</div>
-            </div>
-            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>Present Today</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#15803d', marginTop: '4px' }}>{hrSummary?.present ?? 0}</div>
-            </div>
-            <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#991b1b', fontWeight: 600, textTransform: 'uppercase' }}>Absent</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#b91c1c', marginTop: '4px' }}>{hrSummary?.absent ?? 0}</div>
-            </div>
-            <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600, textTransform: 'uppercase' }}>Late Arrival</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#b45309', marginTop: '4px' }}>{hrSummary?.late ?? 0}</div>
-            </div>
-            <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#5b21b6', fontWeight: 600, textTransform: 'uppercase' }}>On Approved Leave</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#6d28d9', marginTop: '4px' }}>{hrSummary?.onLeave ?? 0}</div>
-            </div>
-            <div style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '6px', padding: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#9a3412', fontWeight: 600, textTransform: 'uppercase' }}>Missing Check-Out</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#c2410c', marginTop: '4px' }}>{hrSummary?.missingCheckOut ?? 0}</div>
-            </div>
-          </div>
+      {/* ── Tab: Employee Self-Service Portal ── */}
+      {activeTab === 'employee' && (
+        <EmployeePortal currentTheme={currentTheme} />
+      )}
 
-          {/* Sub Navigation Bar */}
-          <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
-            {[
-              { id: 'attendance', label: `Daily Attendance Register (${attendanceList.length})` },
-              { id: 'work_logs', label: `Daily Work Logs (${workLogsList.length})` },
-              { id: 'staff', label: `Staff Directory (${staffList.length})` },
-              { id: 'leaves', label: `Leave Approvals (${leaveList.length})` },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setHrSubTab(tab.id as typeof hrSubTab)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: hrSubTab === tab.id ? currentTheme.lightBg : 'transparent',
-                  color: hrSubTab === tab.id ? currentTheme.primary : '#64748b',
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* 1. Sub-Tab: Attendance Register */}
-          {hrSubTab === 'attendance' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                  Register for {hrDateFilter}
-                </span>
-                {staffList.length > 0 && (
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      onClick={async () => {
-                        const staffId = prompt('Enter Employee ID or Select Staff ID:\n' + staffList.map(s => `${s.id}: ${s.full_name}`).join('\n'), staffList[0]?.id);
-                        if (!staffId) return;
-                        const res = await fetch('/api/operations/hr', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ action: 'check_in', staffId, date: hrDateFilter }),
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                          alert('Check-in recorded with server timestamp!');
-                          window.location.reload();
-                        } else {
-                          alert(`Check-in failed: ${data.error || 'Server error'}`);
-                        }
-                      }}
-                      style={{ padding: '6px 12px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      + Record Check-In
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 600 }}>
-                      <th style={{ padding: '10px 12px' }}>Employee</th>
-                      <th style={{ padding: '10px 12px' }}>Role / Dept</th>
-                      <th style={{ padding: '10px 12px' }}>Check-In</th>
-                      <th style={{ padding: '10px 12px' }}>Check-Out</th>
-                      <th style={{ padding: '10px 12px' }}>Worked Hours</th>
-                      <th style={{ padding: '10px 12px' }}>Status</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendanceList.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
-                          No attendance records found for {hrDateFilter}.
-                        </td>
-                      </tr>
-                    ) : (
-                      attendanceList.map((att) => (
-                        <tr key={att.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0f172a' }}>{att.full_name}</td>
-                          <td style={{ padding: '10px 12px', color: '#64748b' }}>
-                            {staffList.find(s => s.id === att.staff_id)?.job_title || 'Engineering Staff'}
-                          </td>
-                          <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#0f172a' }}>
-                            {att.check_in ? new Date(att.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#0f172a' }}>
-                            {att.check_out ? new Date(att.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (att.check_in ? <span style={{ color: '#d97706', fontWeight: 600 }}>Active</span> : '—')}
-                          </td>
-                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>
-                            {att.working_hours !== undefined && att.working_hours !== null ? `${att.working_hours} hrs` : '—'}
-                          </td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              backgroundColor: att.status === 'present' ? '#dcfce7' : att.status === 'on_leave' ? '#f3e8ff' : att.status === 'late' ? '#fef3c7' : '#fee2e2',
-                              color: att.status === 'present' ? '#15803d' : att.status === 'on_leave' ? '#6b21a8' : att.status === 'late' ? '#b45309' : '#b91c1c',
-                            }}>
-                              {att.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                              {att.check_in && !att.check_out && (
-                                <>
-                                  <button
-                                    onClick={async () => {
-                                      const reason = prompt('Reason for break (e.g. Lunch break):', 'Lunch break');
-                                      if (!reason) return;
-                                      const res = await fetch('/api/operations/hr', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ action: 'record_break', attendanceId: att.id, breakAction: 'start', reason }),
-                                      });
-                                      if (res.ok) alert('Break started.');
-                                      else {
-                                        const d = await res.json();
-                                        alert(d.error || 'Failed to start break');
-                                      }
-                                    }}
-                                    style={{ padding: '3px 8px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                                  >
-                                    Start Break
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      const res = await fetch('/api/operations/hr', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ action: 'record_break', attendanceId: att.id, breakAction: 'end' }),
-                                      });
-                                      if (res.ok) alert('Break ended.');
-                                      else {
-                                        const d = await res.json();
-                                        alert(d.error || 'Failed to end break');
-                                      }
-                                    }}
-                                    style={{ padding: '3px 8px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                                  >
-                                    End Break
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (!confirm(`Check out ${att.full_name}? Server timestamp will compute worked hours excluding breaks.`)) return;
-                                      const res = await fetch('/api/operations/hr', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ action: 'check_out', attendanceId: att.id }),
-                                      });
-                                      const data = await res.json();
-                                      if (res.ok) {
-                                        alert(`Check-out recorded. Worked: ${data.record.working_hours} hrs.`);
-                                        window.location.reload();
-                                      } else {
-                                        alert(`Check-out failed: ${data.error}`);
-                                      }
-                                    }}
-                                    style={{ padding: '3px 8px', backgroundColor: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                                  >
-                                    Check Out
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setCorrectionTarget(att);
-                                  setCorrectionForm({
-                                    correctedCheckIn: att.check_in ? new Date(att.check_in).toISOString().slice(11, 16) : '09:00',
-                                    correctedCheckOut: att.check_out ? new Date(att.check_out).toISOString().slice(11, 16) : '18:00',
-                                    reason: '',
-                                  });
-                                }}
-                                style={{ padding: '3px 8px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                              >
-                                Correct
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* 2. Sub-Tab: Daily Work Logs */}
-          {hrSubTab === 'work_logs' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                  Submitted Daily Work Logs ({workLogsList.length})
-                </span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>PostgreSQL-backed entries & manager review audit</span>
-              </div>
-
-              <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 600 }}>
-                      <th style={{ padding: '10px 12px' }}>Date</th>
-                      <th style={{ padding: '10px 12px' }}>Staff</th>
-                      <th style={{ padding: '10px 12px' }}>Task Description & Progress</th>
-                      <th style={{ padding: '10px 12px' }}>Linked Order</th>
-                      <th style={{ padding: '10px 12px' }}>Time Spent</th>
-                      <th style={{ padding: '10px 12px' }}>Status</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Manager Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workLogsList.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
-                          No daily work logs recorded. Click "+ New Work Log" above to submit one.
-                        </td>
-                      </tr>
-                    ) : (
-                      workLogsList.map((log) => (
-                        <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#64748b' }}>
-                            {typeof log.date === 'string' ? log.date.slice(0, 10) : new Date(log.date).toISOString().slice(0, 10)}
-                          </td>
-                          <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0f172a' }}>{log.full_name}</td>
-                          <td style={{ padding: '10px 12px', maxWidth: '320px' }}>
-                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{log.task_description}</div>
-                            {log.completed_work && <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px' }}>✓ {log.completed_work}</div>}
-                            {log.pending_work && <div style={{ fontSize: '11px', color: '#ea580c' }}>⏳ Pending: {log.pending_work}</div>}
-                            {log.blockers && <div style={{ fontSize: '11px', color: '#dc2626' }}>⚠ Blocker: {log.blockers}</div>}
-                            {log.review_notes && <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', marginTop: '2px' }}>Note: {log.review_notes}</div>}
-                          </td>
-                          <td style={{ padding: '10px 12px', color: '#64748b' }}>
-                            {log.order_id ? `Order #${log.order_id}` : 'General / Shop Floor'}
-                          </td>
-                          <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0f172a' }}>
-                            {(log.time_spent_minutes / 60).toFixed(1)} hrs ({log.time_spent_minutes}m)
-                          </td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              backgroundColor: log.status === 'approved' ? '#dcfce7' : log.status === 'submitted' ? '#e0f2fe' : log.status === 'returned' ? '#fee2e2' : '#f1f5f9',
-                              color: log.status === 'approved' ? '#15803d' : log.status === 'submitted' ? '#0369a1' : log.status === 'returned' ? '#b91c1c' : '#475569',
-                            }}>
-                              {log.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                            {log.status === 'submitted' && (
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                <button
-                                  onClick={async () => {
-                                    const notes = prompt('Approval notes (optional):', 'Verified output against technical spec');
-                                    const res = await fetch('/api/operations/hr', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ action: 'review_work_log', logId: log.id, decision: 'approved', reviewNotes: notes }),
-                                    });
-                                    if (res.ok) {
-                                      alert('Work log approved.');
-                                      window.location.reload();
-                                    } else {
-                                      alert('Failed to approve work log');
-                                    }
-                                  }}
-                                  style={{ padding: '3px 8px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const notes = prompt('Correction requirements for employee:', 'Please quantify the hours and specify order components');
-                                    if (!notes) return;
-                                    const res = await fetch('/api/operations/hr', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ action: 'review_work_log', logId: log.id, decision: 'returned', reviewNotes: notes }),
-                                    });
-                                    if (res.ok) {
-                                      alert('Work log returned for correction.');
-                                      window.location.reload();
-                                    } else {
-                                      alert('Failed to return work log');
-                                    }
-                                  }}
-                                  style={{ padding: '3px 8px', backgroundColor: '#e11d48', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                                >
-                                  Return
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* 3. Sub-Tab: Staff Directory */}
-          {hrSubTab === 'staff' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-              {staffList.length === 0 ? (
-                <div style={{ color: '#64748b', padding: '16px' }}>No staff registered.</div>
-              ) : (
-                staffList.map((st) => (
-                  <div key={st.id} style={{ padding: '14px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f172a' }}>
-                      <span>{st.full_name}</span>
-                      <span style={{ color: currentTheme.primary, fontFamily: 'monospace', fontSize: '11px' }}>{st.employee_id}</span>
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '12px', marginTop: '4px' }}>{st.job_title} · {st.department}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '11px' }}>
-                      <span style={{ color: st.status === 'active' ? '#15803d' : '#94a3b8', fontWeight: 600 }}>Status: {st.status.toUpperCase()}</span>
-                      <button
-                        onClick={() => {
-                          setNewWorkLogForm(prev => ({ ...prev, staffId: st.id }));
-                          setIsSubmittingWorkLog(true);
-                        }}
-                        style={{ padding: '3px 8px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
-                      >
-                        + Work Log
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* 4. Sub-Tab: Leave Requests */}
-          {hrSubTab === 'leaves' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {leaveList.length === 0 ? (
-                <div style={{ color: '#64748b', padding: '16px' }}>0 leave requests recorded.</div>
-              ) : (
-                leaveList.map((l) => (
-                  <div key={l.id} style={{ padding: '12px 14px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>
-                        {l.full_name} · <span style={{ color: currentTheme.primary, textTransform: 'uppercase', fontSize: '11px' }}>{l.leave_type}</span>
-                      </div>
-                      <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>
-                        Duration: {typeof l.start_date === 'string' ? l.start_date.slice(0, 10) : new Date(l.start_date).toISOString().slice(0, 10)} to {typeof l.end_date === 'string' ? l.end_date.slice(0, 10) : new Date(l.end_date).toISOString().slice(0, 10)}
-                      </div>
-                      <div style={{ color: '#475569', fontSize: '11px', marginTop: '2px' }}>Reason: {l.reason}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        backgroundColor: l.status === 'approved' ? '#dcfce7' : l.status === 'pending' ? '#fef3c7' : '#fee2e2',
-                        color: l.status === 'approved' ? '#15803d' : l.status === 'pending' ? '#b45309' : '#b91c1c',
-                      }}>
-                        {l.status}
-                      </span>
-                      {l.status === 'pending' && (
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={async () => {
-                              const res = await fetch('/api/operations/hr', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action: 'process_leave', leaveId: l.id, decision: 'approved' }),
-                              });
-                              if (res.ok) {
-                                alert('Leave approved & synced with attendance!');
-                                window.location.reload();
-                              }
-                            }}
-                            style={{ padding: '4px 10px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={async () => {
-                              const res = await fetch('/api/operations/hr', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action: 'process_leave', leaveId: l.id, decision: 'rejected' }),
-                              });
-                              if (res.ok) {
-                                alert('Leave rejected');
-                                window.location.reload();
-                              }
-                            }}
-                            style={{ padding: '4px 10px', backgroundColor: '#e11d48', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Modal: Submit Daily Work Log */}
-          {isSubmittingWorkLog && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px', color: '#0f172a' }}>Submit Daily Work Log</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Employee</label>
-                    <select
-                      value={newWorkLogForm.staffId}
-                      onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, staffId: e.target.value }))}
-                      style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    >
-                      <option value="">Select Employee...</option>
-                      {staffList.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.job_title})</option>)}
-                    </select>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Date</label>
-                      <input
-                        type="date"
-                        value={newWorkLogForm.date}
-                        onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, date: e.target.value }))}
-                        style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Minutes Spent</label>
-                      <input
-                        type="number"
-                        value={newWorkLogForm.timeSpentMinutes}
-                        onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, timeSpentMinutes: Number(e.target.value) }))}
-                        style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Task Description *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Assembling CNC chassis and calibration"
-                      value={newWorkLogForm.taskDescription}
-                      onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, taskDescription: e.target.value }))}
-                      style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Completed Work</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Assembled 4 units, passed torque tests"
-                      value={newWorkLogForm.completedWork}
-                      onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, completedWork: e.target.value }))}
-                      style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Pending Work & Blockers</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Awaiting wiring harness from supplier"
-                      value={newWorkLogForm.pendingWork}
-                      onChange={(e) => setNewWorkLogForm(prev => ({ ...prev, pendingWork: e.target.value }))}
-                      style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-                    <button
-                      onClick={() => setIsSubmittingWorkLog(false)}
-                      style={{ padding: '8px 14px', border: '1px solid #cbd5e1', backgroundColor: '#fff', borderRadius: '6px', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!newWorkLogForm.staffId || !newWorkLogForm.taskDescription) {
-                          alert('Employee and task description are required');
-                          return;
-                        }
-                        const res = await fetch('/api/operations/hr', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            action: 'submit_work_log',
-                            staffId: newWorkLogForm.staffId,
-                            date: newWorkLogForm.date,
-                            taskDescription: newWorkLogForm.taskDescription,
-                            timeSpentMinutes: newWorkLogForm.timeSpentMinutes,
-                            completedWork: newWorkLogForm.completedWork,
-                            pendingWork: newWorkLogForm.pendingWork,
-                          }),
-                        });
-                        if (res.ok) {
-                          alert('Work log submitted for manager review!');
-                          setIsSubmittingWorkLog(false);
-                          window.location.reload();
-                        } else {
-                          const d = await res.json();
-                          alert(`Submission failed: ${d.error || 'Server error'}`);
-                        }
-                      }}
-                      style={{ padding: '8px 14px', backgroundColor: currentTheme.primary, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Submit Work Log
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal: Correct Attendance */}
-          {correctionTarget && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 12px', color: '#0f172a' }}>
-                  Attendance Correction: {correctionTarget.full_name}
-                </h3>
-                <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px' }}>
-                  Audited correction logged to PostgreSQL database with reason and manager stamp.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Corrected Check-In</label>
-                      <input
-                        type="time"
-                        value={correctionForm.correctedCheckIn}
-                        onChange={(e) => setCorrectionForm(prev => ({ ...prev, correctedCheckIn: e.target.value }))}
-                        style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Corrected Check-Out</label>
-                      <input
-                        type="time"
-                        value={correctionForm.correctedCheckOut}
-                        onChange={(e) => setCorrectionForm(prev => ({ ...prev, correctedCheckOut: e.target.value }))}
-                        style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Correction Reason *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Biometric gate malfunction, verified on CCTV"
-                      value={correctionForm.reason}
-                      onChange={(e) => setCorrectionForm(prev => ({ ...prev, reason: e.target.value }))}
-                      style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-                    <button
-                      onClick={() => setCorrectionTarget(null)}
-                      style={{ padding: '8px 14px', border: '1px solid #cbd5e1', backgroundColor: '#fff', borderRadius: '6px', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!correctionForm.reason) {
-                          alert('Correction reason is mandatory for the audit log');
-                          return;
-                        }
-                        const res = await fetch('/api/operations/hr', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            action: 'correct_attendance',
-                            attendanceId: correctionTarget.id,
-                            correctedCheckIn: `${hrDateFilter}T${correctionForm.correctedCheckIn}:00Z`,
-                            correctedCheckOut: `${hrDateFilter}T${correctionForm.correctedCheckOut}:00Z`,
-                            reason: correctionForm.reason,
-                          }),
-                        });
-                        if (res.ok) {
-                          alert('Attendance corrected with auditable log record!');
-                          setCorrectionTarget(null);
-                          window.location.reload();
-                        } else {
-                          const d = await res.json();
-                          alert(`Correction failed: ${d.error || 'Server error'}`);
-                        }
-                      }}
-                      style={{ padding: '8px 14px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Apply Correction
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* ── Tab: User Management & RBAC Workspace (Non-Table Card Interface) ── */}
+      {activeTab === 'users' && (
+        <UserManagementWorkspace />
       )}
 
       {/* ── Tab: Documents & Operational Reports (Module 4 & 10) ── */}

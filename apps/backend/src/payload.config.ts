@@ -20,11 +20,10 @@ const dirname = path.dirname(filename);
 
 const DEFAULT_REMOTE_DB = 'postgresql://postgres.thavrhaxomanrpsmfklx:kitchen-bots-password@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
 const rawDbUri =
-  process.env.DATABASE_URI && !process.env.DATABASE_URI.includes('127.0.0.1') && !process.env.DATABASE_URI.includes('localhost')
-    ? process.env.DATABASE_URI
-    : (process.env.VERCEL || process.env.NODE_ENV === 'production'
-      ? DEFAULT_REMOTE_DB
-      : (process.env.DATABASE_URI || DEFAULT_REMOTE_DB));
+  process.env.DATABASE_URI ||
+  (process.env.VERCEL || process.env.NODE_ENV === 'production'
+    ? DEFAULT_REMOTE_DB
+    : 'postgresql://localhost:5432/kitchen_bots_test');
 
 const isRemoteDb = rawDbUri.includes('supabase.com') || rawDbUri.includes('pooler') || rawDbUri.includes('sslmode=');
 // Strip sslmode from URI string so pg doesn't conflict with our ssl config object
@@ -62,7 +61,7 @@ export default buildConfig({
   ].map((collection) => ({ ...collection, lockDocuments: false })),
   editor: lexicalEditor(),
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://kitchen-bots.vercel.app'),
-  secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',
+  secret: process.env.PAYLOAD_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-local-only-payload-secret-key-32ch' : ''),
   cors: [
     'https://kitchenbots.in',
     'https://kitchen-bots.vercel.app',
