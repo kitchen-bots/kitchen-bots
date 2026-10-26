@@ -112,9 +112,19 @@ export const EmployeePortal: React.FC<EmployeePortalProps> = ({
       setIsLoading(true);
       setErrorMsg(null);
       const res = await fetch('/api/operations/employee', { credentials: 'include' });
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: any = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { message: rawText || 'Invalid response from server' };
+      }
+
       if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to load employee profile');
+        if (res.status === 401) {
+          throw new Error('Authentication required. Please sign in to view your employee portal.');
+        }
+        throw new Error(data.message || data.error || `Server error (${res.status})`);
       }
       setProfile(data.profile);
       setTodayAttendance(data.todayAttendance);
