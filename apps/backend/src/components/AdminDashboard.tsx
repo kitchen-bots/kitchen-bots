@@ -233,7 +233,16 @@ export function resolveMediaUrl(rawPath?: string | null): string {
 }
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'inventory' | 'ledger' | 'manufacturing' | 'crm' | 'enquiries' | 'services' | 'documents' | 'invoicing' | 'payments' | 'hr' | 'reports' | 'employee' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'inventory' | 'ledger' | 'manufacturing' | 'crm' | 'enquiries' | 'services' | 'documents' | 'invoicing' | 'payments' | 'hr' | 'reports' | 'employee' | 'users'>(() => {
+    if (typeof window !== 'undefined') {
+      const initialTab = new URLSearchParams(window.location.search).get('tab');
+      const validTabs = ['overview', 'orders', 'products', 'inventory', 'ledger', 'manufacturing', 'crm', 'enquiries', 'services', 'documents', 'invoicing', 'payments', 'hr', 'reports', 'employee', 'users'];
+      if (initialTab && validTabs.includes(initialTab)) {
+        return initialTab as any;
+      }
+    }
+    return 'overview';
+  });
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -246,11 +255,19 @@ export function AdminDashboard() {
       .then((data) => {
         if (data?.user?.role) {
           setUserRole(data.user.role);
-          // If the authenticated user is an employee and no specific tab or admin tab is requested, default to employee portal
+          // If the authenticated user is an employee, enforce employee portal
           const params = new URLSearchParams(window.location.search);
           const currentUrlTab = params.get('tab');
-          if (data.user.role === 'employee' && (!currentUrlTab || currentUrlTab === 'overview' || currentUrlTab === 'hr')) {
+          if (data.user.role === 'employee' && (!currentUrlTab || currentUrlTab !== 'employee')) {
             setActiveTab('employee');
+            try {
+              const url = new URL(window.location.href);
+              url.searchParams.set('tab', 'employee');
+              window.history.replaceState({}, '', url.toString());
+              window.dispatchEvent(new Event('kb-tab-change'));
+            } catch {
+              // ignore
+            }
           }
         }
       })
@@ -1090,150 +1107,152 @@ export function AdminDashboard() {
 
   return (
     <div className="admin-dashboard-root" style={{ paddingBottom: '48px', color: '#0f172a' }}>
-      {/* ── Breadcrumb & Command Header ── */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          padding: '20px 24px',
-          backgroundColor: '#ffffff',
-          borderRadius: '10px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-          marginBottom: '24px',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
-            <span>Operations Console</span>
-            <span>/</span>
-            <span style={{ color: currentTheme.primary, fontWeight: 600 }}>Commercial Machinery Fleet</span>
+      {/* ── Breadcrumb & Command Header (Administrative tabs only) ── */}
+      {activeTab !== 'employee' && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            padding: '20px 24px',
+            backgroundColor: '#ffffff',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            marginBottom: '24px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
+              <span>Operations Console</span>
+              <span>/</span>
+              <span style={{ color: currentTheme.primary, fontWeight: 600 }}>Commercial Machinery Fleet</span>
+            </div>
+            <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              Command Desk & Workflow Control
+            </h1>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+              Live status of customer fabrication, dispatch logistics, B2B quotes, and service tickets.
+            </p>
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>
-            Command Desk & Workflow Control
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Live status of customer fabrication, dispatch logistics, B2B quotes, and service tickets.
-          </p>
-        </div>
 
-        {/* Action Controls */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Theme / Palette Selector Trigger */}
-          <button
-            onClick={() => setIsThemeModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 14px',
-              backgroundColor: '#ffffff',
-              color: '#334155',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 600,
-              border: '1px solid #cbd5e1',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            }}
-          >
-            <span
+          {/* Action Controls */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Theme / Palette Selector Trigger */}
+            <button
+              onClick={() => setIsThemeModalOpen(true)}
               style={{
                 display: 'inline-flex',
-                gap: '3px',
                 alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                backgroundColor: '#ffffff',
+                color: '#334155',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: '1px solid #cbd5e1',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
               }}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.primary }} />
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.secondary }} />
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.neutral }} />
-            </span>
-            <span>Palette: {currentTheme.name}</span>
-          </button>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  gap: '3px',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.primary }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.secondary }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: currentTheme.neutral }} />
+              </span>
+              <span>Palette: {currentTheme.name}</span>
+            </button>
 
-          {/* Employee Portal / Admin View Switcher */}
-          <button
-            onClick={() => handleTabChange(activeTab === 'employee' ? 'overview' : 'employee')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              backgroundColor: activeTab === 'employee' ? '#0f172a' : '#f1f5f9',
-              color: activeTab === 'employee' ? '#ffffff' : '#334155',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 600,
-              border: '1px solid #cbd5e1',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            }}
-          >
-            <UserCheck size={14} />
-            <span>{activeTab === 'employee' ? '← Admin HR Console' : 'Employee Self-Service'}</span>
-          </button>
+            {/* Employee Portal Switcher */}
+            <button
+              onClick={() => handleTabChange('employee')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                backgroundColor: '#f1f5f9',
+                color: '#334155',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: '1px solid #cbd5e1',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              }}
+            >
+              <UserCheck size={14} />
+              <span>Employee Self-Service</span>
+            </button>
 
-          <a
-            href="/admin/collections/orders/create"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              backgroundColor: currentTheme.primary,
-              color: '#ffffff',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 600,
-              textDecoration: 'none',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
-            <span>+ New Order</span>
-          </a>
-          <a
-            href="/admin/collections/products/create"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              backgroundColor: '#ffffff',
-              color: '#334155',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 500,
-              textDecoration: 'none',
-              border: '1px solid #cbd5e1',
-            }}
-          >
-            <span>+ Add Machinery</span>
-          </a>
-          <a
-            href="/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              backgroundColor: '#f8fafc',
-              color: '#64748b',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: 500,
-              textDecoration: 'none',
-              border: '1px solid #e2e8f0',
-            }}
-          >
-            <span>Storefront ↗</span>
-          </a>
+            <a
+              href="/admin/collections/orders/create"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                backgroundColor: currentTheme.primary,
+                color: '#ffffff',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              }}
+            >
+              <span>+ New Order</span>
+            </a>
+            <a
+              href="/admin/collections/products/create"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                backgroundColor: '#ffffff',
+                color: '#334155',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 500,
+                textDecoration: 'none',
+                border: '1px solid #cbd5e1',
+              }}
+            >
+              <span>+ Add Machinery</span>
+            </a>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                backgroundColor: '#f8fafc',
+                color: '#64748b',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 500,
+                textDecoration: 'none',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <span>Storefront ↗</span>
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       {errorMsg && (
         <div
@@ -1252,6 +1271,7 @@ export function AdminDashboard() {
       )}
 
       {/* ── KPI Metric Cards Grid (Shadcn + Open-Source Ecommerce Pattern) ── */}
+      {activeTab !== 'employee' && (
       <div
         style={{
           display: 'grid',
@@ -1394,6 +1414,7 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Employee Access Boundary Guard ── */}
       {userRole === 'employee' && activeTab !== 'employee' && (
@@ -3773,7 +3794,11 @@ export function AdminDashboard() {
 
       {/* ── Tab: Employee Self-Service Portal ── */}
       {activeTab === 'employee' && (
-        <EmployeePortal currentTheme={currentTheme} />
+        <EmployeePortal
+          currentTheme={currentTheme}
+          isAdminUser={userRole !== 'employee'}
+          onSwitchToAdmin={() => handleTabChange('overview')}
+        />
       )}
 
       {/* ── Tab: User Management & RBAC Workspace (Non-Table Card Interface) ── */}
