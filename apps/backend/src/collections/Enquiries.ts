@@ -6,7 +6,7 @@ export const Enquiries: CollectionConfig = {
   admin: {
     group: 'Sales & Support',
     useAsTitle: 'reference',
-    defaultColumns: ['reference', 'name', 'email', 'company', 'status', 'createdAt'],
+    defaultColumns: ['reference', 'name', 'company', 'email', 'status', 'createdAt'],
   },
   access: {
     read: ({ req: { user } }) => Boolean(user && ['admin', 'operations', 'editor'].includes(user.role as string)),

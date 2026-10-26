@@ -141,7 +141,10 @@ export const Products: CollectionConfig = {
       name: 'specifications',
       type: 'json',
       admin: {
-        description: 'Technical specs object: key-value pairs (e.g. Dimensions, Power, Material)',
+        description: 'Technical specs: structured parameters (Dimensions, Power, Fuel, Capacity, etc.)',
+        components: {
+          Field: '@/components/SpecificationsField#SpecificationsField',
+        },
       },
     },
     {

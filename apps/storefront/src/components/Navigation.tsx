@@ -282,20 +282,13 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                         e.preventDefault();
                         e.stopPropagation();
                         setUserMenuOpen(false);
-                        navigate('login');
+                        navigate('profile');
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setUserMenuOpen(false);
-                          navigate('login');
-                        }
-                      }}
                       className="flex w-full items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[#F1F5F9] mb-1 rounded-lg hover:bg-[#FFF7ED] transition-colors group cursor-pointer text-left"
-                      title="View Customer Portal"
-                      aria-label="View Customer Portal"
+                      title="View Profile"
+                      aria-label="View Profile"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-[#111827] group-hover:text-[#C2410C] transition-colors truncate">
@@ -304,10 +297,25 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
                         <p className="text-[11px] text-[#64748B] truncate">
                           {user.email}
                         </p>
+                        {user.role && (
+                          <span className="inline-block mt-1 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold">
+                            {user.role}
+                          </span>
+                        )}
                       </div>
                       <ChevronRight size={14} className="text-[#94A3B8] group-hover:text-[#C2410C] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </button>
-
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('profile');
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-[#334155] hover:bg-[#F8FAFC] transition-colors"
+                    >
+                      <User size={15} />
+                      My Profile
+                    </button>
                     {(user.role === 'admin' || user.role === 'operations') && (
                       <a
                         href="/admin"
@@ -419,10 +427,10 @@ export default function Navigation({ currentPage, onNavigate, onCartClick, onCat
               type="button"
               onClick={() => {
                 setMobileOpen(false);
-                navigate('login');
+                navigate('profile');
               }}
-              title="View Customer Portal"
-              aria-label="View Customer Portal"
+              title="View Profile"
+              aria-label="View Profile"
               className="mx-4 mt-4 mb-1 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-[#FFF7ED] px-4 py-3 border border-[#FED7AA] text-left hover:bg-[#FFEDD5] transition-colors cursor-pointer"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-white text-sm font-bold uppercase">

@@ -33,20 +33,16 @@ const connectionString = isRemoteDb ? rawDbUri.replace(/([?&])sslmode=[^&]+(&|$)
 export default buildConfig({
   admin: {
     user: Users.slug,
-    theme: 'dark',
+    theme: 'light',
     meta: {
       titleSuffix: '- Kitchen Bots Admin',
-    },
-    autoLogin: {
-      email: 'admin@kitchenbots.com',
-      password: 'admin123456',
-      prefillOnly: true,
     },
     components: {
       graphics: {
         Logo: '@/components/Logo#Logo',
         Icon: '@/components/Icon#Icon',
       },
+      Nav: '@/components/CustomNav#CustomNav',
       beforeDashboard: ['@/components/AdminDashboard#AdminDashboard'],
       actions: ['@/components/StorefrontLink#StorefrontLink'],
       beforeNavLinks: ['@/components/NavHeader#NavHeader'],
@@ -63,7 +59,7 @@ export default buildConfig({
     Documents,
     Media,
     Users,
-  ],
+  ].map((collection) => ({ ...collection, lockDocuments: false })),
   editor: lexicalEditor(),
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://kitchen-bots.vercel.app'),
   secret: process.env.PAYLOAD_SECRET || 'kitchen-bots-super-secret-payload-key-2026',

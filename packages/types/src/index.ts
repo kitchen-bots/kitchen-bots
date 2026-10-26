@@ -3,3 +3,7 @@ export * from './order';
 export * from './quote';
 export * from './enquiry';
 export * from './user';
+export * from './inventory-billing';
+export * from './crm';
+export * from './service';
+export * from './document';

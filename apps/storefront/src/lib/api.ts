@@ -720,20 +720,22 @@ export async function submitOrder(
     }
   }
 
-  const payloadBody = {
-    orderNumber,
+  const checkoutUrl = baseUrl ? `${baseUrl}/api/operations/orders/checkout` : '/api/operations/orders/checkout';
+
+  // Format request for atomic inventory reservation endpoint
+  const atomicCheckoutBody = {
+    idempotencyKey: orderNumber,
     customerName,
     customerEmail,
     customerPhone,
-    totalPaise,
-    status: 'pending',
-    paymentStatus: 'pending',
-    items: orderData.items.map((i) => ({
-      name: i.name,
-      sku: i.sku || 'KB-GEN',
-      pricePaise: i.pricePaise,
-      quantity: i.quantity,
-    })),
+    items: orderData.items.map((i) => {
+      const rawId = String(i.productId || '');
+      const parsedId = rawId.startsWith('prod-') ? Number(rawId.replace('prod-', '')) : Number(rawId || 1);
+      return {
+        productId: isNaN(parsedId) || parsedId <= 0 ? 1 : parsedId,
+        quantity: Number(i.quantity || 1),
+      };
+    }),
     shippingAddress: {
       fullName: orderData.shippingAddress.fullName,
       phone: orderData.shippingAddress.phone,
@@ -746,23 +748,22 @@ export async function submitOrder(
     },
   };
 
-  const primaryUrl = baseUrl ? `${baseUrl}/api/orders` : '/api/orders';
   try {
-    const res = await fetch(primaryUrl, {
+    const res = await fetch(checkoutUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify(payloadBody),
+      body: JSON.stringify(atomicCheckoutBody),
     });
 
     if (res.ok) {
       const json = await res.json();
-      const doc = json.doc || json.data || json;
-      const ref = doc.orderNumber || orderNumber;
-      
-      // Mirror to localStorage for offline user recall
+      const serverOrder = json.order || json;
+      const ref = serverOrder.order_number || serverOrder.orderNumber || orderNumber;
+
+      // Mirror to localStorage for offline user recall (marked Confirmed by server)
       try {
         const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
         stored.unshift({
@@ -783,19 +784,26 @@ export async function submitOrder(
           totalPaise,
           total: totalPaise / 100,
           status: 'Confirmed',
+          idempotencyKey: orderNumber,
         });
         localStorage.setItem('kb_orders', JSON.stringify(stored));
       } catch {
         // Ignore storage errors
       }
 
-      return { orderNumber: ref, id: String(doc.id || ref) };
+      return { orderNumber: ref, id: String(serverOrder.id || ref) };
+    } else if (res.status === 409 || res.status === 422) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || `Checkout failed (${res.status})`);
     }
-  } catch {
-    // Fall back to local persistence
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.message.includes('INSUFFICIENT_STOCK') || err.message.includes('UNPRICED_PRODUCT') || err.message.includes('Idempotency'))) {
+      throw err;
+    }
+    // Network failure: fall back to unconfirmed local queue
   }
 
-  // Local persistence fallback
+  // Local persistence fallback - explicitly NOT confirmed
   const stored = JSON.parse(localStorage.getItem('kb_orders') || '[]');
   stored.unshift({
     orderNumber,
@@ -814,7 +822,9 @@ export async function submitOrder(
     items: orderData.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.pricePaise / 100 })),
     totalPaise,
     total: totalPaise / 100,
-    status: 'Confirmed',
+    status: 'Pending Sync (Offline)',
+    idempotencyKey: orderNumber,
+    isOfflineUnconfirmed: true,
   });
   localStorage.setItem('kb_orders', JSON.stringify(stored));
 
