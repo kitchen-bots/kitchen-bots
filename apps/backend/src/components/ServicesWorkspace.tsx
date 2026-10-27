@@ -162,9 +162,12 @@ export const ServicesWorkspace: React.FC<ServicesWorkspaceProps> = ({
     }
   };
 
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const handleCreateCase = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setCreateError(null);
     try {
       const res = await fetch('/api/operations/services', {
         method: 'POST',
@@ -195,8 +198,14 @@ export const ServicesWorkspace: React.FC<ServicesWorkspaceProps> = ({
         setFormCompany('');
         setFormSubject('');
         setFormDesc('');
+        setCreateError(null);
         await onRefreshData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setCreateError(data.error || `Failed to create service case (HTTP ${res.status})`);
       }
+    } catch (err: any) {
+      setCreateError(err.message || 'Network error creating service case');
     } finally {
       setSubmitting(false);
     }
@@ -1127,6 +1136,25 @@ export const ServicesWorkspace: React.FC<ServicesWorkspaceProps> = ({
         >
           <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', width: '560px', maxWidth: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 16px', color: '#0f172a' }}>Register New Service Case</h2>
+            {createError && (
+              <div
+                style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  marginBottom: '14px',
+                  color: '#b91c1c',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertTriangle size={16} />
+                <span>{createError}</span>
+              </div>
+            )}
             <form onSubmit={handleCreateCase}>
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Service Case Type *</label>

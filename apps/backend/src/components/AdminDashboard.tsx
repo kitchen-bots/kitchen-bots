@@ -214,6 +214,18 @@ export const PALETTES: Record<PaletteId, PaletteConfig> = {
 
 const R2_PUBLIC_CDN = 'https://pub-a4b0711cb441484fbb54bc792d2312b5.r2.dev';
 
+export function getStorefrontUrl(): string {
+  if (process.env.NEXT_PUBLIC_STOREFRONT_URL) {
+    return process.env.NEXT_PUBLIC_STOREFRONT_URL;
+  }
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5173';
+    }
+  }
+  return 'https://kitchen-bots.vercel.app';
+}
+
 export function resolveMediaUrl(rawPath?: string | null): string {
   if (!rawPath) return '';
   let pathStr = rawPath.trim();
@@ -254,11 +266,12 @@ export function AdminDashboard() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.user?.role) {
-          setUserRole(data.user.role);
-          // If the authenticated user is an employee, enforce employee portal
+          const role = data.user.role;
+          setUserRole(role);
+          // If the authenticated user is strictly an employee, enforce employee portal
           const params = new URLSearchParams(window.location.search);
           const currentUrlTab = params.get('tab');
-          if (data.user.role === 'employee' && (!currentUrlTab || currentUrlTab !== 'employee')) {
+          if (role === 'employee' && currentUrlTab !== 'employee') {
             setActiveTab('employee');
             try {
               const url = new URL(window.location.href);
@@ -280,6 +293,8 @@ export function AdminDashboard() {
         const validTabs = ['overview', 'orders', 'products', 'inventory', 'ledger', 'manufacturing', 'crm', 'enquiries', 'services', 'documents', 'invoicing', 'payments', 'hr', 'reports', 'employee', 'users'];
         if (tab && validTabs.includes(tab)) {
           setActiveTab(tab as any);
+        } else if (!tab) {
+          setActiveTab('overview');
         }
         const oTab = params.get('orderStatus');
         if (oTab === 'completed' || oTab === 'pending' || oTab === 'cancelled') {
@@ -292,7 +307,11 @@ export function AdminDashboard() {
 
     syncTabFromUrl();
     window.addEventListener('popstate', syncTabFromUrl);
-    return () => window.removeEventListener('popstate', syncTabFromUrl);
+    window.addEventListener('kb-tab-change', syncTabFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncTabFromUrl);
+      window.removeEventListener('kb-tab-change', syncTabFromUrl);
+    };
   }, []);
 
   const handleTabChange = (newTab: typeof activeTab) => {
@@ -1194,24 +1213,26 @@ export function AdminDashboard() {
               <span>Employee Self-Service</span>
             </button>
 
-            <a
-              href="/admin/collections/orders/create"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                backgroundColor: currentTheme.primary,
-                color: '#ffffff',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              }}
-            >
-              <span>+ New Order</span>
-            </a>
+            {userRole && ['admin', 'operations'].includes(userRole) && (
+              <a
+                href="/admin/collections/orders/create"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  backgroundColor: currentTheme.primary,
+                  color: '#ffffff',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+              >
+                <span>+ New Order</span>
+              </a>
+            )}
             <a
               href="/admin/collections/products/create"
               style={{
@@ -1231,7 +1252,7 @@ export function AdminDashboard() {
               <span>+ Add Machinery</span>
             </a>
             <a
-              href="/"
+              href={getStorefrontUrl()}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -3796,7 +3817,7 @@ export function AdminDashboard() {
       {activeTab === 'employee' && (
         <EmployeePortal
           currentTheme={currentTheme}
-          isAdminUser={userRole !== 'employee'}
+          isAdminUser={userRole ? ['admin', 'operations'].includes(userRole) : false}
           onSwitchToAdmin={() => handleTabChange('overview')}
         />
       )}

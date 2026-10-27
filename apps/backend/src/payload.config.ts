@@ -18,12 +18,15 @@ import { Media } from './collections/Media';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const DEFAULT_REMOTE_DB = 'postgresql://postgres.thavrhaxomanrpsmfklx:kitchen-bots-password@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
 const rawDbUri =
   process.env.DATABASE_URI ||
-  (process.env.VERCEL || process.env.NODE_ENV === 'production'
-    ? DEFAULT_REMOTE_DB
+  (process.env.NODE_ENV === 'production'
+    ? ''
     : 'postgresql://localhost:5432/kitchen_bots_test');
+
+if (!rawDbUri) {
+  throw new Error('DATABASE_URI environment variable is required in production.');
+}
 
 const isRemoteDb = rawDbUri.includes('supabase.com') || rawDbUri.includes('pooler') || rawDbUri.includes('sslmode=');
 // Strip sslmode from URI string so pg doesn't conflict with our ssl config object

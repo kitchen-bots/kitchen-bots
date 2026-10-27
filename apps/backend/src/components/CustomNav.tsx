@@ -444,7 +444,12 @@ export const CustomNav: React.FC = () => {
       >
         {/* Storefront Link */}
         <a
-          href="https://kitchenbots.in"
+          href={
+            process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+            (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+              ? 'http://localhost:5173'
+              : 'https://kitchen-bots.vercel.app')
+          }
           target="_blank"
           rel="noopener noreferrer"
           title={collapsed ? 'Live Storefront' : undefined}
